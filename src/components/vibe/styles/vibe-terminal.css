@@ -1,0 +1,55 @@
+/* ═══════════════════════════════════════════════════════════════
+   VIBE CODE — Terminal Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.vibe-terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0e14;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.vibe-terminal-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.vibe-terminal-output::-webkit-scrollbar { width: 4px; }
+.vibe-terminal-output::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 4px; }
+
+.vibe-terminal-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: rgba(255,255,255,0.5);
+  padding: 1px 0;
+}
+.vibe-terminal-line.cmd { color: #58a6ff; }
+.vibe-terminal-line.ai { color: #a78bfa; font-weight: 500; }
+.vibe-terminal-line.success { color: #3fb950; }
+.vibe-terminal-line.error { color: #f85149; }
+
+.vibe-terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+}
+.vibe-terminal-prompt {
+  color: #3fb950;
+  font-weight: 700;
+  font-size: 13px;
+}
+.vibe-terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e6edf3;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.vibe-terminal-input::placeholder { color: rgba(255,255,255,0.15); }

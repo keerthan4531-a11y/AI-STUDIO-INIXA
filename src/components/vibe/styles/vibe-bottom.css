@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════
+   VIBE CODE — Bottom Panel (Chat/Terminal Toggle)
+   ═══════════════════════════════════════════════════════════════ */
+
+.vibe-bottom-panel {
+  display: flex;
+  flex-direction: column;
+  height: 320px;
+  min-height: 180px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #0d1117;
+}
+.vibe-bottom-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.vibe-bottom-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.vibe-bottom-tab:hover { color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.04); }
+.vibe-bottom-tab.active { color: #818cf8; background: rgba(99,102,241,0.1); }
+.vibe-bottom-spacer { flex: 1; }
+.vibe-bottom-content { flex: 1; min-height: 0; overflow: hidden; }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .vibe-studio { font-size: 13px; }
+  .vibe-toolbar { padding: 0 8px; height: 40px; }
+  .vibe-file-tree-panel { display: none !important; }
+  .vibe-project-name { display: none; }
+  .vibe-bottom-panel { height: 260px; }
+  .vibe-editor-header { padding: 4px 10px; }
+  .vibe-chat-bubble { max-width: 95%; }
+}

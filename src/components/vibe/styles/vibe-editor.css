@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════════
+   VIBE CODE — Editor Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.vibe-editor-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ─── File Tabs ─── */
+.vibe-file-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 34px;
+  min-height: 34px;
+  background: #0d1117;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+  padding: 0 4px;
+}
+.vibe-file-tabs::-webkit-scrollbar { height: 0; }
+.vibe-file-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 100%;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  white-space: nowrap;
+  position: relative;
+}
+.vibe-file-tab:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.03); }
+.vibe-file-tab.active { color: #e6edf3; border-bottom-color: #818cf8; background: rgba(99,102,241,0.06); }
+.vibe-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.2);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.1s;
+}
+.vibe-file-tab:hover .vibe-tab-close { opacity: 1; }
+.vibe-tab-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* ─── Content Area ─── */
+.vibe-content-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Editor ─── */
+.vibe-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0d1117;
+}
+.vibe-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+}
+.vibe-editor-lang {
+  padding: 1px 6px;
+  background: rgba(99,102,241,0.12);
+  color: #818cf8;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.vibe-editor-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vibe-editor-lines { font-size: 10px; color: rgba(255,255,255,0.15); }
+
+.vibe-editor-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+.vibe-line-numbers {
+  width: 48px;
+  min-width: 48px;
+  overflow: hidden;
+  padding: 10px 0;
+  background: rgba(255,255,255,0.01);
+  border-right: 1px solid rgba(255,255,255,0.04);
+  user-select: none;
+}
+.vibe-line-num {
+  height: 20px;
+  line-height: 20px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: rgba(255,255,255,0.12);
+  text-align: right;
+  padding-right: 10px;
+}
+.vibe-editor-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: #e6edf3;
+  font-size: 13px;
+  line-height: 20px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+  overflow: auto;
+  white-space: pre;
+}
+.vibe-editor-textarea::placeholder { color: rgba(255,255,255,0.1); }
+.vibe-editor-textarea::-webkit-scrollbar { width: 6px; height: 6px; }
+.vibe-editor-textarea::-webkit-scrollbar-track { background: transparent; }
+.vibe-editor-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+/* ─── Empty State ─── */
+.vibe-editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+}
+.vibe-editor-empty p { font-size: 13px; color: rgba(255,255,255,0.2); margin: 0; }
+.vibe-editor-empty p.sub { font-size: 11px; color: rgba(255,255,255,0.1); }
+
+/* ─── Preview ─── */
+.vibe-preview { width: 100%; height: 100%; background: #fff; }
+.vibe-preview-frame { width: 100%; height: 100%; border: none; }

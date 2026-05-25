@@ -1,0 +1,177 @@
+/* ═══════════════════════════════════════════════════════════════
+   VIBE CODE STUDIO — Main Layout & Toolbar
+   ═══════════════════════════════════════════════════════════════ */
+
+.vibe-studio {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: 'Outfit', -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* ─── Top Toolbar ─── */
+.vibe-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: #161b22;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+  z-index: 50;
+}
+.vibe-toolbar-left,
+.vibe-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vibe-toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 2px;
+}
+.vibe-project-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6edf3;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+}
+
+/* ─── Tabs ─── */
+.vibe-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vibe-tab:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.04); }
+.vibe-tab.active { color: #fff; background: rgba(99,102,241,0.2); }
+
+/* ─── Buttons ─── */
+.vibe-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vibe-btn-icon:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15); }
+.vibe-btn-icon.tiny { width: 24px; height: 24px; border-radius: 5px; }
+.vibe-btn-icon.small { width: 26px; height: 26px; border-radius: 6px; font-size: 14px; }
+
+/* ─── Model Picker ─── */
+.vibe-model-picker-wrap { position: relative; }
+.vibe-model-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(99,102,241,0.1);
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.vibe-model-btn:hover { background: rgba(99,102,241,0.2); color: #fff; }
+.vibe-model-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  width: 260px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #1c2128;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 6px;
+  z-index: 200;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.vibe-model-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: left;
+}
+.vibe-model-option:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.vibe-model-option.active { background: rgba(99,102,241,0.15); color: #818cf8; }
+.vibe-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.vibe-badge.red { background: rgba(239,68,68,0.15); color: #f87171; }
+.vibe-badge.blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.vibe-badge.pink { background: rgba(236,72,153,0.15); color: #f472b6; }
+.vibe-badge.violet { background: rgba(139,92,246,0.15); color: #a78bfa; }
+.vibe-badge.green { background: rgba(16,185,129,0.15); color: #34d399; }
+
+/* ─── Main Layout ─── */
+.vibe-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Show Bottom Panel Button ─── */
+.vibe-show-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin: 0 auto 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vibe-show-bottom:hover { background: rgba(99,102,241,0.15); color: #818cf8; }

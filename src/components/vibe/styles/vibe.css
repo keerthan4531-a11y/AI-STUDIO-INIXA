@@ -1,0 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════
+   VIBE CODE STUDIO — Master CSS Import
+   Import this single file to get all Vibe Code styles
+   ═══════════════════════════════════════════════════════════════ */
+
+@import './vibe-layout.css';
+@import './vibe-filetree.css';
+@import './vibe-editor.css';
+@import './vibe-terminal.css';
+@import './vibe-chat.css';
+@import './vibe-bottom.css';

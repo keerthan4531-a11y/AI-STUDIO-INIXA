@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index.js" }
+  ],
+  "regions": ["sfo1"],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -1,0 +1,727 @@
+/* ═══════════════════════════════════════════════════════════════
+   GOOGLE AI STUDIO VIBE — Premium Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --vibe-bg: #0b0d0f;
+  --vibe-sidebar: #131517;
+  --vibe-header: #131517;
+  --vibe-border: rgba(255, 255, 255, 0.08);
+  --vibe-accent: #8ab4f8; /* Google Blue */
+  --vibe-accent-soft: rgba(138, 180, 248, 0.1);
+  --vibe-text: #e8eaed;
+  --vibe-text-dim: #9aa0a6;
+  --vibe-font: 'Outfit', 'Inter', -apple-system, sans-serif;
+}
+
+/* ─── Modal Base ─── */
+.vibe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.vibe-modal {
+  background: #1e1f21;
+  border: 1px solid var(--vibe-border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.vibe-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--vibe-border);
+}
+
+.vibe-modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.vibe-modal-content {
+  padding: 20px 24px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.vibe-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vibe-shortcut-row:last-child {
+  border-bottom: none;
+}
+
+.vibe-shortcut-action {
+  font-size: 13px;
+  color: var(--vibe-text-dim);
+}
+
+.vibe-shortcut-keys {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #fff;
+}
+
+/* ─── Import/Export Buttons ─── */
+.vibe-import-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--vibe-border);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.vibe-import-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.vibe-studio {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: var(--vibe-bg);
+  color: var(--vibe-text);
+  font-family: var(--vibe-font);
+  overflow: hidden;
+}
+
+.vibe-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vibe-toolbar {
+  height: 56px;
+  background: var(--vibe-sidebar);
+  border-bottom: 1px solid var(--vibe-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+}
+
+.vibe-toolbar-center {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.03);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--vibe-border);
+}
+
+.vibe-tab {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  color: var(--vibe-text-dim);
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.vibe-tab:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+}
+
+.vibe-tab.active {
+  color: var(--vibe-accent);
+  background: var(--vibe-accent-soft);
+}
+
+.vibe-model-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--vibe-border);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.vibe-model-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: var(--vibe-accent);
+}
+
+/* ─── Sidebar (File Tree) ─── */
+.vibe-file-tree-panel {
+  background: var(--vibe-sidebar);
+  border-right: 1px solid var(--vibe-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.vibe-tree-header {
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vibe-border);
+}
+
+.vibe-tree-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--vibe-text-dim);
+  text-transform: uppercase;
+}
+
+.vibe-tree-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+
+.vibe-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--vibe-text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.vibe-tree-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+
+.vibe-tree-item.active {
+  background: var(--vibe-accent-soft);
+  color: var(--vibe-accent);
+  border-right: 2px solid var(--vibe-accent);
+}
+
+.vibe-tree-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Chat Area (Google AI Studio Style) ─── */
+.vibe-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.vibe-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 40px;
+}
+
+.vibe-chat-msg {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  max-width: 100%;
+}
+
+.vibe-chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--vibe-border);
+  color: var(--vibe-text-dim);
+}
+
+.vibe-chat-msg.user .vibe-chat-avatar {
+  background: var(--vibe-accent-soft);
+  color: var(--vibe-accent);
+  border-color: var(--vibe-accent-soft);
+}
+
+.vibe-chat-bubble {
+  flex: 1;
+  min-width: 0;
+}
+
+.vibe-chat-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--vibe-text);
+}
+
+.vibe-chat-code {
+  margin: 16px 0;
+  background: #1e1f21;
+  border: 1px solid var(--vibe-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.vibe-chat-code-header {
+  background: rgba(255,255,255,0.03);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--vibe-text-dim);
+  border-bottom: 1px solid var(--vibe-border);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.vibe-chat-code code {
+  display: block;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  overflow-x: auto;
+  color: #e8eaed;
+}
+
+/* ─── Input Area ─── */
+.vibe-chat-input-area {
+  margin-top: auto;
+  padding: 24px 0 0;
+}
+
+.vibe-chat-input-container {
+  background: #1e1f21;
+  border: 1px solid var(--vibe-border);
+  border-radius: 28px;
+  padding: 12px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.vibe-chat-input-container:focus-within {
+  border-color: var(--vibe-accent);
+}
+
+.vibe-chat-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  padding: 8px 0;
+}
+
+.vibe-chat-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.vibe-send-btn {
+  background: var(--vibe-accent);
+  color: #0b0d0f;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.vibe-send-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--vibe-accent-soft);
+}
+
+/* ─── Editor Tabs ─── */
+.vibe-file-tabs {
+  height: 44px;
+  background: var(--vibe-sidebar);
+  display: flex;
+  border-bottom: 1px solid var(--vibe-border);
+  padding: 0 8px;
+}
+
+.vibe-file-tab {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--vibe-text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.vibe-file-tab.active {
+  color: var(--vibe-accent);
+  border-bottom-color: var(--vibe-accent);
+  background: rgba(255,255,255,0.02);
+}
+
+/* ─── Right Panel (Model Settings) ─── */
+.vibe-right-panel {
+  background: var(--vibe-sidebar);
+  border-left: 1px solid var(--vibe-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.vibe-panel-header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vibe-border);
+}
+
+/* ─── Terminal Panel ─── */
+.vibe-terminal-panel {
+  background: #0b0d0f;
+  border-top: 1px solid var(--vibe-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.vibe-terminal-header {
+  height: 36px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #131517;
+  border-bottom: 1px solid var(--vibe-border);
+}
+
+.vibe-terminal {
+  flex: 1;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  overflow-y: auto;
+}
+
+.vibe-terminal-line {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.vibe-terminal-line.cmd { color: var(--vibe-accent); }
+.vibe-terminal-line.ai { color: #f472b6; }
+.vibe-terminal-line.success { color: #34d399; }
+.vibe-terminal-line.error { color: #f87171; }
+
+.vibe-terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 12px;
+}
+
+.vibe-terminal-prompt { color: var(--vibe-accent); font-weight: bold; }
+.vibe-terminal-input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  flex: 1;
+  outline: none;
+}
+
+/* ─── Utility ─── */
+.vibe-content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+
+.vibe-content-main {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.vibe-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ─── Premium Welcome Screen ─── */
+.vibe-chat-welcome {
+  text-align: center;
+  padding: 40px 24px 60px;
+}
+
+.vibe-chat-welcome h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 20px 0 12px;
+  background: linear-gradient(to right, #fff, #9aa0a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.vibe-welcome-sparkle {
+  display: inline-flex;
+  padding: 20px;
+  border-radius: 30px;
+  background: radial-gradient(circle, rgba(138, 180, 248, 0.15) 0%, transparent 70%);
+}
+
+/* ─── Suggestion Cards (Google AI Studio Style) ─── */
+.vibe-suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.vibe-suggestion-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.vibe-suggestion-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.vibe-suggestion-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(138, 180, 248, 0.15), rgba(138, 180, 248, 0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8ab4f8;
+  flex-shrink: 0;
+}
+
+.vibe-suggestion-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.vibe-suggestion-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8eaed;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.vibe-suggestion-desc {
+  font-size: 11px;
+  color: #9aa0a6;
+  line-height: 1.4;
+}
+
+/* ─── Quick Tips ─── */
+.vibe-quick-tips {
+  margin-top: 32px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: inline-block;
+  text-align: left;
+}
+
+.vibe-tip-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9aa0a6;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vibe-tip {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.vibe-suggestions-grid {
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+  opacity: 0;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .vibe-suggestions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .vibe-chat-welcome h1 {
+    font-size: 22px;
+  }
+}
+
+.vibe-suggestion {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  color: #bdc1c6;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vibe-suggestion:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-soft {
+  0% { box-shadow: 0 0 0 0 rgba(138, 180, 248, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(138, 180, 248, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(138, 180, 248, 0); }
+}
+
+.vibe-chat-msg {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.vibe-welcome-sparkle {
+  animation: float 4s ease-in-out infinite;
+  position: relative;
+}
+
+.vibe-welcome-sparkle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 40px;
+  animation: pulse-soft 3s infinite;
+}
+
+.vibe-chat-welcome h1 {
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  opacity: 0;
+}
+
+.vibe-chat-welcome p {
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+  opacity: 0;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .vibe-file-tree-panel {
+    position: absolute;
+    left: 0;
+    top: 56px;
+    bottom: 0;
+    z-index: 200;
+    width: 260px !important;
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+    background: var(--vibe-sidebar);
+  }
+  
+  .vibe-toolbar-center {
+    display: none;
+  }
+  
+  .vibe-chat {
+    padding: 20px 16px;
+  }
+  
+  .vibe-chat-msg {
+    gap: 12px;
+  }
+  
+  .vibe-chat-content {
+    font-size: 14px;
+  }
+}
+

@@ -1,0 +1,164 @@
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  height: 80vh;
+  margin: 0 auto;
+  border: 1px solid var(--border-color);
+  background-color: rgba(5, 5, 5, 0.85);
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.15), inset 0 0 10px rgba(0, 255, 65, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: var(--dark-accent);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.terminal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.terminal-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--foreground);
+}
+
+.status-text {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.terminal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.message-meta {
+  display: flex;
+  gap: 10px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.message-time {
+  color: #888;
+}
+
+.message.user .message-role {
+  color: #00d2ff; /* Different color for user */
+}
+
+.message.assistant .message-role {
+  color: var(--foreground);
+}
+
+.message.system .message-role,
+.message.system .message-content {
+  color: var(--error-color);
+}
+
+.message-content {
+  font-size: 1rem;
+  line-height: 1.4;
+  text-shadow: 0 0 2px var(--foreground);
+}
+
+.terminal-footer {
+  padding: 15px;
+  border-top: 1px solid var(--border-color);
+  background-color: rgba(0, 59, 0, 0.3);
+}
+
+.terminal-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prompt-indicator {
+  font-weight: bold;
+  font-size: 1.2rem;
+  animation: blink 1s step-end infinite;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  outline: none;
+  text-shadow: 0 0 2px var(--foreground);
+}
+
+.terminal-input::placeholder {
+  color: rgba(0, 255, 65, 0.3);
+}
+
+.terminal-submit {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--foreground);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.terminal-submit:hover:not(:disabled) {
+  background-color: var(--dark-accent);
+  box-shadow: 0 0 10px var(--accent-color);
+}
+
+.terminal-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blink {
+  animation: blink 1.5s infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
