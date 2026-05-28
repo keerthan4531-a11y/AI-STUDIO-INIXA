@@ -13,8 +13,9 @@ import { aiChat, getSelectedModel, AI_MODELS, AIModel, CF_WORKER_URL } from '../
 // ═══════════════════════════════════════════════════════════════════
 
 const VOICES = [
-  { id: 'Kore', label: 'Kore', desc: 'Soft female voice (Tamil)' },
-  { id: 'Aoede', label: 'Aoede', desc: 'Warm female voice' },
+  { id: 'nova', label: 'Nova', desc: 'Soft female voice (Supports Tamil)' },
+  { id: 'alloy', label: 'Alloy', desc: 'Neutral voice' },
+  { id: 'echo', label: 'Echo', desc: 'Warm male voice' },
 ];
 
 const LANGUAGES = [
@@ -35,13 +36,17 @@ interface VoiceMessage {
   timestamp: number;
 }
 
+// Global AudioContext to prevent hitting browser limits (which causes silent muting)
+let globalAudioCtx: AudioContext | null = null;
+
+
 export default function VoiceAssistant() {
   const [messages, setMessages] = useState<VoiceMessage[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState('Kore');
+  const [selectedVoice, setSelectedVoice] = useState('nova');
   const [selectedLang, setSelectedLang] = useState('ta-IN');
   const [sttModel, setSttModel] = useState('browser');
   const [showSettings, setShowSettings] = useState(false);
@@ -238,7 +243,7 @@ export default function VoiceAssistant() {
         setMessages(prev => [...prev, assistantMsg]);
       }
     } catch (error) {
-      console.error('Voice chat error:', error);
+      console.warn('Voice chat error:', error);
       const errorMsg: VoiceMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -252,69 +257,35 @@ export default function VoiceAssistant() {
     }
   };
 
-  // Text-to-Speech using Gemini API
+  // Text-to-Speech using auto-scraped TTS API
   const speakText = async (text: string, msg: VoiceMessage) => {
     setIsSpeaking(true);
     try {
-      const GEMINI_KEY = customApiKey || 'AIzaSyB4oppmKaumsbtT607CBT9meUvRAyZlYjk';
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=${GEMINI_KEY}`, {
+      const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: selectedVoice
-                }
-              }
-            }
-          }
+          text,
+          voice: selectedVoice,
+          lang: selectedLang
         }),
       });
 
       if (!res.ok) {
-        console.error('TTS failed:', res.status);
+        console.warn('TTS proxy failed:', res.status, '- Falling back to browser TTS');
+        // Add message without audio so it's not lost
+        setMessages(prev => {
+          if (!prev.find(m => m.id === msg.id)) {
+            return [...prev, msg];
+          }
+          return prev;
+        });
         // Fallback to browser TTS
         fallbackSpeak(text);
         return;
       }
 
-      const data = await res.json();
-      const base64Audio = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      
-      if (!base64Audio) {
-        throw new Error('No audio data received');
-      }
-
-      // Convert Base64 to raw PCM bytes
-      const byteCharacters = atob(base64Audio);
-      const byteArray = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteArray[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      // Gemini returns raw 16-bit PCM at 24kHz. We must wrap it in a WAV header to play it.
-      const wavHeader = new ArrayBuffer(44);
-      const view = new DataView(wavHeader);
-      
-      view.setUint32(0, 0x52494646, false); // "RIFF"
-      view.setUint32(4, 36 + byteArray.length, true); // File size
-      view.setUint32(8, 0x57415645, false); // "WAVE"
-      view.setUint32(12, 0x666D7420, false); // "fmt "
-      view.setUint32(16, 16, true); // format chunk size
-      view.setUint16(20, 1, true); // PCM format
-      view.setUint16(22, 1, true); // 1 channel
-      view.setUint32(24, 24000, true); // 24000 sample rate
-      view.setUint32(28, 24000 * 2, true); // byte rate
-      view.setUint16(32, 2, true); // block align
-      view.setUint16(34, 16, true); // 16 bits per sample
-      view.setUint32(36, 0x64617461, false); // "data"
-      view.setUint32(40, byteArray.length, true); // data size
-
-      const audioBlob = new Blob([wavHeader, byteArray], { type: 'audio/wav' });
+      const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       
       // Add message to chat only when audio is ready to play (synchronized)
@@ -343,12 +314,17 @@ export default function VoiceAssistant() {
 
       // Audio visualization
       try {
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaElementSource(audio);
-        const analyser = audioCtx.createAnalyser();
+        if (!globalAudioCtx) {
+          globalAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (globalAudioCtx.state === 'suspended') {
+          await globalAudioCtx.resume();
+        }
+        const source = globalAudioCtx.createMediaElementSource(audio);
+        const analyser = globalAudioCtx.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
-        analyser.connect(audioCtx.destination);
+        analyser.connect(globalAudioCtx.destination);
         analyserRef.current = analyser;
 
         const visualize = () => {
@@ -367,7 +343,7 @@ export default function VoiceAssistant() {
 
       await audio.play();
     } catch (e) {
-      console.error('TTS error:', e);
+      console.warn('TTS error:', e);
       setIsSpeaking(false);
       fallbackSpeak(text);
     }

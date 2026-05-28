@@ -63,7 +63,7 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
         initial={{ y: 100, scale: 0.95 }}
         animate={{ y: 0, scale: 1 }}
         exit={{ y: 100, scale: 0.95 }}
-        className="relative w-full max-w-lg max-h-[80vh] overflow-hidden rounded-[32px] bg-[#0c0d12]/90 border border-white/10 shadow-[0_32px_80px_rgba(0,0,0,0.9)] flex flex-col"
+        className="relative w-full max-w-lg max-h-[80vh] overflow-hidden apple-glass-card shadow-[0_32px_80px_rgba(0,0,0,0.9)] flex flex-col"
       >
         <div className="p-6 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
           <div className="flex items-center gap-3">

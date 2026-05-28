@@ -463,7 +463,33 @@ export const aiChat = async (
   }
 };
 
-// ─── Web Search (Mock) ─────────────────────────────────────────────
+// ─── Web Search & Scrape ─────────────────────────────────────────────
 export const aiWebSearch = async (query: string): Promise<any[]> => {
-  return []; // Mock for now
+  try {
+    const res = await fetch(`${CF_WORKER_URL}/web-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    const data = await res.json();
+    if (data.ok && data.results) return data.results;
+  } catch (e) {
+    console.error('Web Search Error:', e);
+  }
+  return [];
+};
+
+export const aiWebScrape = async (url: string): Promise<string> => {
+  try {
+    const res = await fetch(`${CF_WORKER_URL}/web-scrape`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.ok && data.text) return data.text;
+  } catch (e) {
+    console.error('Web Scrape Error:', e);
+  }
+  return '';
 };

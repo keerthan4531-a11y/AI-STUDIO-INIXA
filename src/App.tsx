@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, ChevronDown, Sparkles } from 'lucide-react';
-import { HolographicMesh } from './components/HolographicMesh';
+import { Menu, X, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { VideoGenerator, ImageGenerator } from './components/Generators';
 import { ProfileScreen } from './components/ProfileScreen';
@@ -16,6 +15,8 @@ import { getSelectedModel, setSelectedModel, type AIModel } from './api/aiEngine
 import { VibeCodeStudio } from './components/vibe';
 import { DeveloperConsole } from './components/DeveloperConsole';
 import VoiceAssistant from './components/VoiceAssistant';
+import { DeepResearchAgent } from './components/DeepResearchAgent';
+import { NoteIXLayout } from './components/note-ix/NoteIXLayout';
 
 export interface ChatSession {
   id: string;
@@ -119,52 +120,52 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen bg-[#080a14] text-white flex relative tracking-tight selection:bg-indigo-500/30 overflow-hidden font-sans">
-      {activeTab !== 'vibe' && (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full animate-float-slow" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] rounded-full animate-float-slow" style={{ animationDelay: '-5s' }} />
-          <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 blur-[100px] rounded-full animate-float-slow" style={{ animationDelay: '-10s' }} />
-        </div>
-      )}
+    <div className="h-[100dvh] bg-[#030712] text-white flex relative tracking-tight selection:bg-indigo-500/30 overflow-hidden font-sans">
+      {/* Static Premium Glass Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#030712]">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 blur-[150px] rounded-full" />
+        <div className="absolute top-[30%] right-[20%] w-[40%] h-[40%] bg-blue-500/5 blur-[150px] rounded-full" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')] opacity-[0.035] mix-blend-overlay" />
+      </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-        body { font-family: 'Outfit', sans-serif; background-color: #0b0c14; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+        body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; background-color: #030712; }
         .font-serif { font-family: 'Playfair Display', serif; }
       `}</style>
-      
-      {activeTab !== 'vibe' && <HolographicMesh activeTab={activeTab} lowPowerMode={lowPowerMode} />}
 
       {/* Desktop Sidebar */}
       {user && <DesktopSidebar {...sidebarProps} />}
 
-      <div className="flex-1 flex flex-col min-w-0 relative h-screen">
+      <div className="flex-1 flex flex-col min-w-0 relative h-[100dvh]">
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-5 py-4 apple-glass border-b border-white/[0.05]">
           <div className="flex items-center gap-3">
+            {user && (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={toggleSidebar} className="w-9 h-9 rounded-xl apple-glass flex items-center justify-center text-white/60 mr-2">
+                {showSidebar ? <X className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
+              </motion.button>
+            )}
             <div className="w-9 h-9 rounded-xl apple-glass-thick flex items-center justify-center">
               <InixaLogo size={20} className="text-white" />
             </div>
-            <h1 className="text-[15px] font-black tracking-tight uppercase text-white">Inixa <span className="text-white/40 font-medium normal-case">Preview</span></h1>
+            <h1 className="text-[15px] font-black tracking-tight uppercase text-white">Inixa</h1>
           </div>
           {user && (
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setShowModelSelector(true)} 
-                className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-full apple-glass border border-white/10 text-[10px] font-bold text-white/40 hover:text-white transition-all mr-1"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full apple-glass border border-white/10 text-[10px] font-bold text-white/40 hover:text-white transition-all"
               >
                 {currentModel.label.split(' ')[0]} <ChevronDown className="w-3 h-3 opacity-30" />
               </button>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={toggleSidebar} className="w-9 h-9 rounded-xl apple-glass flex items-center justify-center text-white/60">
-                {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </motion.button>
             </div>
           )}
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 flex-1 overflow-y-auto hide-scrollbar flex flex-col">
+        <main className={`relative z-10 flex-1 flex flex-col h-full hide-scrollbar ${activeTab === 'note-ix' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {!user ? (
             <AuthScreen onLogin={handleLogin} />
           ) : (
@@ -174,7 +175,7 @@ export default function App() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="flex-1 flex flex-col h-full"
+                className="flex-1 flex flex-col h-full min-h-full w-full"
               >
                 {activeTab === 'chat' && (
                   <ChatInterface
@@ -240,6 +241,9 @@ export default function App() {
                     setShowModelSelector={setShowModelSelector}
                   />
                 )}
+                {activeTab === 'note-ix' && (
+                  <NoteIXLayout currentModel={currentModel} setShowModelSelector={setShowModelSelector} />
+                )}
                 {activeTab === 'image' && <ImageGenerator />}
                 {activeTab === 'video' && <VideoGenerator />}
                 {activeTab === 'vibe' && (
@@ -260,6 +264,7 @@ export default function App() {
                 {activeTab === 'about' && <AboutScreen />}
                 {activeTab === 'api' && <DeveloperConsole />}
                 {activeTab === 'voice' && <VoiceAssistant />}
+                {activeTab === 'deep-research' && <DeepResearchAgent currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
               </motion.div>
             </AnimatePresence>
           )}

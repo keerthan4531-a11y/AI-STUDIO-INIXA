@@ -9,11 +9,9 @@
   },
   "dependencies": {
     "cheerio": "^1.2.0",
-    "cookie-agent": "^0.0.1",
     "cors": "^2.8.6",
     "express": "^4.22.2",
     "fingerprint-generator": "^2.1.82",
-    "got": "^15.0.5",
     "got-scraping": "^4.2.1",
     "tough-cookie": "^4.1.4"
   }

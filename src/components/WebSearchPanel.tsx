@@ -27,64 +27,73 @@ interface WebSearchPanelProps {
 export function WebSearchPanel({ isSearching, sources, query }: WebSearchPanelProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Automatically expand if we just got sources
+  useEffect(() => {
+    if (sources.length > 0) setExpanded(true);
+  }, [sources.length]);
+
   if (sources.length === 0 && !isSearching) return null;
 
-  const displayedSources = expanded ? sources : sources.slice(0, 3);
-
   return (
-    <div className="w-full flex flex-col gap-3">
-      {/* Sources Header */}
-      {!isSearching && sources.length > 0 && (
-        <div className="flex items-center gap-2 mb-1">
-          <Search className="w-4 h-4 text-white/50" />
-          <span className="text-sm font-bold text-white/90">Sources</span>
-        </div>
-      )}
-
-      {/* Perplexity-style source cards */}
-      {sources.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          {displayedSources.map((s, i) => (
-            <motion.a
-              key={i} href={s.link} target="_blank" rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-[#202123]/80 hover:bg-[#2a2b32] border border-white/[0.05] transition-all group cursor-pointer w-full max-w-2xl"
-            >
-              {/* Domain & Favicon */}
-              <div className="flex items-center gap-2">
-                <img src={getFaviconUrl(s.link)} alt="" className="w-4 h-4 rounded-sm" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                <span className="text-[12px] font-medium text-white/60">{getDomain(s.link)}</span>
+    <div className="w-full max-w-3xl my-2">
+      <div 
+        className="flex items-center gap-2 cursor-pointer text-white/70 hover:text-white transition-colors select-none w-fit"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Globe className="w-4 h-4" />
+        <span className="text-[14px] font-medium">Searched the web</span>
+        {expanded ? <ChevronUp className="w-4 h-4 opacity-50" /> : <ChevronDown className="w-4 h-4 opacity-50" />}
+      </div>
+      
+      <AnimatePresence>
+        {expanded && sources.length > 0 && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }} 
+            animate={{ height: 'auto', opacity: 1 }} 
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden mt-3"
+          >
+            <div className="border-l border-white/10 ml-2 pl-6 py-1 flex flex-col gap-4">
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between pr-2">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-white/40" />
+                    <span className="text-[13px] text-white/60 font-medium">{query || 'Web Search'}</span>
+                  </div>
+                  <span className="text-[12px] text-white/40">{sources.length} results</span>
+                </div>
+                
+                <div className="flex flex-col rounded-xl bg-white/[0.02] border border-white/10 overflow-hidden divide-y divide-white/[0.05]">
+                  {sources.map((s, i) => (
+                    <a 
+                      key={i} 
+                      href={s.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 hover:bg-white/[0.05] transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden mr-4">
+                        <div className="w-5 h-5 shrink-0 bg-white/5 rounded flex items-center justify-center">
+                          <img src={getFaviconUrl(s.link)} alt="" className="w-3.5 h-3.5 rounded-sm" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        </div>
+                        <span className="text-[13px] font-medium text-white/80 group-hover:text-blue-400 truncate leading-relaxed">{s.title}</span>
+                      </div>
+                      <span className="text-[12px] text-white/40 shrink-0 max-w-[150px] truncate">{getDomain(s.link)}</span>
+                    </a>
+                  ))}
+                </div>
               </div>
               
-              {/* Title */}
-              <h3 className="text-[14px] font-semibold text-white/90 group-hover:text-blue-400 transition-colors leading-snug line-clamp-2">
-                {s.title}
-              </h3>
-              
-              {/* Date / Snippet */}
-              {s.snippet && (
-                <p className="text-[12px] text-white/40 line-clamp-1 mt-0.5">
-                  {s.snippet.slice(0, 80)}...
-                </p>
-              )}
-            </motion.a>
-          ))}
-          {sources.length > 3 && !expanded && (
-            <button 
-              onClick={() => setExpanded(true)}
-              className="text-[13px] font-bold text-white/70 hover:text-white text-left mt-1 py-1"
-            >
-              More
-            </button>
-          )}
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* Searching State */}
       {isSearching && sources.length === 0 && (
-        <div className="flex items-center gap-3 py-2">
-          <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-          <span className="text-[13px] font-medium text-white/50">Searching the web...</span>
+        <div className="flex items-center gap-2 mt-2 ml-2 pl-6 border-l border-white/10 text-white/50 py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+          <span className="text-[13px]">Searching...</span>
         </div>
       )}
     </div>

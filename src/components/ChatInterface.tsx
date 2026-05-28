@@ -284,6 +284,17 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
 
       let msgsForAI = [...newMessages];
 
+      if (finalQuery !== text) {
+        const lastMsg = msgsForAI[msgsForAI.length - 1];
+        if (typeof lastMsg.content === 'string') {
+          msgsForAI[msgsForAI.length - 1] = { ...lastMsg, content: finalQuery };
+        } else if (Array.isArray(lastMsg.content)) {
+          // If it's an array (images + text), replace the text part with finalQuery
+          const newContent = lastMsg.content.map((c: any) => c.type === 'text' ? { ...c, text: finalQuery } : c);
+          msgsForAI[msgsForAI.length - 1] = { ...lastMsg, content: newContent };
+        }
+      }
+
       if (pdfChunks.length > 0) {
         setIsSearching(true);
         const queryToSearch = text || "Please provide a comprehensive summary of this document.";
@@ -417,14 +428,15 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         
         {/* Landing */}
         {isLanding && !isPdfMode && (
-          <div className="flex flex-col items-center justify-center text-center mt-6 sm:mt-12 mb-8 space-y-6 max-w-3xl mx-auto px-4">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl">
-              <InixaLogo size={30} className="text-white" />
+          <div className="flex flex-col items-center justify-center text-center mt-8 sm:mt-16 mb-8 space-y-7 max-w-3xl mx-auto px-4">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-white/10 flex items-center justify-center shadow-[0_0_60px_rgba(99,102,241,0.15)] relative group cursor-default">
+              <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <InixaLogo size={36} className="text-white relative z-10 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
             </motion.div>
-            <motion.h2 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-6xl font-serif font-medium tracking-tight text-white/90">
+            <motion.h2 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-[64px] font-['Playfair_Display'] font-medium tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-white/90 to-white/60 leading-[1.1]">
               Hi, {userName || 'there'}!
             </motion.h2>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-lg sm:text-xl font-medium text-white/35">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-lg sm:text-[22px] font-['DM_Sans'] text-white/40 tracking-wide">
               How can I help you today?
             </motion.p>
           </div>
@@ -512,6 +524,13 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                       <span className="text-[12px] font-semibold text-white/50">{currentModel.label}</span>
                     </div>
 
+                    {/* Web Search Sources */}
+                    {m.sources && m.sources.length > 0 && (
+                      <div className="pl-9 mb-4 pr-4">
+                        <WebSearchPanel isSearching={false} sources={m.sources} query="" />
+                      </div>
+                    )}
+
                     {/* Thinking panel */}
                     {m.thinking && <DeepThinkPanel thinkingContent={m.thinking} isThinking={false} modelName={currentModel.label} />}
 
@@ -519,13 +538,6 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                     <div className="pl-9">
                       <MessageContent content={textContent} isCodex={!!isCodex} onOpenArtifact={(type, data, title) => setActiveArtifact({type, data, title})} />
                     </div>
-
-                    {/* Web Search Sources */}
-                    {m.sources && m.sources.length > 0 && (
-                      <div className="pl-9 mt-4 pr-4">
-                        <WebSearchPanel isSearching={false} sources={m.sources} query="" />
-                      </div>
-                    )}
 
                     {/* Actions */}
                     <div className="pl-9 flex items-center gap-1.5 mt-3 opacity-0 hover:opacity-100 transition-opacity">
@@ -580,16 +592,16 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                 </div>
                 <span className="text-[12px] font-semibold text-white/50">{currentModel.label}</span>
               </div>
+              {/* Web Search Sources during streaming */}
+              {searchSources.length > 0 && (
+                <div className="pl-9 mb-4 pr-4">
+                  <WebSearchPanel isSearching={false} sources={searchSources} query="" />
+                </div>
+              )}
               <div className="pl-9">
                 <MessageContent content={streamingText} isCodex={!!isCodex} onOpenArtifact={(type, data, title) => setActiveArtifact({type, data, title})} />
                 <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.5, repeat: Infinity }} className="inline-block w-[2px] h-4 bg-indigo-400 ml-0.5" />
               </div>
-              {/* Web Search Sources during streaming */}
-              {searchSources.length > 0 && (
-                <div className="pl-9 mt-4 pr-4">
-                  <WebSearchPanel isSearching={false} sources={searchSources} query="" />
-                </div>
-              )}
             </div>
           )}
 
@@ -631,7 +643,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
       )}>
         <div className={cn("max-w-3xl mx-auto px-4 flex flex-col items-center gap-3", !isLanding && "pb-6 sm:pb-8 pt-6 bg-gradient-to-t from-[#0b0c14] via-[#0b0c14]/90 to-transparent")}>
           <div className="w-full pointer-events-auto flex flex-col gap-3">
-            <div className={cn("relative apple-glass rounded-[24px] overflow-hidden transition-all focus-within:ring-1 focus-within:ring-white/20", input.trim() && "border-white/20")}>
+            <div className={cn("relative apple-glass-card overflow-hidden transition-all duration-300 group", input.trim() ? "border-white/20 shadow-[0_8px_30px_rgba(255,255,255,0.05)]" : "hover:border-white/15 focus-within:border-white/25 focus-within:shadow-[0_8px_30px_rgba(99,102,241,0.1)]")}>
               
               {/* File previews */}
               {selectedFiles.length > 0 && (

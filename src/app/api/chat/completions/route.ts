@@ -36,6 +36,29 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
   }
 }
 
+async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
+  const now = Date.now();
+  if (now - lastScrapeTime > SCRAPE_INTERVAL || cachedScrapedKeys.length === 0) {
+    const fresh = await scrapeKeys();
+    if (fresh.length > 0) {
+      cachedScrapedKeys = fresh;
+      lastScrapeTime = now;
+      console.log(`[Scraper] Loaded ${fresh.length} keys for models: ${[...new Set(fresh.map(e => e.model))].join(', ')}`);
+    }
+  }
+  
+  if (cachedScrapedKeys.length === 0) return [];
+  
+  if (targetModel) {
+    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
+    if (modelKeys.length > 0) {
+      return modelKeys.map(e => e.key);
+    }
+  }
+  // Fallback: return any random key
+  return [cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key];
+}
+
 async function getScrapedKey(targetModel?: string): Promise<string> {
   const now = Date.now();
   if (now - lastScrapeTime > SCRAPE_INTERVAL || cachedScrapedKeys.length === 0) {
@@ -328,6 +351,13 @@ export async function POST(req: Request) {
       } catch (e: any) {
         console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to Cloudflare Worker proxy...`);
         
+        if (selectedModel.toLowerCase().includes('gpt')) {
+           return NextResponse.json(
+             { error: `GPT model failed: ${e.message || e}`, reply: `⚠️ GPT Error: The model failed to respond. No fallback available.` },
+             { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+           );
+        }
+
         // Determine the best fallback model based on the requested model string
         let fallbackModel = 'gemini/gemini-2.5-flash'; // stable default fallback
         if (ddgModelStr.includes('llama')) {
@@ -400,42 +430,123 @@ export async function POST(req: Request) {
       }
     }
 
-    // Experimental: Auto-scraped keys from free-llm-api-keys repo
-    if (selectedModel.startsWith('auto/')) {
-      const realModel = selectedModel.replace('auto/', '');
-      const scrapedKey = await getScrapedKey(realModel);
-      if (scrapedKey) {
-        ROUTER_URL = 'https://aiapiv2.pekpik.com/v1/chat/completions';
-        ROUTER_API_KEY = scrapedKey;
-        selectedModel = realModel;
-        console.log(`[Auto] Using scraped key for model: ${realModel}`);
-      } else {
-        return NextResponse.json({ error: 'No scraped keys available. GitHub repo might be down or keys exhausted.' }, { status: 500 });
-      }
-    }
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Forwarded-For': ip,
       'X-Real-IP': ip,
     };
 
-    // Add API key if configured (needed for deployed 9router)
-    if (ROUTER_API_KEY) {
-      headers['Authorization'] = `Bearer ${ROUTER_API_KEY}`;
+    let proxyResponse: Response;
+
+    // Experimental: Auto-scraped keys from free-llm-api-keys repo
+    if (selectedModel.startsWith('auto/')) {
+      const realModel = selectedModel.replace('auto/', '');
+      const scrapedKeys = await getAllScrapedKeys(realModel);
+      
+      if (scrapedKeys.length > 0) {
+        ROUTER_URL = 'https://aiapiv2.pekpik.com/v1/chat/completions';
+        selectedModel = realModel;
+        console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for model: ${realModel}`);
+        
+        const controllers = scrapedKeys.map(() => new AbortController());
+        
+        const fetchPromises = scrapedKeys.map((key, i) => {
+          const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
+          return fetch(ROUTER_URL, {
+            method: 'POST',
+            headers: reqHeaders,
+            body: JSON.stringify({
+              model: selectedModel,
+              messages: formattedMessages,
+              stream: stream === true,
+              max_tokens: 8000,
+              temperature: 0.7
+            }),
+            signal: controllers[i].signal
+          }).then(res => {
+            if (res.ok) return { res, index: i };
+            throw new Error(`Status ${res.status}`);
+          });
+        });
+
+        try {
+          const winner = await Promise.any(fetchPromises);
+          proxyResponse = winner.res;
+          // Abort losers
+          controllers.forEach((c, i) => {
+            if (i !== winner.index) {
+              c.abort();
+            }
+          });
+          console.log(`[Auto] Race won by key index ${winner.index}!`);
+        } catch (e) {
+          console.error(`[Auto] All keys failed for ${realModel}`, e);
+          proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
+        }
+      } else {
+        return NextResponse.json({ error: 'No scraped keys available. GitHub repo might be down or keys exhausted.' }, { status: 500 });
+      }
+    } else {
+      // Normal flow
+      if (ROUTER_API_KEY) {
+        headers['Authorization'] = `Bearer ${ROUTER_API_KEY}`;
+      }
+      proxyResponse = await fetch(ROUTER_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: formattedMessages,
+          stream: stream === true,
+          max_tokens: 8000,
+          temperature: 0.7
+        }),
+      });
     }
 
-    const proxyResponse = await fetch(ROUTER_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: formattedMessages,
-        stream: stream === true,
-        max_tokens: 4000,
-        temperature: 0.7
-      }),
-    });
+    if (!proxyResponse.ok) {
+      if (selectedModel === 'claude-opus-4-7') {
+        console.log(`[Fallback] Opus failed with ${proxyResponse.status}. Racing all available working models...`);
+        
+        if (cachedScrapedKeys.length === 0) {
+            await getAllScrapedKeys('dummy'); // Populate cache
+        }
+        
+        if (cachedScrapedKeys.length > 0) {
+            const controllers = cachedScrapedKeys.map(() => new AbortController());
+            const fetchPromises = cachedScrapedKeys.map(({key, model}, i) => {
+              const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
+              return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
+                method: 'POST',
+                headers: reqHeaders,
+                body: JSON.stringify({
+                  model: model,
+                  messages: formattedMessages,
+                  stream: stream === true,
+                  max_tokens: 8000,
+                  temperature: 0.7
+                }),
+                signal: controllers[i].signal
+              }).then(res => {
+                if (res.ok) return { res, index: i, model };
+                throw new Error(`Status ${res.status}`);
+              });
+            });
+
+            try {
+              const winner = await Promise.any(fetchPromises);
+              proxyResponse = winner.res;
+              selectedModel = winner.model;
+              controllers.forEach((c, i) => {
+                if (i !== winner.index) c.abort();
+              });
+              console.log(`[Fallback] Race won by model ${winner.model} with key index ${winner.index}!`);
+            } catch (e) {
+              console.error(`[Fallback] All scraped models failed fallback for Opus`);
+            }
+        }
+      }
+    }
 
     if (!proxyResponse.ok) {
       const errorText = await proxyResponse.text();
