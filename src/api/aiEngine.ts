@@ -133,6 +133,7 @@ export const AI_MODELS: AIModel[] = [
   },
 
 
+
   // ── DuckDuckGo AI Chat Models (via Cloudflare Worker /ddg) ──
   // Free DDG models routed through divine-leaf worker
   {
@@ -391,7 +392,8 @@ export const aiChat = async (
     const modelStr = model.modelStr;
     console.log(`[aiChat] Model: ${model.label}, Engine: ${model.engine}, ModelStr: ${modelStr}`);
 
-    const res = await fetch('/api/chat/completions', {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${API_BASE}/api/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

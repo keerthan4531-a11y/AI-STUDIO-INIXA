@@ -1,14 +1,14 @@
 "use client";
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, MessageSquare, Image as ImageIcon, Video, ChevronDown, Plus, X, Download, Settings2, FileCode, Trash2, Info, Sparkles, Code2, Mic, MoreHorizontal, Globe, BookMarked } from 'lucide-react';
+import { Search, MessageSquare, Image as ImageIcon, Video, ChevronDown, Plus, X, Download, Settings2, FileCode, Trash2, Info, Sparkles, Code2, Mic, MoreHorizontal, Globe, BookMarked, Music } from 'lucide-react';
 import { cn } from './GlassCard';
 import { InixaLogo } from './Logos';
 import { vibrate } from '../utils/helpers';
 import type { UserData } from './AuthScreen';
 import type { ChatSession } from '../App';
 
-export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix';
+export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix' | 'music';
 
 interface SidebarProps {
   user: UserData;
@@ -63,6 +63,7 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
             { id: 'pdf', icon: FileCode, label: 'Chat with PDF', kbd: 'RAG' },
             { id: 'image', icon: ImageIcon, label: 'Imagine' },
             { id: 'video', icon: Video, label: 'Video' },
+            { id: 'music', icon: Music, label: 'Neural Music', kbd: 'PRO' },
             { id: 'voice', icon: Mic, label: 'Voice Assistant', kbd: 'NEW' },
             { id: 'api', icon: Code2, label: 'API Service', kbd: 'DEV' },
             { id: 'about', icon: Info, label: 'About' },
@@ -221,6 +222,7 @@ export function MobileSidebar({
             { id: 'pdf', icon: FileCode, label: 'Chat with PDF' },
             { id: 'image', icon: ImageIcon, label: 'Imagine' },
             { id: 'video', icon: Video, label: 'Video' },
+            { id: 'music', icon: Music, label: 'Neural Music' },
             { id: 'voice', icon: Mic, label: 'Voice Assistant' },
             { id: 'api', icon: Code2, label: 'API Service' },
             { id: 'about', icon: Info, label: 'About' },

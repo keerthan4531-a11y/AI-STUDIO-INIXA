@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'inixa',
   webDir: 'out',
   server: {
-    url: 'http://10.169.5.137:3000',
+    url: 'https://ai-studio-inixa.vercel.app',
     cleartext: true
   }
 };

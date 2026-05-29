@@ -53,7 +53,8 @@ export default function TerminalChat() {
 
     try {
       // Temporary mocked response for UI building phase
-      const response = await fetch('/api/chat/completions', {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${API_BASE}/api/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

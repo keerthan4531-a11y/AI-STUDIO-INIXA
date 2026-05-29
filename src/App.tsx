@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X, ChevronDown, Sparkles, MoreHorizontal } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { VideoGenerator, ImageGenerator } from './components/Generators';
+import { MusicStudio } from './components/MusicStudio';
 import { ProfileScreen } from './components/ProfileScreen';
 import { AboutScreen } from './components/AboutScreen';
 import { AuthScreen, type UserData } from './components/AuthScreen';
@@ -246,6 +247,7 @@ export default function App() {
                 )}
                 {activeTab === 'image' && <ImageGenerator />}
                 {activeTab === 'video' && <VideoGenerator />}
+                {activeTab === 'music' && <MusicStudio />}
                 {activeTab === 'vibe' && (
                   <div className="flex-1 flex flex-col h-full">
                     <div className="lg:hidden flex-1 flex flex-col items-center justify-center p-8 text-center">

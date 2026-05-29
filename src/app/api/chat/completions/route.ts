@@ -371,6 +371,7 @@ export async function POST(req: Request) {
       }
     }
 
+
     // ── Route: Pollinations engine (Direct Server-Side API) ──
     if (selectedModel.startsWith('poll/')) {
       const pollModelStr = selectedModel.replace('poll/', '');
