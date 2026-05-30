@@ -359,25 +359,11 @@ export async function POST(req: Request) {
 
         throw new Error('Empty response from DDG');
       } catch (e: any) {
-        console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to scraped keys/CF proxy...`);
-        
-        let fallbackModel = 'auto/gemini-2.5-flash'; // stable default fallback
-        
-        const lowerModel = ddgModelStr.toLowerCase();
-        if (lowerModel.includes('llama')) {
-          fallbackModel = 'auto/smart-chat'; // Smart chat often has Llama
-        } else if (lowerModel.includes('mistral') || lowerModel.includes('mixtral')) {
-          fallbackModel = 'auto/smart-chat';
-        } else if (lowerModel.includes('claude')) {
-          fallbackModel = 'auto/claude-opus-4-7';
-        } else if (lowerModel.includes('gpt-5')) {
-          fallbackModel = 'auto/gpt-5.5';
-        } else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-oss')) {
-          fallbackModel = 'auto/smart-chat';
-        }
-        
-        console.log(`[DDG Fallback] Rerouted request model from "${selectedModel}" to "${fallbackModel}"`);
-        selectedModel = fallbackModel;
+        console.warn(`[DDG] Request failed: ${e.message || e}. Sending error to user...`);
+        return NextResponse.json(
+          { error: `DuckDuckGo AI failed: ${e.message || e}`, reply: `⚠️ DuckDuckGo AI Error: The model failed to respond. (Status: ${e.message || 'Unknown'})` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
       }
     }
 
