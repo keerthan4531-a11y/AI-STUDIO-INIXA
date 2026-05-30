@@ -22,13 +22,13 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Proxy all /vibe-studio requests to the Bolt dev server
+        // Proxy all /vibe-studio requests to the deployed Cloudflare Pages app
         source: "/vibe-studio",
-        destination: "http://127.0.0.1:5173/vibe-studio/",
+        destination: "https://bolt-3rv.pages.dev/vibe-studio/",
       },
       {
         source: "/vibe-studio/:path*",
-        destination: "http://127.0.0.1:5173/vibe-studio/:path*",
+        destination: "https://bolt-3rv.pages.dev/vibe-studio/:path*",
       },
     ];
   },
