@@ -58,7 +58,7 @@ export default defineConfig((config) => {
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({
-        basename: '/vibe-studio',
+        basename: '/vibe-studio/',
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,
