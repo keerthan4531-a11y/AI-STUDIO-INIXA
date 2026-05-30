@@ -22,13 +22,18 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Proxy all /vibe-studio requests to the deployed Cloudflare Pages app
+        // Cloudflare Pages serves built assets at /assets/ instead of /vibe-studio/assets/
+        source: "/vibe-studio/assets/:path*",
+        destination: "https://bolt-3rv.pages.dev/assets/:path*",
+      },
+      {
+        // Proxy all other requests keeping /vibe-studio prefix for Remix router
         source: "/vibe-studio",
-        destination: "https://bolt-3rv.pages.dev/",
+        destination: "https://bolt-3rv.pages.dev/vibe-studio/",
       },
       {
         source: "/vibe-studio/:path*",
-        destination: "https://bolt-3rv.pages.dev/:path*",
+        destination: "https://bolt-3rv.pages.dev/vibe-studio/:path*",
       },
     ];
   },
