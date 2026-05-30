@@ -359,21 +359,21 @@ export async function POST(req: Request) {
 
         throw new Error('Empty response from DDG');
       } catch (e: any) {
-        console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to Cloudflare Worker proxy...`);
+        console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to scraped keys/CF proxy...`);
         
-        if (selectedModel.toLowerCase().includes('gpt')) {
-           return NextResponse.json(
-             { error: `GPT model failed: ${e.message || e}`, reply: `⚠️ GPT Error: The model failed to respond. No fallback available.` },
-             { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
-           );
-        }
-
-        // Determine the best fallback model based on the requested model string
-        let fallbackModel = 'gemini/gemini-2.5-flash'; // stable default fallback
-        if (ddgModelStr.includes('llama')) {
-          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
-        } else if (ddgModelStr.includes('mistral') || ddgModelStr.includes('mixtral')) {
-          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
+        let fallbackModel = 'auto/gemini-2.5-flash'; // stable default fallback
+        
+        const lowerModel = ddgModelStr.toLowerCase();
+        if (lowerModel.includes('llama')) {
+          fallbackModel = 'auto/smart-chat'; // Smart chat often has Llama
+        } else if (lowerModel.includes('mistral') || lowerModel.includes('mixtral')) {
+          fallbackModel = 'auto/smart-chat';
+        } else if (lowerModel.includes('claude')) {
+          fallbackModel = 'auto/claude-opus-4-7';
+        } else if (lowerModel.includes('gpt-5')) {
+          fallbackModel = 'auto/gpt-5.5';
+        } else if (lowerModel.includes('gpt-4') || lowerModel.includes('gpt-oss')) {
+          fallbackModel = 'auto/smart-chat';
         }
         
         console.log(`[DDG Fallback] Rerouted request model from "${selectedModel}" to "${fallbackModel}"`);
