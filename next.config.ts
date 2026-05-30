@@ -24,11 +24,11 @@ const nextConfig: NextConfig = {
       {
         // Proxy all /vibe-studio requests to the deployed Cloudflare Pages app
         source: "/vibe-studio",
-        destination: "https://bolt-3rv.pages.dev/vibe-studio/",
+        destination: "https://bolt-3rv.pages.dev/",
       },
       {
         source: "/vibe-studio/:path*",
-        destination: "https://bolt-3rv.pages.dev/vibe-studio/:path*",
+        destination: "https://bolt-3rv.pages.dev/:path*",
       },
     ];
   },
