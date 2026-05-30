@@ -87,6 +87,28 @@ export const AI_MODELS: AIModel[] = [
   // ── Auto-Scraped Models (from free-llm-api-keys GitHub repo) ──
   // Only models with verified working keys are listed here
   {
+    id: 'auto-smart-chat',
+    label: 'Smart Chat (Auto)',
+    engine: 'custom',
+    modelStr: 'auto/smart-chat',
+    badge: 'DEFAULT',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Auto-routes across best working models'
+  },
+  {
+    id: 'auto-kimi-k2.5',
+    label: 'Kimi k2.5 (Auto)',
+    engine: 'custom',
+    modelStr: 'auto/kimi-k2.5',
+    badge: 'AUTO',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Kimi long-context general model'
+  },
+  {
     id: 'auto-deepseek-chat',
     label: 'DeepSeek Chat',
     engine: 'custom',
@@ -97,7 +119,6 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#f97316',
     description: 'DeepSeek V3 via auto-scraped keys'
   },
-
   {
     id: 'auto-gpt-5-5',
     label: 'GPT-5.5 (Auto)',
@@ -207,7 +228,11 @@ export const AI_MODELS: AIModel[] = [
 // ─── Model Selection Helpers ───────────────────────────────────────
 export const getSelectedModel = (): AIModel => {
   const savedId = localStorage.getItem('inixa_ai_model');
-  return AI_MODELS.find(m => m.id === savedId) || AI_MODELS[0];
+  if (savedId) {
+    const model = AI_MODELS.find(m => m.id === savedId);
+    if (model) return model;
+  }
+  return AI_MODELS.find(m => m.id === 'auto-gemini-2.5-flash') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {

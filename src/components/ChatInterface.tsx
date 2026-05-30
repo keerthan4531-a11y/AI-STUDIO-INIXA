@@ -16,6 +16,8 @@ import { ArtifactsPreview } from './ArtifactsPreview';
 import { CodeSandbox } from './CodeSandbox';
 import { DataChartAgent } from './DataChartAgent';
 import { StudentToolkit, TOOLKIT_ITEMS } from './StudentToolkit';
+import { BoltStyleChatInput } from './ui/bolt-style-chat';
+import { LoadingBreadcrumb } from './ui/animated-loading-svg-text-shimmer';
 
 interface ChatInterfaceProps {
   isCodex?: boolean;
@@ -615,12 +617,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                   <InixaLogo size={14} className="text-white/60 animate-pulse relative z-10" />
                 </div>
                 <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1b21] rounded-2xl w-fit border border-white/5 shadow-inner">
-                  <div className="flex gap-1.5 items-center">
-                    <span className="w-1.5 h-1.5 rounded-sm bg-indigo-500/80 animate-typing-dots" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-sm bg-purple-500/80 animate-typing-dots" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-sm bg-pink-500/80 animate-typing-dots" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-widest text-white/30 ml-2">Processing</span>
+                  <LoadingBreadcrumb text="Processing" />
                 </div>
               </div>
               
@@ -639,110 +636,60 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
       {/* Input area */}
       <div className={cn(
         "z-[300] pointer-events-none transition-all",
-        isLanding ? "relative mt-4 mb-12 sm:mb-20 w-full max-w-3xl mx-auto px-4" : "fixed bottom-0 left-0 right-0 lg:left-[260px]"
+        isLanding ? "relative mt-4 mb-12 sm:mb-20 w-full max-w-3xl mx-auto px-4" : "absolute bottom-0 left-0 right-0"
       )}>
         <div className={cn("max-w-3xl mx-auto px-4 flex flex-col items-center gap-3", !isLanding && "pb-6 sm:pb-8 pt-6 bg-gradient-to-t from-[#0b0c14] via-[#0b0c14]/90 to-transparent")}>
           <div className="w-full pointer-events-auto flex flex-col gap-3">
-            <div className={cn("relative apple-glass-card overflow-hidden transition-all duration-300 group", input.trim() ? "border-white/20 shadow-[0_8px_30px_rgba(255,255,255,0.05)]" : "hover:border-white/15 focus-within:border-white/25 focus-within:shadow-[0_8px_30px_rgba(99,102,241,0.1)]")}>
-              
-              {/* File previews */}
-              {selectedFiles.length > 0 && (
-                <div className="px-4 pt-3 flex flex-wrap gap-2">
-                  {selectedFiles.map((f, idx) => (
-                    <div key={idx} className="relative inline-flex items-center gap-2 bg-white/[0.05] rounded-xl px-2.5 py-2 border border-white/10 group">
-                      {f.preview ? (
-                        <img src={f.preview} alt="" className="h-14 w-auto rounded-lg border border-white/20" />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="text-[11px] font-semibold text-white/70 truncate max-w-[120px]">{f.file.name}</p>
-                            <p className="text-[9px] text-white/30">{(f.file.size / 1024).toFixed(1)} KB</p>
-                          </div>
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,.pdf,.docx,.txt,.csv,.json,.md,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.log,.sql,.sh,.bat,.c,.cpp,.h,.java,.go,.rs,.rb,.php,.swift,.kt" className="hidden" multiple />
+            
+            {/* File previews */}
+            {selectedFiles.length > 0 && (
+              <div className="px-4 pt-3 flex flex-wrap gap-2">
+                {selectedFiles.map((f, idx) => (
+                  <div key={idx} className="relative inline-flex items-center gap-2 bg-white/[0.05] rounded-xl px-2.5 py-2 border border-white/10 group">
+                    {f.preview ? (
+                      <img src={f.preview} alt="" className="h-14 w-auto rounded-lg border border-white/20" />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-blue-400" />
                         </div>
-                      )}
-                      <button onClick={() => removeFile(idx)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black border border-white/20 text-white flex items-center justify-center hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Processing Indicator */}
-              {isProcessingPdf && (
-                <div className="px-4 py-2 text-[10px] text-white/40 font-bold apple-glass border-b border-white/10 animate-pulse">
-                  Analyzing Document...
-                </div>
-              )}
-
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px'; }}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="How can I help you today?"
-                className="w-full bg-transparent border-none outline-none text-[15px] sm:text-[16px] text-white/90 placeholder:text-white/20 px-4 pt-4 pb-16 sm:px-5 sm:pt-5 sm:pb-20 resize-none max-h-[200px] font-medium leading-relaxed"
-                rows={1}
-              />
-
-              <div className="absolute bottom-2 sm:bottom-3.5 left-2 sm:left-3.5 right-2 sm:right-3.5 flex items-center justify-between pointer-events-none">
-                <div className="flex items-center gap-1.5 pointer-events-auto">
-                  <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,.pdf,.docx,.txt,.csv,.json,.md,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.log,.sql,.sh,.bat,.c,.cpp,.h,.java,.go,.rs,.rb,.php,.swift,.kt" className="hidden" multiple />
-                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileInputRef.current?.click()} className="p-2 text-white/25 hover:text-white transition-all rounded-lg hover:bg-white/5" title="Attach files">
-                    <Plus className="w-5 h-5" />
-                  </motion.button>
-                  <WebSearchToggle enabled={webSearchEnabled} onToggle={() => { setWebSearchEnabled(!webSearchEnabled); vibrate(20); }} />
-                  <DeepThinkToggle enabled={deepThinkEnabled} onToggle={() => { setDeepThinkEnabled(!deepThinkEnabled); vibrate(20); }} visible={showDeepThink} />
-                  {input.trim().length > 3 && (
-                    <motion.button 
-                      whileTap={{ scale: 0.9 }} 
-                      onClick={async () => {
-                        if (isEnhancing || !input.trim()) return;
-                        setIsEnhancing(true);
-                        vibrate(20);
-                        try {
-                          const enhanceMsg = [{ role: 'user', content: `Rewrite and enhance this prompt to be more detailed, specific, and effective for getting a great AI response. Return ONLY the enhanced prompt, nothing else. No quotes, no explanation.\n\nOriginal prompt: "${input.trim()}"` }];
-                          const enhanced = await aiChat(enhanceMsg);
-                          if (enhanced && enhanced.length > 5) {
-                            setInput(enhanced.replace(/^["']|["']$/g, '').trim());
-                          }
-                        } catch {}
-                        setIsEnhancing(false);
-                      }}
-                      className={cn("p-2 rounded-lg transition-all", isEnhancing ? "text-indigo-400 animate-pulse bg-indigo-500/10" : "text-white/25 hover:text-indigo-400 hover:bg-white/5")}
-                      title="Enhance prompt (Magic Wand)"
-                    >
-                      <Wand2 className="w-4 h-4" />
-                    </motion.button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 pointer-events-auto">
-                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowModelSelector(true)} className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl hover:bg-white/5 text-[10px] sm:text-[11px] font-bold text-white/25 hover:text-white/50 transition-all border border-transparent hover:border-white/5">
-                    <span className="hidden sm:inline">{currentModel.label}</span>
-                    <Settings className="w-3.5 h-3.5 sm:hidden opacity-50" />
-                    <ChevronDown className="w-3 h-3 opacity-30" />
-                  </motion.button>
-                  <motion.button 
-                    animate={{ 
-                      scale: (input.trim() || selectedFiles.length) ? 1 : 0.9, 
-                      opacity: (input.trim() || selectedFiles.length) ? 1 : 0.4,
-                      backgroundColor: (input.trim() || selectedFiles.length) ? "#ffffff" : "rgba(255,255,255,0.05)"
-                    }} 
-                    onClick={() => handleSend()} 
-                    disabled={!input.trim() && !selectedFiles.length} 
-                    className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-lg",
-                      (input.trim() || selectedFiles.length) ? "text-black" : "text-white/20 pointer-events-none"
+                        <div>
+                          <p className="text-[11px] font-semibold text-white/70 truncate max-w-[120px]">{f.file.name}</p>
+                          <p className="text-[9px] text-white/30">{(f.file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                      </div>
                     )}
-                  >
-                    <ArrowDown className="w-4 h-4 rotate-180" />
-                  </motion.button>
-                </div>
+                    <button onClick={() => removeFile(idx)} className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black border border-white/20 text-white flex items-center justify-center hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* Processing Indicator */}
+            {isProcessingPdf && (
+              <div className="px-4 py-2 text-[10px] text-white/40 font-bold apple-glass border-b border-white/10 animate-pulse">
+                Analyzing Document...
+              </div>
+            )}
+
+            <BoltStyleChatInput 
+              ref={inputRef as any}
+              value={input}
+              onValueChange={setInput}
+              isLoading={loading}
+              placeholder="What do you want to build?"
+              showSearch={webSearchEnabled}
+              onToggleSearch={() => { setWebSearchEnabled(!webSearchEnabled); vibrate(20); }}
+              showThink={deepThinkEnabled}
+              onToggleThink={() => { setDeepThinkEnabled(!deepThinkEnabled); vibrate(20); }}
+              onFileUploadClick={() => fileInputRef.current?.click()}
+              onSend={(msg) => handleSend(msg)}
+              currentModelName={currentModel.label}
+              onModelSelectorClick={() => setShowModelSelector(true)}
+            />
 
             {/* Quick pills on landing - including Student Toolkit items */}
             {isLanding && (

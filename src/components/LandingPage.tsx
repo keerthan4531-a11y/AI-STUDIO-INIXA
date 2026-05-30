@@ -9,6 +9,7 @@ import {
   Monitor, Smartphone, ExternalLink
 } from "lucide-react";
 import ShaderAnimation from "./ui/shader-animation";
+import { InteractiveShader } from "./ui/digital-aurora";
 import { SplineScene } from "./ui/splite";
 import { Spotlight } from "./ui/spotlight";
 import { Card } from "./ui/card";
@@ -289,7 +290,19 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.95]);
-  const [showApp, setShowApp] = useState(false);
+  const [showApp, setShowApp] = useState(() => {
+    // Auto-skip landing page if user is already logged in
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('inixa_user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          if (user && user.name) return true;
+        } catch {}
+      }
+    }
+    return false;
+  });
 
   const handleLaunch = () => {
     setShowApp(true);
@@ -528,11 +541,16 @@ export default function LandingPage() {
       </section>
 
       {/* ===== FEATURES SECTION ===== */}
-      <section id="features" className="relative z-10 py-20 sm:py-32">
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/5 blur-[200px] rounded-full pointer-events-none" />
+      <section id="features" className="relative z-10 py-20 sm:py-32 overflow-hidden">
+        {/* Digital Aurora WebGL Shader Background */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+          <InteractiveShader flowSpeed={0.25} colorIntensity={1.4} noiseLayers={4.0} mouseInfluence={0.3} />
+          {/* Dark fading overlays for legibility */}
+          <div className="absolute inset-0 bg-[#030712]/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#030712] via-transparent to-[#030712]" />
+        </div>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10">
           {/* Section Header */}
           <motion.div
             variants={staggerContainer}
@@ -549,11 +567,11 @@ export default function LandingPage() {
             </motion.div>
             <motion.h2
               variants={fadeInUp}
-              className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white mb-5"
+              className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-300 via-cyan-300 to-indigo-400 drop-shadow-[0_0_30px_rgba(52,211,153,0.3)] mb-5"
             >
               Everything You Need,
               <br />
-              <span className="text-gradient-landing">One Platform</span>
+              <span>One Platform</span>
             </motion.h2>
             <motion.p
               variants={fadeInUp}

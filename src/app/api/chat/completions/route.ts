@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 
 // --- Free LLM API Scraper (Model-Aware) ---
 // Parses keys from GitHub README grouped by model
-interface ScrapedKeyEntry { key: string; model: string; }
+interface ScrapedKeyEntry { key: string; model: string; category: string; }
 let cachedScrapedKeys: ScrapedKeyEntry[] = [];
 let lastScrapeTime = 0;
 const SCRAPE_URL = 'https://raw.githubusercontent.com/alistaitsacle/free-llm-api-keys/main/README.md';
@@ -23,11 +23,25 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
     const text = await res.text();
     const entries: ScrapedKeyEntry[] = [];
     
-    // Parse table rows: | `sk-XXX` | model-name | ... |
-    const tableRowRegex = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._-]+)\s*\|/g;
-    let match;
-    while ((match = tableRowRegex.exec(text)) !== null) {
-      entries.push({ key: match[1], model: match[2] });
+    let currentCategory = '';
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('### GPT-5.5')) currentCategory = 'gpt-5.5';
+      else if (line.startsWith('### Claude Opus')) currentCategory = 'claude-opus-4-7';
+      else if (line.startsWith('### Gemini')) currentCategory = 'gemini-2.5-flash';
+      else if (line.startsWith('### DeepSeek')) currentCategory = 'deepseek-chat';
+      else if (line.startsWith('### Multi-Model')) currentCategory = 'smart-chat';
+      else if (line.startsWith('### Kimi')) currentCategory = 'kimi-k2.5';
+      else if (line.startsWith('### Image')) currentCategory = 'text-embedding';
+      
+      const match = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._-]+)\s*\|/.exec(line);
+      if (match) {
+        entries.push({ 
+          category: currentCategory || match[2], 
+          key: match[1], 
+          model: match[2] 
+        });
+      }
     }
     return entries;
   } catch (e) {
@@ -36,27 +50,26 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
   }
 }
 
-async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
+async function getAllScrapedKeys(targetModel?: string): Promise<ScrapedKeyEntry[]> {
   const now = Date.now();
   if (now - lastScrapeTime > SCRAPE_INTERVAL || cachedScrapedKeys.length === 0) {
     const fresh = await scrapeKeys();
     if (fresh.length > 0) {
       cachedScrapedKeys = fresh;
       lastScrapeTime = now;
-      console.log(`[Scraper] Loaded ${fresh.length} keys for models: ${[...new Set(fresh.map(e => e.model))].join(', ')}`);
+      console.log(`[Scraper] Loaded ${fresh.length} keys for categories: ${[...new Set(fresh.map(e => e.category))].join(', ')}`);
     }
   }
   
   if (cachedScrapedKeys.length === 0) return [];
   
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.category === targetModel);
     if (modelKeys.length > 0) {
-      return modelKeys.map(e => e.key);
+      return modelKeys;
     }
   }
-  // Fallback: return any random key
-  return [cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key];
+  return cachedScrapedKeys;
 }
 
 async function getScrapedKey(targetModel?: string): Promise<string> {
@@ -66,20 +79,17 @@ async function getScrapedKey(targetModel?: string): Promise<string> {
     if (fresh.length > 0) {
       cachedScrapedKeys = fresh;
       lastScrapeTime = now;
-      console.log(`[Scraper] Loaded ${fresh.length} keys for models: ${[...new Set(fresh.map(e => e.model))].join(', ')}`);
     }
   }
   
   if (cachedScrapedKeys.length === 0) return '';
   
-  // Try to find a key for the specific model first
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.category === targetModel);
     if (modelKeys.length > 0) {
       return modelKeys[Math.floor(Math.random() * modelKeys.length)].key;
     }
   }
-  // Fallback: return any random key
   return cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key;
 }
 
@@ -447,17 +457,17 @@ export async function POST(req: Request) {
       if (scrapedKeys.length > 0) {
         ROUTER_URL = 'https://aiapiv2.pekpik.com/v1/chat/completions';
         selectedModel = realModel;
-        console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for model: ${realModel}`);
+        console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for category: ${realModel}`);
         
         const controllers = scrapedKeys.map(() => new AbortController());
         
-        const fetchPromises = scrapedKeys.map((key, i) => {
-          const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
+        const fetchPromises = scrapedKeys.map((entry, i) => {
+          const reqHeaders = { ...headers, 'Authorization': `Bearer ${entry.key}` };
           return fetch(ROUTER_URL, {
             method: 'POST',
             headers: reqHeaders,
             body: JSON.stringify({
-              model: selectedModel,
+              model: entry.model,
               messages: formattedMessages,
               stream: stream === true,
               max_tokens: 8000,
@@ -465,7 +475,7 @@ export async function POST(req: Request) {
             }),
             signal: controllers[i].signal
           }).then(res => {
-            if (res.ok) return { res, index: i };
+            if (res.ok) return { res, index: i, entry };
             throw new Error(`Status ${res.status}`);
           });
         });
@@ -479,10 +489,51 @@ export async function POST(req: Request) {
               c.abort();
             }
           });
-          console.log(`[Auto] Race won by key index ${winner.index}!`);
+          console.log(`[Auto] Race won by key index ${winner.index} with model ${winner.entry.model}!`);
         } catch (e) {
-          console.error(`[Auto] All keys failed for ${realModel}`, e);
-          proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
+          console.error(`[Auto] All keys failed for category ${realModel}`);
+          
+          // Fallback logic specifically for Opus
+          if (realModel === 'claude-opus-4-7') {
+             console.log('[Fallback] Opus all keys failed, falling back to DeepSeek, Smart Chat, Kimi, GPT-5.5...');
+             const fallbackCategories = ['deepseek-chat', 'smart-chat', 'kimi-k2.5', 'gpt-5.5'];
+             const fallbackKeys = cachedScrapedKeys.filter(k => fallbackCategories.includes(k.category));
+             
+             if (fallbackKeys.length > 0) {
+                 const fallbackControllers = fallbackKeys.map(() => new AbortController());
+                 const fallbackPromises = fallbackKeys.map((entry, i) => {
+                    const reqHeaders = { ...headers, 'Authorization': `Bearer ${entry.key}` };
+                    return fetch(ROUTER_URL, {
+                      method: 'POST',
+                      headers: reqHeaders,
+                      body: JSON.stringify({
+                        model: entry.model,
+                        messages: formattedMessages,
+                        stream: stream === true,
+                        max_tokens: 8000,
+                        temperature: 0.7
+                      }),
+                      signal: fallbackControllers[i].signal
+                    }).then(res => {
+                      if (res.ok) return { res, index: i, entry };
+                      throw new Error(`Status ${res.status}`);
+                    });
+                 });
+                 
+                 try {
+                     const fallbackWinner = await Promise.any(fallbackPromises);
+                     proxyResponse = fallbackWinner.res;
+                     fallbackControllers.forEach((c, i) => { if (i !== fallbackWinner.index) c.abort(); });
+                     console.log(`[Fallback] Race won by category ${fallbackWinner.entry.category} (model ${fallbackWinner.entry.model})!`);
+                 } catch (fallbackErr) {
+                     proxyResponse = new Response(JSON.stringify({ error: { message: "All fallback API keys failed to respond" } }), { status: 502 });
+                 }
+             } else {
+                 proxyResponse = new Response(JSON.stringify({ error: { message: "No fallback API keys available" } }), { status: 502 });
+             }
+          } else {
+             proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
+          }
         }
       } else {
         return NextResponse.json({ error: 'No scraped keys available. GitHub repo might be down or keys exhausted.' }, { status: 500 });
@@ -503,50 +554,6 @@ export async function POST(req: Request) {
           temperature: 0.7
         }),
       });
-    }
-
-    if (!proxyResponse.ok) {
-      if (selectedModel === 'claude-opus-4-7') {
-        console.log(`[Fallback] Opus failed with ${proxyResponse.status}. Racing all available working models...`);
-        
-        if (cachedScrapedKeys.length === 0) {
-            await getAllScrapedKeys('dummy'); // Populate cache
-        }
-        
-        if (cachedScrapedKeys.length > 0) {
-            const controllers = cachedScrapedKeys.map(() => new AbortController());
-            const fetchPromises = cachedScrapedKeys.map(({key, model}, i) => {
-              const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
-              return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
-                method: 'POST',
-                headers: reqHeaders,
-                body: JSON.stringify({
-                  model: model,
-                  messages: formattedMessages,
-                  stream: stream === true,
-                  max_tokens: 8000,
-                  temperature: 0.7
-                }),
-                signal: controllers[i].signal
-              }).then(res => {
-                if (res.ok) return { res, index: i, model };
-                throw new Error(`Status ${res.status}`);
-              });
-            });
-
-            try {
-              const winner = await Promise.any(fetchPromises);
-              proxyResponse = winner.res;
-              selectedModel = winner.model;
-              controllers.forEach((c, i) => {
-                if (i !== winner.index) c.abort();
-              });
-              console.log(`[Fallback] Race won by model ${winner.model} with key index ${winner.index}!`);
-            } catch (e) {
-              console.error(`[Fallback] All scraped models failed fallback for Opus`);
-            }
-        }
-      }
     }
 
     if (!proxyResponse.ok) {

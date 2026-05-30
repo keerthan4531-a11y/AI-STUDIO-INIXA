@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
+import { Brain, ChevronRight, ChevronUp, Lightbulb } from 'lucide-react';
 
 interface DeepThinkPanelProps {
   thinkingContent: string;
@@ -10,7 +10,13 @@ interface DeepThinkPanelProps {
 }
 
 export function DeepThinkPanel({ thinkingContent, isThinking, modelName }: DeepThinkPanelProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(isThinking);
+
+  // Auto-collapse when thinking finishes
+  React.useEffect(() => {
+    if (!isThinking) setExpanded(false);
+    else setExpanded(true);
+  }, [isThinking]);
 
   return (
     <motion.div
@@ -49,7 +55,7 @@ export function DeepThinkPanel({ thinkingContent, isThinking, modelName }: DeepT
             )}
           </div>
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-amber-400/50" /> : <ChevronDown className="w-4 h-4 text-amber-400/50" />}
+        {expanded ? <ChevronUp className="w-4 h-4 text-amber-400/50" /> : <ChevronRight className="w-4 h-4 text-amber-400/50" />}
       </button>
 
       {/* Content */}
@@ -124,10 +130,13 @@ export function isDeepThinkModel(modelId: string): boolean {
     'poll-deepseek-v3',
     'llm7-deepseek-v3',
     'puter-glm-51',
+    'auto-kimi-k2.5',
+    'auto-smart-chat'
   ];
   return deepThinkIds.includes(modelId) || 
     modelId.toLowerCase().includes('deepthink') || 
     modelId.toLowerCase().includes('o1') ||
-    modelId.toLowerCase().includes('reasoning');
+    modelId.toLowerCase().includes('reasoning') ||
+    modelId.toLowerCase().includes('deepseek');
 }
 

@@ -7,6 +7,7 @@ import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FileCode, Maximize2, Minimize2, Brain, Copy, Check, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 import mermaid from 'mermaid';
 import { useState } from 'react';
 import { DataChartAgent } from './DataChartAgent';

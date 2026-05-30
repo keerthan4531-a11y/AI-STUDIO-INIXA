@@ -31,12 +31,11 @@ export default function App() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [currentModel, setCurrentModel] = useState(getSelectedModel());
   const [user, setUser] = useState<UserData | null>(() => {
-    const saved = localStorage.getItem('inixa_user');
-    if (saved) return JSON.parse(saved);
-    // Default anonymous user — no login required!
-    const anonymous: UserData = { name: 'User', email: '', joined: new Date().toLocaleDateString() };
-    localStorage.setItem('inixa_user', JSON.stringify(anonymous));
-    return anonymous;
+    try {
+      const saved = localStorage.getItem('inixa_user');
+      if (saved) { const parsed = JSON.parse(saved); if (parsed?.name) return parsed; }
+    } catch {}
+    return null;
   });
 
   const [showSidebar, setShowSidebar] = useState(false);
