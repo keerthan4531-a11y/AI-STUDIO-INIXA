@@ -21,25 +21,28 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    const isDev = process.env.NODE_ENV !== "production";
+    const boltUrl = isDev ? "http://127.0.0.1:5173" : "https://bolt-3rv.pages.dev";
+
     return [
       {
         // Cloudflare Pages serves built assets at /assets/ instead of /vibe-studio/assets/
         source: "/vibe-studio/assets/:path*",
-        destination: "https://bolt-3rv.pages.dev/assets/:path*",
+        destination: `${boltUrl}/assets/:path*`,
       },
       {
         // Proxy public static files that are served from the root
         source: "/vibe-studio/:path(inspector-script\\.js|favicon\\.ico|favicon\\.svg|apple-touch-icon.*\\.png|logo.*\\.png|logo\\.svg|social_preview_index\\.jpg|icons/.*)",
-        destination: "https://bolt-3rv.pages.dev/:path",
+        destination: `${boltUrl}/:path`,
       },
       {
         // Proxy all other requests keeping /vibe-studio prefix for Remix router
         source: "/vibe-studio",
-        destination: "https://bolt-3rv.pages.dev/vibe-studio/",
+        destination: `${boltUrl}/vibe-studio/`,
       },
       {
         source: "/vibe-studio/:path*",
-        destination: "https://bolt-3rv.pages.dev/vibe-studio/:path*",
+        destination: `${boltUrl}/vibe-studio/:path*`,
       },
     ];
   },
