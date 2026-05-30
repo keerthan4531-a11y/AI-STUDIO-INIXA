@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 // Same-origin URL via Next.js rewrite proxy — no CORS issues!
-const BOLT_URL = "/vibe-studio/";
+const BOLT_URL = "/vibe-studio/?v=2";
 
 export function VibeCodeStudio() {
   const [status, setStatus] = useState<'checking' | 'connected' | 'error'>('checking');
