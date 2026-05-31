@@ -293,13 +293,29 @@ async function handleChatCompletion(request, env, ctx) {
   if (model && model.includes(":") && !preferredProvider) {
     const [serverPart, modelPart] = model.split(":", 2);
     // Check if serverPart matches a provider server ID
+    let found = false;
     for (const [name, config] of Object.entries(PROVIDERS)) {
       if (config.serverId === serverPart) {
         preferredProvider = name;
         model = modelPart;
         providersToTry.push(name);
+        found = true;
         break;
       }
+    }
+
+    // Dynamic routing fallback: if it starts with srv_ and isn't registered, create dynamic provider
+    if (!found && serverPart.startsWith("srv_")) {
+      const dynamicName = `dynamic-${serverPart}`;
+      PROVIDERS[dynamicName] = {
+        endpoint: `https://g4f.space/custom/${serverPart}/chat/completions`,
+        defaultModel: modelPart,
+        needsApiKey: false,
+        models: [modelPart]
+      };
+      preferredProvider = dynamicName;
+      model = modelPart;
+      providersToTry.push(dynamicName);
     }
   }
 
@@ -316,21 +332,21 @@ async function handleChatCompletion(request, env, ctx) {
 
     // If still no matches, use all providers with auto-routing
     if (providersToTry.length === 0) {
-      // Priority order: direct providers first, then g4f proxied
+      // Priority order: high-reliability first, then public servers
       providersToTry = [
-        "pollinations-direct",
         "perplexity-worker",
-        "qwen-worker",
+        "gemini",
         "nvidia",
         "openrouter",
         "pollinations",
-        "gemini",
         "groq",
         "ollama",
         "airforce",
         "perplexity",
         "azure",
-        "g4f-v1"
+        "qwen-worker",
+        "g4f-v1",
+        "pollinations-direct"
       ];
     }
   }
@@ -359,7 +375,6 @@ async function handleChatCompletion(request, env, ctx) {
 
     try {
       const result = await makeProviderRequest(provider, {
-        model: requestModel,
         messages,
         stream: stream === true,
         ...body, // Pass through other params like temperature, max_tokens
