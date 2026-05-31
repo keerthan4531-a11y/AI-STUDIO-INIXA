@@ -1,0 +1,6 @@
+name = "g4f-bypass"
+main = "g4f-bypass-worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ENVIRONMENT = "production"
