@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 
 // --- Free LLM API Scraper (Model-Aware) ---
 // Parses keys from GitHub README grouped by model
-interface ScrapedKeyEntry { key: string; model: string; category: string; }
+interface ScrapedKeyEntry { key: string; model: string; }
 let cachedScrapedKeys: ScrapedKeyEntry[] = [];
 let lastScrapeTime = 0;
 const SCRAPE_URL = 'https://raw.githubusercontent.com/alistaitsacle/free-llm-api-keys/main/README.md';
@@ -22,26 +22,12 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
     const res = await fetch(SCRAPE_URL, { cache: 'no-store' });
     const text = await res.text();
     const entries: ScrapedKeyEntry[] = [];
-    
-    let currentCategory = '';
-    const lines = text.split('\n');
-    for (const line of lines) {
-      if (line.startsWith('### GPT-5.5')) currentCategory = 'gpt-5.5';
-      else if (line.startsWith('### Claude Opus')) currentCategory = 'claude-opus-4-7';
-      else if (line.startsWith('### Gemini')) currentCategory = 'gemini-2.5-flash';
-      else if (line.startsWith('### DeepSeek')) currentCategory = 'deepseek-chat';
-      else if (line.startsWith('### Multi-Model')) currentCategory = 'smart-chat';
-      else if (line.startsWith('### Kimi')) currentCategory = 'kimi-k2.5';
-      else if (line.startsWith('### Image')) currentCategory = 'text-embedding';
-      
-      const match = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._-]+)\s*\|/.exec(line);
-      if (match) {
-        entries.push({ 
-          category: currentCategory || match[2], 
-          key: match[1], 
-          model: match[2] 
-        });
-      }
+
+    // Parse table rows: | `sk-XXX` | model-name | ... |
+    const tableRowRegex = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._-]+)\s*\|/g;
+    let match;
+    while ((match = tableRowRegex.exec(text)) !== null) {
+      entries.push({ key: match[1], model: match[2] });
     }
     return entries;
   } catch (e) {
@@ -50,26 +36,27 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
   }
 }
 
-async function getAllScrapedKeys(targetModel?: string): Promise<ScrapedKeyEntry[]> {
+async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
   const now = Date.now();
   if (now - lastScrapeTime > SCRAPE_INTERVAL || cachedScrapedKeys.length === 0) {
     const fresh = await scrapeKeys();
     if (fresh.length > 0) {
       cachedScrapedKeys = fresh;
       lastScrapeTime = now;
-      console.log(`[Scraper] Loaded ${fresh.length} keys for categories: ${[...new Set(fresh.map(e => e.category))].join(', ')}`);
+      console.log(`[Scraper] Loaded ${fresh.length} keys for models: ${[...new Set(fresh.map(e => e.model))].join(', ')}`);
     }
   }
-  
+
   if (cachedScrapedKeys.length === 0) return [];
-  
+
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.category === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
     if (modelKeys.length > 0) {
-      return modelKeys;
+      return modelKeys.map(e => e.key);
     }
   }
-  return cachedScrapedKeys;
+  // Fallback: return any random key
+  return [cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key];
 }
 
 async function getScrapedKey(targetModel?: string): Promise<string> {
@@ -79,17 +66,20 @@ async function getScrapedKey(targetModel?: string): Promise<string> {
     if (fresh.length > 0) {
       cachedScrapedKeys = fresh;
       lastScrapeTime = now;
+      console.log(`[Scraper] Loaded ${fresh.length} keys for models: ${[...new Set(fresh.map(e => e.model))].join(', ')}`);
     }
   }
-  
+
   if (cachedScrapedKeys.length === 0) return '';
-  
+
+  // Try to find a key for the specific model first
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.category === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
     if (modelKeys.length > 0) {
       return modelKeys[Math.floor(Math.random() * modelKeys.length)].key;
     }
   }
+  // Fallback: return any random key
   return cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key;
 }
 
@@ -204,7 +194,7 @@ export async function POST(req: Request) {
 
     // Prepend or inject the CHART_SYSTEM_PROMPT to help LLM render correct charts
     const hasSystemMsg = chatMessages.some((m: any) => m.role === 'system');
-    const formattedMessages = hasSystemMsg 
+    const formattedMessages = hasSystemMsg
       ? chatMessages.map((m: any) => m.role === 'system' ? { ...m, content: CHART_SYSTEM_PROMPT + "\n\n" + m.content } : m)
       : [{ role: 'system', content: CHART_SYSTEM_PROMPT }, ...chatMessages];
 
@@ -231,28 +221,154 @@ export async function POST(req: Request) {
 
     console.log(`[Route] Final selectedModel = "${selectedModel}"`);
 
-    // ── Route: DDG engine (Advanced Backend Trick) ──
-    // Since DuckDuckGo has blocked Vercel/Cloudflare IPs with strict JS challenges,
-    // we use an "advanced backend trick": seamlessly mapping DDG models to our high-performance
-    // internal auto-scraped keys and Groq APIs. The UI will still show "DDG", but it will work flawlessly!
+    // ── Route: DDG engine (Direct DuckDuckGo AI Chat) ──
+    // DDG blocks VQD from Cloudflare Workers, so we MUST call directly from Next.js server
     if (selectedModel.startsWith('ddg/')) {
-      const ddgRaw = selectedModel.replace('ddg/', '');
-      console.log(`[DDG Advanced Fallback] Intercepted DDG model: ${ddgRaw}`);
-      
-      // Map to equivalent or better models internally
-      if (ddgRaw.includes('gpt') || ddgRaw.includes('o3')) {
-        selectedModel = 'auto/gpt-5.5'; // Our scraped fast GPT-4o equivalent
-      } else if (ddgRaw.includes('claude')) {
-        selectedModel = 'auto/claude-opus-4-7'; // Our scraped Claude
-      } else if (ddgRaw.includes('llama')) {
-        selectedModel = 'groq/llama3-70b-8192'; // Blazing fast Groq Llama
-      } else if (ddgRaw.includes('mixtral')) {
-        selectedModel = 'groq/mixtral-8x7b-32768'; // Blazing fast Groq Mixtral
-      } else {
-        selectedModel = 'auto/gpt-5.5';
+      const ddgModelStr = selectedModel.replace('ddg/', '');
+      console.log(`[DDG] Routing to DuckDuckGo with model: ${ddgModelStr}`);
+      try {
+        // Step 1: Get VQD token
+        const statusRes = await fetch('https://duckduckgo.com/duckchat/v1/status', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://duckduckgo.com/',
+            'Origin': 'https://duckduckgo.com',
+            'x-vqd-accept': '1',
+            'Cache-Control': 'no-store',
+            'X-Forwarded-For': ip,
+            'X-Real-IP': ip,
+          }
+        });
+
+        const vqd = statusRes.headers.get('x-vqd-4');
+        if (!vqd) {
+          throw new Error(`VQD token fetch failed (HTTP ${statusRes.status})`);
+        }
+
+        // Step 2: Send chat request
+        // Only send simple role/content messages (no system prompts for DDG)
+        const ddgMessages = formattedMessages
+          .filter((m: any) => m.role !== 'system')
+          .map((m: any) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : String(m.content) }));
+
+        const chatRes = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'text/event-stream',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Content-Type': 'application/json',
+            'Referer': 'https://duckduckgo.com/',
+            'Origin': 'https://duckduckgo.com',
+            'x-vqd-4': vqd,
+            'X-Forwarded-For': ip,
+            'X-Real-IP': ip,
+          },
+          body: JSON.stringify({ model: ddgModelStr, messages: ddgMessages }),
+        });
+
+        if (!chatRes.ok) {
+          throw new Error(`DDG chat error: HTTP ${chatRes.status}`);
+        }
+
+        if (stream === true && chatRes.body) {
+          console.log(`[DDG] Streaming response started`);
+
+          // Convert DDG stream format to OpenAI stream format
+          const transformStream = new TransformStream({
+            transform(chunk, controller) {
+              const decoder = new TextDecoder();
+              const encoder = new TextEncoder();
+              const text = decoder.decode(chunk);
+              const lines = text.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const dataStr = line.slice(6).trim();
+                  if (dataStr === '[DONE]') {
+                    controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                    continue;
+                  }
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    if (parsed.message != null) {
+                      const openaiChunk = {
+                        id: `chatcmpl-ddg-${Date.now()}`,
+                        object: 'chat.completion.chunk',
+                        created: Math.floor(Date.now() / 1000),
+                        model: ddgModelStr,
+                        choices: [{ index: 0, delta: { content: parsed.message }, finish_reason: null }],
+                      };
+                      controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+                    }
+                  } catch { }
+                }
+              }
+            },
+            flush(controller) {
+              const encoder = new TextEncoder();
+              const finalChunk = { id: `chatcmpl-ddg-${Date.now()}`, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: ddgModelStr, choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            }
+          });
+
+          return new Response(chatRes.body.pipeThrough(transformStream), {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        // Step 3: Parse SSE response for non-streaming mode
+        const sseTxt = await chatRes.text();
+        let content = '';
+        for (const line of sseTxt.split('\n')) {
+          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.message) content += parsed.message;
+            } catch { }
+          }
+        }
+
+        if (content) {
+          console.log(`[DDG] Success! Response length: ${content.length}`);
+          return NextResponse.json(
+            { reply: content },
+            { headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+          );
+        }
+
+        throw new Error('Empty response from DDG');
+      } catch (e: any) {
+        console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to Cloudflare Worker proxy...`);
+
+        if (selectedModel.toLowerCase().includes('gpt')) {
+          return NextResponse.json(
+            { error: `GPT model failed: ${e.message || e}`, reply: `⚠️ GPT Error: The model failed to respond. No fallback available.` },
+            { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+          );
+        }
+
+        // Determine the best fallback model based on the requested model string
+        let fallbackModel = 'gemini/gemini-2.5-flash'; // stable default fallback
+        if (ddgModelStr.includes('llama')) {
+          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
+        } else if (ddgModelStr.includes('mistral') || ddgModelStr.includes('mixtral')) {
+          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
+        }
+
+        console.log(`[DDG Fallback] Rerouted request model from "${selectedModel}" to "${fallbackModel}"`);
+        selectedModel = fallbackModel;
       }
-      
-      console.log(`[DDG Advanced Fallback] Remapped internally to: ${selectedModel}`);
     }
 
 
@@ -296,7 +412,7 @@ export async function POST(req: Request) {
 
         const data = await pollRes.json();
         const content = data.choices?.[0]?.message?.content || data.content || '';
-        
+
         if (content) {
           console.log(`[Pollinations] Success! Response length: ${content.length}`);
           return NextResponse.json(
@@ -327,21 +443,21 @@ export async function POST(req: Request) {
     if (selectedModel.startsWith('auto/')) {
       const realModel = selectedModel.replace('auto/', '');
       const scrapedKeys = await getAllScrapedKeys(realModel);
-      
+
       if (scrapedKeys.length > 0) {
         ROUTER_URL = 'https://aiapiv2.pekpik.com/v1/chat/completions';
         selectedModel = realModel;
-        console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for category: ${realModel}`);
-        
+        console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for model: ${realModel}`);
+
         const controllers = scrapedKeys.map(() => new AbortController());
-        
-        const fetchPromises = scrapedKeys.map((entry, i) => {
-          const reqHeaders = { ...headers, 'Authorization': `Bearer ${entry.key}` };
+
+        const fetchPromises = scrapedKeys.map((key, i) => {
+          const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
           return fetch(ROUTER_URL, {
             method: 'POST',
             headers: reqHeaders,
             body: JSON.stringify({
-              model: entry.model,
+              model: selectedModel,
               messages: formattedMessages,
               stream: stream === true,
               max_tokens: 8000,
@@ -349,7 +465,7 @@ export async function POST(req: Request) {
             }),
             signal: controllers[i].signal
           }).then(res => {
-            if (res.ok) return { res, index: i, entry };
+            if (res.ok) return { res, index: i };
             throw new Error(`Status ${res.status}`);
           });
         });
@@ -363,51 +479,10 @@ export async function POST(req: Request) {
               c.abort();
             }
           });
-          console.log(`[Auto] Race won by key index ${winner.index} with model ${winner.entry.model}!`);
+          console.log(`[Auto] Race won by key index ${winner.index}!`);
         } catch (e) {
-          console.error(`[Auto] All keys failed for category ${realModel}`);
-          
-          // Fallback logic specifically for Opus
-          if (realModel === 'claude-opus-4-7') {
-             console.log('[Fallback] Opus all keys failed, falling back to DeepSeek, Smart Chat, Kimi, GPT-5.5...');
-             const fallbackCategories = ['deepseek-chat', 'smart-chat', 'kimi-k2.5', 'gpt-5.5'];
-             const fallbackKeys = cachedScrapedKeys.filter(k => fallbackCategories.includes(k.category));
-             
-             if (fallbackKeys.length > 0) {
-                 const fallbackControllers = fallbackKeys.map(() => new AbortController());
-                 const fallbackPromises = fallbackKeys.map((entry, i) => {
-                    const reqHeaders = { ...headers, 'Authorization': `Bearer ${entry.key}` };
-                    return fetch(ROUTER_URL, {
-                      method: 'POST',
-                      headers: reqHeaders,
-                      body: JSON.stringify({
-                        model: entry.model,
-                        messages: formattedMessages,
-                        stream: stream === true,
-                        max_tokens: 8000,
-                        temperature: 0.7
-                      }),
-                      signal: fallbackControllers[i].signal
-                    }).then(res => {
-                      if (res.ok) return { res, index: i, entry };
-                      throw new Error(`Status ${res.status}`);
-                    });
-                 });
-                 
-                 try {
-                     const fallbackWinner = await Promise.any(fallbackPromises);
-                     proxyResponse = fallbackWinner.res;
-                     fallbackControllers.forEach((c, i) => { if (i !== fallbackWinner.index) c.abort(); });
-                     console.log(`[Fallback] Race won by category ${fallbackWinner.entry.category} (model ${fallbackWinner.entry.model})!`);
-                 } catch (fallbackErr) {
-                     proxyResponse = new Response(JSON.stringify({ error: { message: "All fallback API keys failed to respond" } }), { status: 502 });
-                 }
-             } else {
-                 proxyResponse = new Response(JSON.stringify({ error: { message: "No fallback API keys available" } }), { status: 502 });
-             }
-          } else {
-             proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
-          }
+          console.error(`[Auto] All keys failed for ${realModel}`, e);
+          proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
         }
       } else {
         return NextResponse.json({ error: 'No scraped keys available. GitHub repo might be down or keys exhausted.' }, { status: 500 });
@@ -428,6 +503,50 @@ export async function POST(req: Request) {
           temperature: 0.7
         }),
       });
+    }
+
+    if (!proxyResponse.ok) {
+      if (selectedModel === 'claude-opus-4-7') {
+        console.log(`[Fallback] Opus failed with ${proxyResponse.status}. Racing all available working models...`);
+
+        if (cachedScrapedKeys.length === 0) {
+          await getAllScrapedKeys('dummy'); // Populate cache
+        }
+
+        if (cachedScrapedKeys.length > 0) {
+          const controllers = cachedScrapedKeys.map(() => new AbortController());
+          const fetchPromises = cachedScrapedKeys.map(({ key, model }, i) => {
+            const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
+            return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
+              method: 'POST',
+              headers: reqHeaders,
+              body: JSON.stringify({
+                model: model,
+                messages: formattedMessages,
+                stream: stream === true,
+                max_tokens: 8000,
+                temperature: 0.7
+              }),
+              signal: controllers[i].signal
+            }).then(res => {
+              if (res.ok) return { res, index: i, model };
+              throw new Error(`Status ${res.status}`);
+            });
+          });
+
+          try {
+            const winner = await Promise.any(fetchPromises);
+            proxyResponse = winner.res;
+            selectedModel = winner.model;
+            controllers.forEach((c, i) => {
+              if (i !== winner.index) c.abort();
+            });
+            console.log(`[Fallback] Race won by model ${winner.model} with key index ${winner.index}!`);
+          } catch (e) {
+            console.error(`[Fallback] All scraped models failed fallback for Opus`);
+          }
+        }
+      }
     }
 
     if (!proxyResponse.ok) {

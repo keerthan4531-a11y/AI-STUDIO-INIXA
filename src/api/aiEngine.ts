@@ -27,6 +27,161 @@ export interface AIModel {
 // 9router auto-selects the best free provider for each model.
 // Model strings follow the format used by 9router's provider system.
 export const AI_MODELS: AIModel[] = [
+  // ── Ultimate Unlimited G4F Proxy Models (Ordered: Powerful to Low) ──
+  {
+    id: 'g4f-openai-fast',
+    label: 'GPT-5 Nano (Pollinations)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkoloq41e34074b6133e:openai-fast',
+    badge: 'GPT-5',
+    badgeColor: 'red',
+    icon: 'Sparkles',
+    iconColor: '#ef4444',
+    description: 'GPT-5 Nano (gpt-5-nano-2025-08-07) via Proxy Pool'
+  },
+  {
+    id: 'g4f-gpt-4o-pollinations',
+    label: 'GPT-5.4 Nano (Pollinations)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkoloq41e34074b6133e:openai',
+    badge: 'GPT-5.4',
+    badgeColor: 'red',
+    icon: 'Sparkles',
+    iconColor: '#ef4444',
+    description: 'GPT-5.4 Nano (gpt-5.4-nano-2026-03-17) via Proxy Pool'
+  },
+  {
+    id: 'g4f-deepseek-v4-pro',
+    label: 'DeepSeek-V4 Pro',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Pro',
+    badge: 'NEW',
+    badgeColor: 'purple',
+    icon: 'Sparkles',
+    iconColor: '#a855f7',
+    description: 'DeepSeek V4 Pro via Proxy Pool'
+  },
+  {
+    id: 'g4f-deepseek-v4-flash',
+    label: 'DeepSeek-V4 Flash',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Flash',
+    badge: 'FLASH',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'DeepSeek V4 Flash via Proxy Pool'
+  },
+  {
+    id: 'g4f-claude-fast',
+    label: 'Claude Fast (Haiku 4.5)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkoloq41e34074b6133e:claude-fast',
+    badge: 'CLAUDE',
+    badgeColor: 'green',
+    icon: 'Star',
+    iconColor: '#10b981',
+    description: 'Claude Haiku 4.5 via Proxy Pool'
+  },
+  {
+    id: 'g4f-gemini-3-flash-preview',
+    label: 'Gemini 3 Flash Preview',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkol5tgcd33cc358ddbc:models/gemini-3-flash-preview',
+    badge: 'GEMINI',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'Gemini 3 Flash Preview via Proxy Pool'
+  },
+  {
+    id: 'g4f-gemini-3.5',
+    label: 'Gemini 3.5 Flash',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkol5tgcd33cc358ddbc:models/gemini-3.5-flash',
+    badge: 'GEMINI',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'Gemini 3.5 Flash via Proxy Pool'
+  },
+  {
+    id: 'g4f-gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkol5tgcd33cc358ddbc:models/gemini-2.5-flash',
+    badge: 'PRO',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Gemini 2.5 Flash via Proxy Pool'
+  },
+  {
+    id: 'g4f-gpt-oss',
+    label: 'GPT-OSS 120B',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkombumpae45db46dcb8:openai/gpt-oss-120b',
+    badge: '120B',
+    badgeColor: 'red',
+    icon: 'Sparkles',
+    iconColor: '#ef4444',
+    description: 'GPT-OSS 120B via Proxy Pool'
+  },
+  {
+    id: 'g4f-gpt-oss-20b',
+    label: 'GPT-OSS 20B (Fast)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkom688d57c76d8a3542:openai/gpt-oss-20b',
+    badge: 'FAST',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'GPT-OSS 20B via Proxy Pool'
+  },
+  {
+    id: 'g4f-unmoderated-gpt',
+    label: 'Unmoderated GPT',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp3lmkuad07322459f47:unmoderated-gpt',
+    badge: 'UNCENSORED',
+    badgeColor: 'orange',
+    icon: 'Unlock',
+    iconColor: '#f97316',
+    description: 'Unmoderated GPT via Proxy Pool'
+  },
+  {
+    id: 'g4f-grok',
+    label: 'Grok',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkoloq41e34074b6133e:grok',
+    badge: 'GROK',
+    badgeColor: 'blue',
+    icon: 'Globe',
+    iconColor: '#3b82f6',
+    description: 'X.AI Grok via Proxy Pool'
+  },
+  {
+    id: 'g4f-kimi-k2.6',
+    label: 'Kimi k2.6',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp5miql908c8738d71be:kimi-k2.6',
+    badge: 'KIMI',
+    badgeColor: 'orange',
+    icon: 'Brain',
+    iconColor: '#f97316',
+    description: 'Moonshot Kimi k2.6 via Proxy Pool'
+  },
+  {
+    id: 'g4f-turbo',
+    label: 'Perplexity Turbo',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkopv2kp2e0038cdf550:turbo',
+    badge: 'SEARCH',
+    badgeColor: 'cyan',
+    icon: 'Globe',
+    iconColor: '#06b6d4',
+    description: 'Perplexity Turbo via Proxy Pool'
+  },
   {
     id: 'gemini-3.5-flash',
     label: 'Gemini 3.5 Flash',
@@ -418,7 +573,11 @@ export const aiChat = async (
     console.log(`[aiChat] Model: ${model.label}, Engine: ${model.engine}, ModelStr: ${modelStr}`);
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-    const res = await fetch(`${API_BASE}/api/chat/completions`, {
+    
+    // Route G4F models to the dedicated G4F proxy pool endpoint
+    const endpointPath = model.engine === 'g4f' ? '/api/chat/g4f' : '/api/chat/completions';
+    
+    const res = await fetch(`${API_BASE}${endpointPath}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
