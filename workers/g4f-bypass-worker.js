@@ -98,6 +98,33 @@ const PROVIDERS = {
     models: ["deepseek-v3.2:free"],
     tags: "deepseek, airforce"
   },
+  "deepseek-hf": {
+    serverId: "srv_mp2huzrg06e426ad12f3",
+    endpoint: "https://g4f.space/custom/srv_mp2huzrg06e426ad12f3/chat/completions",
+    modelsEndpoint: "https://g4f.space/custom/srv_mp2huzrg06e426ad12f3/models",
+    defaultModel: "deepseek-ai/DeepSeek-V4-Pro",
+    needsApiKey: false,
+    models: ["deepseek-ai/DeepSeek-V4-Pro", "deepseek-ai/DeepSeek-V4-Flash"],
+    tags: "deepseek"
+  },
+  "unmoderated": {
+    serverId: "srv_mp3lmkuad07322459f47",
+    endpoint: "https://g4f.space/custom/srv_mp3lmkuad07322459f47/chat/completions",
+    modelsEndpoint: "https://g4f.space/custom/srv_mp3lmkuad07322459f47/models",
+    defaultModel: "unmoderated-gpt",
+    needsApiKey: false,
+    models: ["unmoderated-gpt"],
+    tags: "unmoderated"
+  },
+  "kimi": {
+    serverId: "srv_mp5miql908c8738d71be",
+    endpoint: "https://g4f.space/custom/srv_mp5miql908c8738d71be/chat/completions",
+    modelsEndpoint: "https://g4f.space/custom/srv_mp5miql908c8738d71be/models",
+    defaultModel: "kimi-k2.6",
+    needsApiKey: false,
+    models: ["kimi-k2.6"],
+    tags: "kimi"
+  },
   "azure": {
     serverId: "srv_mks0cusg6010f87029ea",
     endpoint: "https://g4f.space/custom/srv_mks0cusg6010f87029ea/chat/completions",
@@ -293,61 +320,49 @@ async function handleChatCompletion(request, env, ctx) {
   if (model && model.includes(":") && !preferredProvider) {
     const [serverPart, modelPart] = model.split(":", 2);
     // Check if serverPart matches a provider server ID
-    let found = false;
     for (const [name, config] of Object.entries(PROVIDERS)) {
       if (config.serverId === serverPart) {
         preferredProvider = name;
         model = modelPart;
         providersToTry.push(name);
-        found = true;
         break;
       }
     }
+  }
 
-    // Dynamic routing fallback: if it starts with srv_ and isn't registered, create dynamic provider
-    if (!found && serverPart.startsWith("srv_")) {
-      const dynamicName = `dynamic-${serverPart}`;
-      PROVIDERS[dynamicName] = {
-        endpoint: `https://g4f.space/custom/${serverPart}/chat/completions`,
-        defaultModel: modelPart,
-        needsApiKey: false,
-        models: [modelPart]
-      };
-      preferredProvider = dynamicName;
-      model = modelPart;
-      providersToTry.push(dynamicName);
+  // Find providers that support this model to use as fallbacks
+  if (model && model !== "auto") {
+    // Find providers with this model
+    for (const [name, config] of Object.entries(PROVIDERS)) {
+      if (config.models.includes(model) && !providersToTry.includes(name)) {
+        providersToTry.push(name);
+      }
     }
   }
 
-  // If no preferred provider, find providers that support this model
-  if (providersToTry.length === 0) {
-    if (model && model !== "auto") {
-      // Find providers with this model
-      for (const [name, config] of Object.entries(PROVIDERS)) {
-        if (config.models.includes(model)) {
-          providersToTry.push(name);
-        }
+  // If still no matches (or only 1 preferred provider), add all providers as fallback
+  if (providersToTry.length <= 1) {
+    // Priority order: direct providers first, then g4f proxied
+    const fallbackList = [
+      "pollinations-direct",
+      "perplexity-worker",
+      "qwen-worker",
+      "nvidia",
+      "openrouter",
+      "pollinations",
+      "gemini",
+      "groq",
+      "ollama",
+      "airforce",
+      "deepseek-hf",
+      "perplexity",
+      "azure",
+      "g4f-v1"
+    ];
+    for (const name of fallbackList) {
+      if (!providersToTry.includes(name) && PROVIDERS[name]) {
+        providersToTry.push(name);
       }
-    }
-
-    // If still no matches, use all providers with auto-routing
-    if (providersToTry.length === 0) {
-      // Priority order: high-reliability first, then public servers
-      providersToTry = [
-        "perplexity-worker",
-        "gemini",
-        "nvidia",
-        "openrouter",
-        "pollinations",
-        "groq",
-        "ollama",
-        "airforce",
-        "perplexity",
-        "azure",
-        "qwen-worker",
-        "g4f-v1",
-        "pollinations-direct"
-      ];
     }
   }
 
@@ -375,6 +390,7 @@ async function handleChatCompletion(request, env, ctx) {
 
     try {
       const result = await makeProviderRequest(provider, {
+        model: requestModel,
         messages,
         stream: stream === true,
         ...body, // Pass through other params like temperature, max_tokens
@@ -403,13 +419,18 @@ async function handleChatCompletion(request, env, ctx) {
         continue;
       }
 
-      // For 4xx errors (except 429), return immediately
+      // For 4xx errors (except 429), return immediately ONLY IF it's an auth error, else retry
       if (result.status >= 400 && result.status < 500) {
-        return jsonResponse({
-          error: { message: `Provider ${providerName} returned ${result.status}: ${errorText.slice(0, 200)}` },
-          provider: providerName,
-          ip_used: fakeIP
-        }, result.status);
+        if (result.status === 401 || result.status === 403) {
+          return jsonResponse({
+            error: { message: `Provider ${providerName} returned ${result.status}: ${errorText.slice(0, 200)}` },
+            provider: providerName,
+            ip_used: fakeIP
+          }, result.status);
+        } else {
+          console.log(`[${providerName}] Error ${result.status} (likely model not found), trying next...`);
+          continue;
+        }
       }
     } catch (e) {
       errors.push({ provider: providerName, error: e.message });
