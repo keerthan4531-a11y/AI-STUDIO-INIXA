@@ -422,11 +422,8 @@ async function handleChatCompletion(request, env, ctx) {
       // For 4xx errors (except 429), return immediately ONLY IF it's an auth error, else retry
       if (result.status >= 400 && result.status < 500) {
         if (result.status === 401 || result.status === 403) {
-          return jsonResponse({
-            error: { message: `Provider ${providerName} returned ${result.status}: ${errorText.slice(0, 200)}` },
-            provider: providerName,
-            ip_used: fakeIP
-          }, result.status);
+          console.log(`[${providerName}] Auth Error ${result.status} (Cloud provider blocked), trying next...`);
+          continue;
         } else {
           console.log(`[${providerName}] Error ${result.status} (likely model not found), trying next...`);
           continue;

@@ -1,13 +1,13 @@
-const modelsToTest = [
-  'g4f/srv_mkoloq41e34074b6133e:openai-fast',
-  'g4f/srv_mkoloq41e34074b6133e:openai',
-  'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Pro',
-  'g4f/srv_mkoloq41e34074b6133e:claude-fast',
-  'g4f/srv_mkol5tgcd33cc358ddbc:models/gemini-3-flash-preview',
-];
+const fs = require('fs');
 
 async function testAll() {
-  for (const model of modelsToTest) {
+  const content = fs.readFileSync('./src/api/aiEngine.ts', 'utf-8');
+  const matches = [...content.matchAll(/modelStr:\s*'(g4f\/[^']+)'/g)];
+  const models = matches.map(m => m[1]);
+  
+  console.log(`Found ${models.length} G4F models. Testing...`);
+
+  for (const model of models) {
     console.log(`\nTesting model: ${model}`);
     try {
       const res = await fetch('http://localhost:3000/api/chat/g4f', {
@@ -22,9 +22,15 @@ async function testAll() {
       const data = await res.json();
       console.log(`Status: ${res.status}`);
       if (data.reply) {
-        console.log(`Reply: ${data.reply.trim()}`);
+        let snippet = data.reply.trim().substring(0, 100);
+        snippet = snippet.replace(/\n/g, '\\n');
+        console.log(`Reply: ${snippet}`);
+      } else if (data.choices && data.choices[0] && data.choices[0].message) {
+        let snippet = data.choices[0].message.content.trim().substring(0, 100);
+        snippet = snippet.replace(/\n/g, '\\n');
+        console.log(`Reply: ${snippet}`);
       } else {
-        console.log(`Response: ${JSON.stringify(data)}`);
+        console.log(`Response: ${JSON.stringify(data).substring(0, 200)}`);
       }
     } catch (e) {
       console.error('Error:', e.message);
