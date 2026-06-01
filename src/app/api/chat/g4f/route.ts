@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 // Worker URL: https://g4f-bypass.haruyhari930.workers.dev
 // ═══════════════════════════════════════════════════════════════════
 
-const WORKER_URL = 'https://g4f-bypass.haruyhari930.workers.dev';
+const WORKER_URL = 'https://g4f-bypass.haruyhari930.workers.dev/v1/chat/completions';
 
 export async function POST(req: Request) {
   try {
@@ -22,6 +22,14 @@ export async function POST(req: Request) {
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: 'messages array is required' }, { status: 400 });
     }
+
+    // Strip "g4f/" prefix if present
+    if (model.startsWith('g4f/')) {
+      model = model.replace('g4f/', '');
+    }
+
+    // Ensure the body has the stripped model
+    body.model = model;
 
     console.log(`[G4F Route] Forwarding to Worker - Model: "${model}", stream: ${stream}`);
 
@@ -49,6 +57,18 @@ export async function POST(req: Request) {
 
       // Non-stream: parse and return
       const data = await response.json();
+      
+      // If the worker returned a direct reply format or standard OpenAI format
+      if (data.reply) {
+         return NextResponse.json(data);
+      } else if (data.choices?.[0]?.message?.content) {
+         return NextResponse.json({
+           reply: data.choices[0].message.content,
+           provider: data.provider || "g4f",
+           model: model
+         });
+      }
+      
       return NextResponse.json(data);
     }
 
@@ -56,11 +76,19 @@ export async function POST(req: Request) {
     const errorText = await response.text().catch(() => 'Unknown error');
     console.error(`[G4F Route] Worker returned ${response.status}:`, errorText);
     
+    let errorMsg = `Worker Error ${response.status}`;
+    try {
+      const parsedErr = JSON.parse(errorText);
+      if (parsedErr.error && parsedErr.error.message) {
+        errorMsg = parsedErr.error.message;
+      }
+    } catch(e) {}
+    
     return NextResponse.json(
       { 
         ok: false, 
-        error: `Worker Error ${response.status}`, 
-        reply: `❌ Cloudflare Worker failed with status ${response.status}.` 
+        error: errorMsg, 
+        reply: `❌ Cloudflare Worker failed with status ${response.status}: ${errorMsg}` 
       },
       { status: response.status === 429 ? 429 : 502 }
     );
