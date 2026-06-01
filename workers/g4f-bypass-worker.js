@@ -488,10 +488,16 @@ async function makeProviderRequest(provider, requestBody, fakeIP, userAgent) {
     "User-Agent": userAgent,
     "X-Forwarded-For": fakeIP,
     "X-Real-IP": fakeIP,
+    "CF-Connecting-IP": fakeIP,
     "Accept": requestBody.stream ? "text/event-stream" : "application/json",
     "Accept-Language": "en-US,en;q=0.9",
     "Origin": "https://g4f.dev",
     "Referer": "https://g4f.dev/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "Cache-Control": "no-cache",
+    "Cookie": `g4f_session=fake_session_${Math.random().toString(36).substring(2)}; __cf_bm=${Math.random().toString(36).substring(2)}`
   };
 
   // Clean up request body - remove our custom fields
