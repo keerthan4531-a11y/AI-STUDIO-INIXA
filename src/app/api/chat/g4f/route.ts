@@ -155,61 +155,80 @@ export async function POST(req: Request) {
       
       await refreshProxyPool();
       
-      const maxRetries = 3;
-      let lastError = null;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const proxyUrl = getNextProxy();
-        if (!proxyUrl) throw new Error('No proxies available in the pool.');
-
-        console.log(`[G4F-ProxyPool] Attempt ${attempt}/${maxRetries} using Proxy: ${proxyUrl}`);
-        const agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
-        
-        let targetEndpoint = 'https://g4f.space/v1/chat/completions';
-        let requestModel = g4fModel;
-
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-          const g4fRes = await nodeFetch(targetEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': stream ? 'text/event-stream' : 'application/json',
-              'Origin': 'https://g4f.dev',
-              'Referer': 'https://g4f.dev/',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-              'X-Forwarded-For': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`
-            },
-            body: JSON.stringify({ ...body, model: requestModel }),
-            agent: agent,
-            signal: controller.signal as any
-          });
-          
-          clearTimeout(timeoutId);
-
-          if (g4fRes.ok) {
-            console.log(`[G4F-ProxyPool] Success on attempt ${attempt}!`);
-            if (stream) {
-              return new Response(g4fRes.body as any, { headers: { 'Content-Type': 'text/event-stream' } });
-            }
-            return NextResponse.json(await g4fRes.json());
-          } else {
-            const errorText = await g4fRes.text();
-            lastError = `Status ${g4fRes.status}: ${errorText.substring(0, 100)}`;
-            console.log(`[Proxy Failed] ${lastError}`);
-            if (g4fRes.status !== 429) {
-              return new Response(errorText, { status: g4fRes.status, headers: { 'Content-Type': 'application/json' }});
-            }
-          }
-        } catch (error: any) {
-          lastError = error.message;
-          console.log(`[Proxy Error] ${error.message}`);
-        }
+      if (proxyPool.length === 0) {
+        throw new Error('No proxies available in the pool.');
       }
 
-      throw new Error(`All ${maxRetries} proxies failed. Last error: ${lastError}`);
+      console.log(`[G4F-ProxyPool] Racing multiple proxies for model: ${g4fModel}`);
+      let targetEndpoint = 'https://g4f.space/v1/chat/completions';
+      
+      // Grab 5 random proxies to race
+      const numToRace = Math.min(5, proxyPool.length);
+      const proxiesToTry = [];
+      for(let i = 0; i < numToRace; i++) {
+        proxiesToTry.push(getNextProxy());
+      }
+
+      const racePromises = proxiesToTry.map((proxyUrl, index) => {
+        return new Promise(async (resolve, reject) => {
+          if (!proxyUrl) return reject(new Error('Empty proxy'));
+          
+          const agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+          const controller = new AbortController();
+          // Short timeout for racing - if a proxy is slow, we don't want it anyway
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          try {
+            const fakeIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+            
+            const g4fRes = await nodeFetch(targetEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': stream ? 'text/event-stream' : 'application/json',
+                'Origin': 'https://g4f.dev',
+                'Referer': 'https://g4f.dev/',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                'X-Forwarded-For': fakeIP
+              },
+              body: JSON.stringify({ ...body, model: g4fModel }),
+              agent: agent,
+              signal: controller.signal as any
+            });
+            
+            clearTimeout(timeoutId);
+
+            if (g4fRes.ok) {
+              console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
+              resolve(g4fRes);
+            } else {
+              const errText = await g4fRes.text();
+              reject(new Error(`Status ${g4fRes.status}: ${errText.substring(0, 100)}`));
+            }
+          } catch (err: any) {
+            clearTimeout(timeoutId);
+            reject(err);
+          }
+        });
+      });
+
+      try {
+        // Promise.any resolves with the FIRST successful promise
+        const winningRes: any = await Promise.any(racePromises);
+        
+        if (stream) {
+          return new Response(winningRes.body as any, { headers: { 'Content-Type': 'text/event-stream' } });
+        }
+        return NextResponse.json(await winningRes.json());
+      } catch (aggregateError: any) {
+        // All raced proxies failed
+        const errors = aggregateError.errors ? aggregateError.errors.map((e: any) => e.message).join(' | ') : aggregateError.message;
+        console.error(`[Proxy-Race Failed] All ${numToRace} proxies failed. Errors: ${errors}`);
+        return NextResponse.json(
+          { ok: false, engine: "proxy", error: `All raced proxies failed. Last error: ${errors}` },
+          { status: 502 }
+        );
+      }
     }
 
     // 3. Fallback Route
