@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { HttpProxyAgent } from 'http-proxy-agent';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 // @ts-ignore
 import nodeFetch from 'node-fetch';
 
@@ -62,24 +63,31 @@ async function refreshProxyPool() {
   }
 
   try {
-    console.log('[ProxyPool] Fetching fresh working proxies from multiple sources...');
+    console.log('[ProxyPool] Fetching fresh working SOCKS proxies from multiple sources...');
     const newProxies = new Set<string>();
 
-    // Source 1: ProxyScrape (High quality anonymous proxies < 2000ms)
+    // Source 1: ProxyScrape SOCKS5
     try {
-      const psRes = await nodeFetch('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=2000&country=all&ssl=yes&anonymity=anonymous,elite');
+      const psRes = await nodeFetch('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks5&timeout=4000&country=all');
       const psText = await psRes.text();
-      psText.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`http://${p.trim()}`));
+      psText.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`socks5://${p.trim()}`));
     } catch(e) {}
 
-    // Source 2: Geonode API
+    // Source 2: ProxyScrape SOCKS4
     try {
-      const geoRes = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps&anonymityLevel=elite&anonymityLevel=anonymous');
+      const psRes4 = await nodeFetch('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=socks4&timeout=4000&country=all');
+      const psText4 = await psRes4.text();
+      psText4.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`socks4://${p.trim()}`));
+    } catch(e) {}
+
+    // Source 3: Geonode API SOCKS
+    try {
+      const geoRes = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=socks5%2Csocks4');
       const geoData = await geoRes.json();
       if (geoData && geoData.data) {
         geoData.data
-          .filter((p: any) => p.speed < 2000) 
-          .forEach((p: any) => newProxies.add(`http://${p.ip}:${p.port}`));
+          .filter((p: any) => p.speed < 3000) 
+          .forEach((p: any) => newProxies.add(`${p.protocols[0]}://${p.ip}:${p.port}`));
       }
     } catch(e) {}
 
@@ -88,21 +96,21 @@ async function refreshProxyPool() {
       proxyPool = Array.from(newProxies).sort(() => 0.5 - Math.random());
       lastProxyScrape = now;
       currentProxyIndex = 0;
-      console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast anonymous proxies.`);
+      console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast SOCKS proxies.`);
       return;
     }
 
-    // Source 3: Fallback TheSpeedX
-    const fallbackRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt');
+    // Source 4: Fallback TheSpeedX SOCKS5
+    const fallbackRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt');
     const fallbackText = await fallbackRes.text();
     const lines = fallbackText.split('\n').filter((l: string) => l.trim().length > 0);
     const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 200);
-    proxyPool = shuffled.map((p: string) => `http://${p.trim()}`);
+    proxyPool = shuffled.map((p: string) => `socks5://${p.trim()}`);
     lastProxyScrape = now;
     currentProxyIndex = 0;
-    console.log(`[ProxyPool] Fallback loaded ${proxyPool.length} proxies.`);
+    console.log(`[ProxyPool] Fallback loaded ${proxyPool.length} SOCKS5 proxies.`);
   } catch (e) {
-    console.error('[ProxyPool] Error fetching proxies:', e);
+    console.error('[ProxyPool] Error fetching SOCKS proxies:', e);
   }
 }
 
@@ -186,10 +194,16 @@ export async function POST(req: Request) {
         return new Promise(async (resolve, reject) => {
           if (!proxyUrl) return reject(new Error('Empty proxy'));
           
-          const agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+          let agent;
+          if (proxyUrl.startsWith('socks')) {
+            agent = new SocksProxyAgent(proxyUrl);
+          } else {
+            agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+          }
+          
           const controller = new AbortController();
           // Short timeout for racing - if a proxy is slow, we don't want it anyway
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
 
           try {
             const fakeIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
