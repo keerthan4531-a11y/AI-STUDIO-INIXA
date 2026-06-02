@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { HttpProxyAgent } from 'http-proxy-agent';
+// @ts-ignore
+import nodeFetch from 'node-fetch';
 
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route 
@@ -13,7 +17,7 @@ const SCRAPE_INTERVAL = 5 * 60 * 1000;
 
 async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
   try {
-    const res = await fetch(SCRAPE_URL, { cache: 'no-store' });
+    const res = await nodeFetch(SCRAPE_URL);
     const text = await res.text();
     const entries: ScrapedKeyEntry[] = [];
     
@@ -45,6 +49,58 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Free Proxy Pool Manager (Round-Robin)
+// ═══════════════════════════════════════════════════════════════════
+let proxyPool: string[] = [];
+let currentProxyIndex = 0;
+let lastProxyScrape = 0;
+
+async function refreshProxyPool() {
+  const now = Date.now();
+  if (proxyPool.length > 0 && now - lastProxyScrape < 10 * 60 * 1000) {
+    return; // Use cache if less than 10 mins old and we have proxies
+  }
+
+  try {
+    console.log('[ProxyPool] Fetching fresh working proxies...');
+    const res = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps');
+    const data = await res.json();
+    
+    if (data && data.data) {
+      const workingProxies = data.data
+        .filter((p: any) => p.speed < 2000) 
+        .map((p: any) => `http://${p.ip}:${p.port}`);
+      
+      if (workingProxies.length > 0) {
+        proxyPool = workingProxies;
+        lastProxyScrape = now;
+        currentProxyIndex = 0;
+        console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast proxies.`);
+        return;
+      }
+    }
+
+    const fallbackRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt');
+    const fallbackText = await fallbackRes.text();
+    const lines = fallbackText.split('\n').filter((l: string) => l.trim().length > 0);
+    const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 100);
+    proxyPool = shuffled.map((p: string) => `http://${p.trim()}`);
+    lastProxyScrape = now;
+    currentProxyIndex = 0;
+    console.log(`[ProxyPool] Fallback loaded ${proxyPool.length} proxies.`);
+  } catch (e) {
+    console.error('[ProxyPool] Error fetching proxies:', e);
+  }
+}
+
+function getNextProxy(): string | null {
+  if (proxyPool.length === 0) return null;
+  const proxy = proxyPool[currentProxyIndex];
+  currentProxyIndex = (currentProxyIndex + 1) % proxyPool.length;
+  return proxy;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Smart Router Logic
 // ═══════════════════════════════════════════════════════════════════
 export async function POST(req: Request) {
@@ -56,7 +112,6 @@ export async function POST(req: Request) {
 
     console.log(`[Master Route] Routing model: "${model}"`);
 
-    // 1. If using a specific API key (not 'g4f_...'), route to Nine Router or original scrape keys
     if (authHeader && !authHeader.includes('g4f_')) {
       const isScrapedKeyRequest = authHeader.includes('sk-');
       let targetUrl = 'http://localhost:20128/v1/chat/completions';
@@ -69,19 +124,18 @@ export async function POST(req: Request) {
         }
         
         let matchingKeys = cachedScrapedKeys;
-        if (model === 'gpt-5.5') matchingKeys = cachedScrapedKeys.filter(k => k.category === 'gpt-5.5');
-        else if (model === 'claude-opus-4.7') matchingKeys = cachedScrapedKeys.filter(k => k.category === 'claude-opus-4-7');
+        if (model === 'gpt-5.5') matchingKeys = cachedScrapedKeys.filter((k: any) => k.category === 'gpt-5.5');
+        else if (model === 'claude-opus-4.7') matchingKeys = cachedScrapedKeys.filter((k: any) => k.category === 'claude-opus-4-7');
         
         if (matchingKeys.length > 0) {
           const randomKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
           authHeader = `Bearer ${randomKey.key}`;
           model = randomKey.model;
           targetUrl = 'https://api.chatanywhere.tech/v1/chat/completions';
-          console.log(`[Scrape Router] Using key from category ${randomKey.category}, model ${model}`);
         }
       }
 
-      const backendRes = await fetch(targetUrl, {
+      const backendRes = await nodeFetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +145,7 @@ export async function POST(req: Request) {
       });
 
       if (!backendRes.ok) throw new Error(await backendRes.text());
-      if (stream) return new Response(backendRes.body, { headers: { 'Content-Type': 'text/event-stream' } });
+      if (stream) return new Response(backendRes.body as any, { headers: { 'Content-Type': 'text/event-stream' } });
       return NextResponse.json(await backendRes.json());
     }
 
@@ -99,40 +153,63 @@ export async function POST(req: Request) {
     if (model.startsWith('g4f/')) {
       const g4fModel = model.replace('g4f/', '');
       
-      console.log(`[G4F-Worker] Routing to Cloudflare Bypass Worker for model: ${g4fModel}`);
-      const targetEndpoint = 'https://g4f-bypass.haruyhari930.workers.dev/v1/chat/completions';
+      await refreshProxyPool();
       
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for worker
+      const maxRetries = 3;
+      let lastError = null;
 
-        const g4fRes = await fetch(targetEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': stream ? 'text/event-stream' : 'application/json'
-          },
-          body: JSON.stringify({ ...body, model: g4fModel }),
-          signal: controller.signal
-        });
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const proxyUrl = getNextProxy();
+        if (!proxyUrl) throw new Error('No proxies available in the pool.');
+
+        console.log(`[G4F-ProxyPool] Attempt ${attempt}/${maxRetries} using Proxy: ${proxyUrl}`);
+        const agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
         
-        clearTimeout(timeoutId);
+        let targetEndpoint = 'https://g4f.space/v1/chat/completions';
+        let requestModel = g4fModel;
 
-        if (g4fRes.ok) {
-          console.log(`[G4F-Worker] Success! Model: ${g4fModel}`);
-          if (stream) {
-            return new Response(g4fRes.body, { headers: { 'Content-Type': 'text/event-stream' } });
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+          const g4fRes = await nodeFetch(targetEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': stream ? 'text/event-stream' : 'application/json',
+              'Origin': 'https://g4f.dev',
+              'Referer': 'https://g4f.dev/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'X-Forwarded-For': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`
+            },
+            body: JSON.stringify({ ...body, model: requestModel }),
+            agent: agent,
+            signal: controller.signal as any
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (g4fRes.ok) {
+            console.log(`[G4F-ProxyPool] Success on attempt ${attempt}!`);
+            if (stream) {
+              return new Response(g4fRes.body as any, { headers: { 'Content-Type': 'text/event-stream' } });
+            }
+            return NextResponse.json(await g4fRes.json());
+          } else {
+            const errorText = await g4fRes.text();
+            lastError = `Status ${g4fRes.status}: ${errorText.substring(0, 100)}`;
+            console.log(`[Proxy Failed] ${lastError}`);
+            if (g4fRes.status !== 429) {
+              return new Response(errorText, { status: g4fRes.status, headers: { 'Content-Type': 'application/json' }});
+            }
           }
-          return NextResponse.json(await g4fRes.json());
-        } else {
-          const errorText = await g4fRes.text();
-          console.log(`[G4F-Worker Failed] Status ${g4fRes.status}: ${errorText.substring(0, 100)}`);
-          return new Response(errorText, { status: g4fRes.status, headers: { 'Content-Type': 'application/json' }});
+        } catch (error: any) {
+          lastError = error.message;
+          console.log(`[Proxy Error] ${error.message}`);
         }
-      } catch (error: any) {
-        console.error(`[G4F-Worker Error] ${error.message}`);
-        throw new Error(`Cloudflare Worker failed: ${error.message}`);
       }
+
+      throw new Error(`All ${maxRetries} proxies failed. Last error: ${lastError}`);
     }
 
     // 3. Fallback Route
