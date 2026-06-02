@@ -57,33 +57,46 @@ let lastProxyScrape = 0;
 
 async function refreshProxyPool() {
   const now = Date.now();
-  if (proxyPool.length > 0 && now - lastProxyScrape < 10 * 60 * 1000) {
-    return; // Use cache if less than 10 mins old and we have proxies
+  if (proxyPool.length > 0 && now - lastProxyScrape < 5 * 60 * 1000) {
+    return; // Use cache if less than 5 mins old
   }
 
   try {
-    console.log('[ProxyPool] Fetching fresh working proxies...');
-    const res = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps');
-    const data = await res.json();
-    
-    if (data && data.data) {
-      const workingProxies = data.data
-        .filter((p: any) => p.speed < 2000) 
-        .map((p: any) => `http://${p.ip}:${p.port}`);
-      
-      if (workingProxies.length > 0) {
-        proxyPool = workingProxies;
-        lastProxyScrape = now;
-        currentProxyIndex = 0;
-        console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast proxies.`);
-        return;
+    console.log('[ProxyPool] Fetching fresh working proxies from multiple sources...');
+    const newProxies = new Set<string>();
+
+    // Source 1: ProxyScrape (High quality anonymous proxies < 2000ms)
+    try {
+      const psRes = await nodeFetch('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=2000&country=all&ssl=yes&anonymity=anonymous,elite');
+      const psText = await psRes.text();
+      psText.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`http://${p.trim()}`));
+    } catch(e) {}
+
+    // Source 2: Geonode API
+    try {
+      const geoRes = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=http%2Chttps&anonymityLevel=elite&anonymityLevel=anonymous');
+      const geoData = await geoRes.json();
+      if (geoData && geoData.data) {
+        geoData.data
+          .filter((p: any) => p.speed < 2000) 
+          .forEach((p: any) => newProxies.add(`http://${p.ip}:${p.port}`));
       }
+    } catch(e) {}
+
+    if (newProxies.size > 0) {
+      // Shuffle the set
+      proxyPool = Array.from(newProxies).sort(() => 0.5 - Math.random());
+      lastProxyScrape = now;
+      currentProxyIndex = 0;
+      console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast anonymous proxies.`);
+      return;
     }
 
+    // Source 3: Fallback TheSpeedX
     const fallbackRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt');
     const fallbackText = await fallbackRes.text();
     const lines = fallbackText.split('\n').filter((l: string) => l.trim().length > 0);
-    const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 100);
+    const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 200);
     proxyPool = shuffled.map((p: string) => `http://${p.trim()}`);
     lastProxyScrape = now;
     currentProxyIndex = 0;
@@ -162,8 +175,8 @@ export async function POST(req: Request) {
       console.log(`[G4F-ProxyPool] Racing multiple proxies for model: ${g4fModel}`);
       let targetEndpoint = 'https://g4f.space/v1/chat/completions';
       
-      // Grab 5 random proxies to race
-      const numToRace = Math.min(5, proxyPool.length);
+      // Grab 12 random proxies to race
+      const numToRace = Math.min(12, proxyPool.length);
       const proxiesToTry = [];
       for(let i = 0; i < numToRace; i++) {
         proxiesToTry.push(getNextProxy());
