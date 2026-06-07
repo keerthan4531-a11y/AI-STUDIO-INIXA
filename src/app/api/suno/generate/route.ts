@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-const SUNO_API_URL = process.env.SUNO_API_URL || 'https://studio-api.suno.ai';
+const SUNO_API_URL = process.env.SUNO_API_URL;
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // If SUNO_API_URL points to a proxy like gcui-art/suno-api
-    if (SUNO_API_URL.includes('api')) {
+    // If SUNO_API_URL is configured and not the official studio API
+    if (SUNO_API_URL && SUNO_API_URL !== 'https://studio-api.suno.ai') {
       const res = await fetch(`${SUNO_API_URL}/api/custom_generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

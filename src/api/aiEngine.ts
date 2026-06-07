@@ -15,6 +15,7 @@ export interface AIModel {
   label: string;
   engine: string;
   modelStr: string;
+  provider?: string;
   badge?: string;
   badgeColor?: string;
   icon?: string;
@@ -27,29 +28,10 @@ export interface AIModel {
 // 9router auto-selects the best free provider for each model.
 // Model strings follow the format used by 9router's provider system.
 export const AI_MODELS: AIModel[] = [
-  // ── Ultimate Unlimited G4F Proxy Models (Ordered: Powerful to Low) ──
-  {
-    id: 'g4f-openai-fast',
-    label: 'GPT-5 Nano (Pollinations)',
-    engine: 'g4f',
-    modelStr: 'g4f/srv_mkoloq41e34074b6133e:openai-fast',
-    badge: 'GPT-5',
-    badgeColor: 'red',
-    icon: 'Sparkles',
-    iconColor: '#ef4444',
-    description: 'GPT-5 Nano (gpt-5-nano-2025-08-07) via Proxy Pool'
-  },
-  {
-    id: 'g4f-gpt-4o-pollinations',
-    label: 'GPT-5.4 Nano (Pollinations)',
-    engine: 'g4f',
-    modelStr: 'g4f/srv_mkoloq41e34074b6133e:openai',
-    badge: 'GPT-5.4',
-    badgeColor: 'red',
-    icon: 'Sparkles',
-    iconColor: '#ef4444',
-    description: 'GPT-5.4 Nano (gpt-5.4-nano-2026-03-17) via Proxy Pool'
-  },
+  // ── Direct Provider Models (via INIXA AI Gateway CF Worker) ──
+  // These hit Pollinations.ai and DuckDuckGo DIRECTLY — no G4F, no proxies needed!
+
+
   {
     id: 'g4f-deepseek-v4-pro',
     label: 'DeepSeek-V4 Pro',
@@ -60,6 +42,17 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Sparkles',
     iconColor: '#a855f7',
     description: 'DeepSeek V4 Pro via Proxy Pool'
+  },
+  {
+    id: 'g4f-deepseek-v3',
+    label: 'DeepSeek V3',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V3.2',
+    badge: 'FAST',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V3 via Proxy Pool'
   },
   {
     id: 'g4f-deepseek-v4-flash',
@@ -316,7 +309,7 @@ export const AI_MODELS: AIModel[] = [
     id: 'ddg-gpt-5-mini',
     label: 'GPT-5 mini',
     engine: 'ddg',
-    modelStr: 'ddg/gpt-5-mini', 
+    modelStr: 'ddg/gpt-5-mini',
     badge: 'DDG',
     badgeColor: 'green',
     icon: 'Globe',
@@ -349,7 +342,7 @@ export const AI_MODELS: AIModel[] = [
     id: 'ddg-llama-4-scout',
     label: 'Llama 4 Scout',
     engine: 'ddg',
-    modelStr: 'ddg/Llama-4-Scout-17B-16E-Instruct', 
+    modelStr: 'ddg/Llama-4-Scout-17B-16E-Instruct',
     badge: 'DDG',
     badgeColor: 'green',
     icon: 'Globe',
@@ -442,7 +435,7 @@ export const aiGenerateImageWithProgress = async (
 
   const blob = await response.blob();
   if (onProgress) onProgress(100);
-  
+
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
@@ -463,7 +456,7 @@ async function callPollinationsDirect(
   onChunk?: (c: string) => void
 ): Promise<string> {
   console.log(`[Pollinations] Routing to CF Worker /pollinations with model: ${modelName}`);
-  
+
   try {
     const res = await fetch(`${CF_WORKER_URL}/pollinations`, {
       method: 'POST',
@@ -480,7 +473,7 @@ async function callPollinationsDirect(
       if (onChunk) onChunk(data.content);
       return data.content;
     }
-    
+
     console.warn('[Pollinations] CF Worker returned error:', data.error);
     return `⚠️ Pollinations error: ${data.error || 'Empty response'}`;
   } catch (e) {
@@ -570,19 +563,37 @@ export const aiChat = async (
     }));
 
     const modelStr = model.modelStr;
-    console.log(`[aiChat] Model: ${model.label}, Engine: ${model.engine}, ModelStr: ${modelStr}`);
+    console.log(`[aiChat] Model: ${model.label}, Engine: ${model.engine}, ModelStr: ${modelStr}, Provider: ${model.provider || 'default'}`);
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-    
-    // Route G4F models to the dedicated G4F proxy pool endpoint
-    const endpointPath = model.engine === 'g4f' ? '/api/chat/g4f' : '/api/chat/completions';
-    
-    const res = await fetch(`${API_BASE}${endpointPath}`, {
+
+    // Route based on engine type
+    let endpointPath: string;
+    let fetchUrl: string;
+
+    if (model.engine === 'direct') {
+      // Direct models go through our INIXA AI Gateway CF Worker
+      // This hits Pollinations/DDG directly - no G4F, no proxies!
+      fetchUrl = `${CF_WORKER_URL}/v1/chat/completions`;
+      console.log(`[aiChat] Direct routing via CF Worker: ${fetchUrl}`);
+    } else if (model.engine === 'g4f') {
+      endpointPath = '/api/chat/g4f';
+      fetchUrl = `${API_BASE}${endpointPath}`;
+    } else {
+      endpointPath = '/api/chat/completions';
+      fetchUrl = `${API_BASE}${endpointPath}`;
+    }
+
+    const res = await fetch(fetchUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer inixa_secret_key_123`
+      },
       body: JSON.stringify({
         messages: conversationHistory,
         model: modelStr,
+        provider: model.provider,
         stream: !!onChunk
       })
     });
@@ -595,7 +606,7 @@ export const aiChat = async (
         const errorData = await res.json();
         if (errorData.reply) return errorData.reply;
         if (errorData.error) return `⚠️ ${errorData.error}`;
-      } catch {}
+      } catch { }
       return `❌ Error: Server returned ${res.status}. Please check if 9router is running and providers are configured.`;
     }
 
@@ -604,18 +615,18 @@ export const aiChat = async (
       const decoder = new TextDecoder('utf-8');
       let fullReply = '';
       let buffer = '';
-      
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        
+
         let changed = false;
         let boundary = buffer.indexOf('\n');
         while (boundary !== -1) {
           const line = buffer.slice(0, boundary).trim();
           buffer = buffer.slice(boundary + 1);
-          
+
           if (line.startsWith('data: ')) {
             const dataStr = line.slice(6).trim();
             if (dataStr === '[DONE]') continue;
@@ -632,7 +643,7 @@ export const aiChat = async (
           }
           boundary = buffer.indexOf('\n');
         }
-        
+
         if (changed) {
           onChunk(fullReply);
         }

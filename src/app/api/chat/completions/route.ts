@@ -466,7 +466,7 @@ export async function POST(req: Request) {
             signal: controllers[i].signal
           }).then(res => {
             if (res.ok) return { res, index: i };
-            throw new Error(`Status ${res.status}`);
+            throw `Status ${res.status}`;
           });
         });
 
@@ -480,8 +480,9 @@ export async function POST(req: Request) {
             }
           });
           console.log(`[Auto] Race won by key index ${winner.index}!`);
-        } catch (e) {
-          console.error(`[Auto] All keys failed for ${realModel}`, e);
+        } catch (e: any) {
+          const errMsg = e.errors ? e.errors.join(' | ') : (e.message || e);
+          console.error(`[Auto] All keys failed for ${realModel}: ${errMsg}`);
           proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
         }
       } else {
@@ -530,7 +531,7 @@ export async function POST(req: Request) {
               signal: controllers[i].signal
             }).then(res => {
               if (res.ok) return { res, index: i, model };
-              throw new Error(`Status ${res.status}`);
+              throw `Status ${res.status}`;
             });
           });
 
@@ -542,8 +543,9 @@ export async function POST(req: Request) {
               if (i !== winner.index) c.abort();
             });
             console.log(`[Fallback] Race won by model ${winner.model} with key index ${winner.index}!`);
-          } catch (e) {
-            console.error(`[Fallback] All scraped models failed fallback for Opus`);
+          } catch (e: any) {
+            const errMsg = e.errors ? e.errors.join(' | ') : (e.message || e);
+            console.error(`[Fallback] All scraped models failed fallback for Opus: ${errMsg}`);
           }
         }
       }

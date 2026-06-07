@@ -98,33 +98,6 @@ const PROVIDERS = {
     models: ["deepseek-v3.2:free"],
     tags: "deepseek, airforce"
   },
-  "deepseek-hf": {
-    serverId: "srv_mp2huzrg06e426ad12f3",
-    endpoint: "https://g4f.space/custom/srv_mp2huzrg06e426ad12f3/chat/completions",
-    modelsEndpoint: "https://g4f.space/custom/srv_mp2huzrg06e426ad12f3/models",
-    defaultModel: "deepseek-ai/DeepSeek-V4-Pro",
-    needsApiKey: false,
-    models: ["deepseek-ai/DeepSeek-V4-Pro", "deepseek-ai/DeepSeek-V4-Flash"],
-    tags: "deepseek"
-  },
-  "unmoderated": {
-    serverId: "srv_mp3lmkuad07322459f47",
-    endpoint: "https://g4f.space/custom/srv_mp3lmkuad07322459f47/chat/completions",
-    modelsEndpoint: "https://g4f.space/custom/srv_mp3lmkuad07322459f47/models",
-    defaultModel: "unmoderated-gpt",
-    needsApiKey: false,
-    models: ["unmoderated-gpt"],
-    tags: "unmoderated"
-  },
-  "kimi": {
-    serverId: "srv_mp5miql908c8738d71be",
-    endpoint: "https://g4f.space/custom/srv_mp5miql908c8738d71be/chat/completions",
-    modelsEndpoint: "https://g4f.space/custom/srv_mp5miql908c8738d71be/models",
-    defaultModel: "kimi-k2.6",
-    needsApiKey: false,
-    models: ["kimi-k2.6"],
-    tags: "kimi"
-  },
   "azure": {
     serverId: "srv_mks0cusg6010f87029ea",
     endpoint: "https://g4f.space/custom/srv_mks0cusg6010f87029ea/chat/completions",
@@ -330,39 +303,35 @@ async function handleChatCompletion(request, env, ctx) {
     }
   }
 
-  // Find providers that support this model to use as fallbacks
-  if (model && model !== "auto") {
-    // Find providers with this model
-    for (const [name, config] of Object.entries(PROVIDERS)) {
-      if (config.models.includes(model) && !providersToTry.includes(name)) {
-        providersToTry.push(name);
+  // If no preferred provider, find providers that support this model
+  if (providersToTry.length === 0) {
+    if (model && model !== "auto") {
+      // Find providers with this model
+      for (const [name, config] of Object.entries(PROVIDERS)) {
+        if (config.models.includes(model)) {
+          providersToTry.push(name);
+        }
       }
     }
-  }
 
-  // If still no matches (or only 1 preferred provider), add all providers as fallback
-  if (providersToTry.length <= 1) {
-    // Priority order: direct providers first, then g4f proxied
-    const fallbackList = [
-      "pollinations-direct",
-      "perplexity-worker",
-      "qwen-worker",
-      "nvidia",
-      "openrouter",
-      "pollinations",
-      "gemini",
-      "groq",
-      "ollama",
-      "airforce",
-      "deepseek-hf",
-      "perplexity",
-      "azure",
-      "g4f-v1"
-    ];
-    for (const name of fallbackList) {
-      if (!providersToTry.includes(name) && PROVIDERS[name]) {
-        providersToTry.push(name);
-      }
+    // If still no matches, use all providers with auto-routing
+    if (providersToTry.length === 0) {
+      // Priority order: direct providers first, then g4f proxied
+      providersToTry = [
+        "pollinations-direct",
+        "perplexity-worker",
+        "qwen-worker",
+        "nvidia",
+        "openrouter",
+        "pollinations",
+        "gemini",
+        "groq",
+        "ollama",
+        "airforce",
+        "perplexity",
+        "azure",
+        "g4f-v1"
+      ];
     }
   }
 
@@ -419,15 +388,13 @@ async function handleChatCompletion(request, env, ctx) {
         continue;
       }
 
-      // For 4xx errors (except 429), return immediately ONLY IF it's an auth error, else retry
+      // For 4xx errors (except 429), return immediately
       if (result.status >= 400 && result.status < 500) {
-        if (result.status === 401 || result.status === 403) {
-          console.log(`[${providerName}] Auth Error ${result.status} (Cloud provider blocked), trying next...`);
-          continue;
-        } else {
-          console.log(`[${providerName}] Error ${result.status} (likely model not found), trying next...`);
-          continue;
-        }
+        return jsonResponse({
+          error: { message: `Provider ${providerName} returned ${result.status}: ${errorText.slice(0, 200)}` },
+          provider: providerName,
+          ip_used: fakeIP
+        }, result.status);
       }
     } catch (e) {
       errors.push({ provider: providerName, error: e.message });
@@ -488,16 +455,10 @@ async function makeProviderRequest(provider, requestBody, fakeIP, userAgent) {
     "User-Agent": userAgent,
     "X-Forwarded-For": fakeIP,
     "X-Real-IP": fakeIP,
-    "CF-Connecting-IP": fakeIP,
     "Accept": requestBody.stream ? "text/event-stream" : "application/json",
     "Accept-Language": "en-US,en;q=0.9",
     "Origin": "https://g4f.dev",
     "Referer": "https://g4f.dev/",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-site",
-    "Cache-Control": "no-cache",
-    "Cookie": `g4f_session=fake_session_${Math.random().toString(36).substring(2)}; __cf_bm=${Math.random().toString(36).substring(2)}`
   };
 
   // Clean up request body - remove our custom fields

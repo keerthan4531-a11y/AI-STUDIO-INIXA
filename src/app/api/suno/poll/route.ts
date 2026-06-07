@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-const SUNO_API_URL = process.env.SUNO_API_URL || 'https://studio-api.suno.ai';
+const SUNO_API_URL = process.env.SUNO_API_URL;
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const ids = url.searchParams.get('ids');
     
-    if (SUNO_API_URL.includes('api')) {
+    if (SUNO_API_URL && SUNO_API_URL !== 'https://studio-api.suno.ai') {
       const res = await fetch(`${SUNO_API_URL}/api/get?ids=${ids}`);
       const data = await res.json();
       return NextResponse.json(data);
