@@ -33,38 +33,28 @@ export const AI_MODELS: AIModel[] = [
 
 
 
+
   {
-    id: 'g4f-deepseek-v3',
-    label: 'DeepSeek V3',
+    id: 'g4f-deepseek-v3.2',
+    label: 'DeepSeek V3.2',
     engine: 'g4f',
     modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V3.2',
     badge: 'FAST',
     badgeColor: 'blue',
     icon: 'Brain',
     iconColor: '#3b82f6',
-    description: 'DeepSeek V3 via Proxy Pool'
+    description: 'DeepSeek V3.2 via Proxy Pool'
   },
   {
-    id: 'g4f-deepseek-v4-flash',
-    label: 'DeepSeek-V4 Flash',
+    id: 'g4f-deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro',
     engine: 'g4f',
-    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Flash',
-    badge: 'FLASH',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'DeepSeek V4 Flash via Proxy Pool'
-  },
-  {
-    id: 'g4f-claude-fast',
-    label: 'Claude Fast (Haiku 4.5)',
-    engine: 'g4f',
-    modelStr: 'g4f/srv_mkoloq41e34074b6133e:claude-fast',
-    badge: 'CLAUDE',
-    badgeColor: 'green',
-    icon: 'Star',
-    iconColor: '#10b981',
-    description: 'Claude Haiku 4.5 via Proxy Pool'
+    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Pro',
+    badge: 'PRO',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V4 Pro via Proxy Pool'
   },
   {
     id: 'g4f-gemini-3-flash-preview',
