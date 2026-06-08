@@ -116,6 +116,54 @@ function HistoryGallery() {
   );
 }
 
+function TokenActivityWidget() {
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        if (data.ok && data.tokenHistory) {
+          setHistory(data.tokenHistory);
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    };
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const maxTokens = Math.max(...history.map((d) => d.tokens), 10);
+  const chartData = [...history];
+  while (chartData.length < 30) {
+    chartData.unshift({ timestamp: 0, tokens: 0 });
+  }
+
+  return (
+    <div className="w-full h-32 bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 flex flex-col justify-between">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-xs font-bold text-white/50">Token Throughput (30m)</span>
+        <span className="text-[10px] uppercase tracking-widest text-indigo-400 font-bold">{history.length > 0 ? history[history.length - 1].tokens : 0} / min</span>
+      </div>
+      <div className="flex-1 flex items-end justify-between gap-0.5 overflow-hidden border-b border-white/[0.05] pb-1">
+        {chartData.slice(-30).map((item, index) => {
+          const heightPct = (item.tokens / maxTokens) * 100;
+          return (
+            <div 
+              key={index} 
+              className="w-full flex-1 bg-indigo-500/50 hover:bg-indigo-400 transition-all rounded-t-sm"
+              style={{ height: `${Math.max(heightPct, 5)}%`, opacity: item.timestamp === 0 ? 0.1 : 1 }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ProfileScreen({ user, onLogout }: { user: UserData; onLogout: () => void }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 overflow-y-auto hide-scrollbar p-6 space-y-8 pb-32">
@@ -136,17 +184,11 @@ export function ProfileScreen({ user, onLogout }: { user: UserData; onLogout: ()
       </div>
 
       {/* Stats Widgets */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col gap-1">
-           <Activity className="w-4 h-4 text-emerald-400 mb-1" />
-           <p className="text-2xl font-black text-white">1,240</p>
-           <p className="text-[10px] uppercase tracking-widest text-white/30 font-bold">Total Prompts</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+           <h3 className="text-base font-black text-white tracking-tight">Live Network Activity</h3>
         </div>
-        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex flex-col gap-1">
-           <Database className="w-4 h-4 text-cyan-400 mb-1" />
-           <p className="text-2xl font-black text-white">45<span className="text-sm text-white/40">MB</span></p>
-           <p className="text-[10px] uppercase tracking-widest text-white/30 font-bold">Local Storage Used</p>
-        </div>
+        <TokenActivityWidget />
       </div>
 
       <div className="space-y-4">

@@ -142,16 +142,20 @@ function getNextProxy(): string | null {
 // ═══════════════════════════════════════════════════════════════════
 // Smart Router Logic
 // ═══════════════════════════════════════════════════════════════════
+import { adminStats } from '@/api/admin-stats';
+
 const ipRateLimit = new Map<string, { count: number, resetTime: number }>();
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const limitInfo = ipRateLimit.get(ip);
+  const limit = adminStats.getRateLimit();
+  
   if (!limitInfo || now > limitInfo.resetTime) {
     ipRateLimit.set(ip, { count: 1, resetTime: now + 60 * 1000 }); // 60s window
     return true;
   }
-  if (limitInfo.count >= 20) { // Max 20 requests per minute per IP
+  if (limitInfo.count >= limit) { 
     return false;
   }
   limitInfo.count++;
@@ -163,9 +167,17 @@ export async function POST(req: Request) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   
   try {
-    // 1. IP Rate Limiting
+    // 1. IP Rate Limiting & Banning
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    
+    if (adminStats.isIpBanned(ip)) {
+      return NextResponse.json({ ok: false, error: 'Forbidden: IP Banned' }, { status: 403 });
+    }
+    
+    adminStats.logRequest(ip);
+
     if (!checkRateLimit(ip)) {
+      adminStats.logFailure();
       console.warn(`[Security] Rate limit exceeded for IP: ${ip}`);
       return NextResponse.json({ ok: false, error: 'Too Many Requests. Please slow down.' }, { status: 429 });
     }
@@ -191,6 +203,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     let model = body.model || 'gpt-4o';
     const stream = body.stream || false;
+
+    // Log approximate input tokens (1 token ≈ 4 chars)
+    const approxInputTokens = Math.ceil(JSON.stringify(body.messages || []).length / 4);
+    adminStats.logTokens(approxInputTokens);
 
     console.log(`[Master Route] Routing model: "${model}"`);
 
