@@ -142,18 +142,50 @@ function getNextProxy(): string | null {
 // ═══════════════════════════════════════════════════════════════════
 // Smart Router Logic
 // ═══════════════════════════════════════════════════════════════════
+const ipRateLimit = new Map<string, { count: number, resetTime: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const limitInfo = ipRateLimit.get(ip);
+  if (!limitInfo || now > limitInfo.resetTime) {
+    ipRateLimit.set(ip, { count: 1, resetTime: now + 60 * 1000 }); // 60s window
+    return true;
+  }
+  if (limitInfo.count >= 20) { // Max 20 requests per minute per IP
+    return false;
+  }
+  limitInfo.count++;
+  return true;
+}
+
 export async function POST(req: Request) {
   // Disable strict SSL verification to bypass expired proxy certificates
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
   
   try {
-    let authHeader = req.headers.get('authorization');
-    const SECRET_KEY = process.env.INIXA_PROXY_SECRET || 'inixa_secret_key_123';
+    // 1. IP Rate Limiting
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      console.warn(`[Security] Rate limit exceeded for IP: ${ip}`);
+      return NextResponse.json({ ok: false, error: 'Too Many Requests. Please slow down.' }, { status: 429 });
+    }
 
-    // Simple API Key Security Check
-    // Block the request if it doesn't have our secret key (unless it's an internal sk- key check)
-    if (!authHeader || (!authHeader.includes(SECRET_KEY) && !authHeader.includes('sk-') && !authHeader.includes('g4f_'))) {
-        return NextResponse.json({ ok: false, error: 'Unauthorized: Invalid API Key' }, { status: 401 });
+    // 2. CORS / Origin Check
+    const origin = req.headers.get('origin') || req.headers.get('referer') || '';
+    const allowedOrigins = ['localhost', '127.0.0.1', 'ai-studio-inixa.vercel.app', 'inixa.vercel.app'];
+    
+    // Check if origin matches allowed domains (skip check if it has a valid backend SECRET_KEY)
+    const isOriginAllowed = allowedOrigins.some(allowed => origin.includes(allowed));
+    
+    let authHeader = req.headers.get('authorization');
+    const SERVER_SECRET = process.env.INIXA_PROXY_SECRET; // No hardcoded fallback
+    
+    const hasValidServerSecret = SERVER_SECRET && authHeader && authHeader.includes(SERVER_SECRET);
+    const isScrapedKeyRequest = authHeader && (authHeader.includes('sk-') || authHeader.includes('g4f_'));
+
+    if (!isOriginAllowed && !hasValidServerSecret && !isScrapedKeyRequest) {
+      console.warn(`[Security] Blocked unauthorized request from Origin: ${origin}`);
+      return NextResponse.json({ ok: false, error: 'Forbidden: Invalid Origin' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -162,7 +194,7 @@ export async function POST(req: Request) {
 
     console.log(`[Master Route] Routing model: "${model}"`);
 
-    if (authHeader && !authHeader.includes('g4f_') && !authHeader.includes(SECRET_KEY)) {
+    if (authHeader && !authHeader.includes('g4f_') && (!SERVER_SECRET || !authHeader.includes(SERVER_SECRET))) {
       const isScrapedKeyRequest = authHeader.includes('sk-');
       let targetUrl = 'http://localhost:20128/v1/chat/completions';
       

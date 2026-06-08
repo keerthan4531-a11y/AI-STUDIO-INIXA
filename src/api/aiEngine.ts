@@ -587,8 +587,8 @@ export const aiChat = async (
     const res = await fetch(fetchUrl, {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer inixa_secret_key_123`
+        'Content-Type': 'application/json'
+        // Security update: Removed static secret. Backend now uses Origin + Rate Limiting.
       },
       body: JSON.stringify({
         messages: conversationHistory,
