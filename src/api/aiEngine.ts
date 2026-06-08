@@ -605,9 +605,9 @@ export const aiChat = async (
       try {
         const errorData = await res.json();
         if (errorData.reply) return errorData.reply;
-        if (errorData.error) return `⚠️ ${errorData.error}`;
+        if (errorData.error) return `⚠️ API Error: ${errorData.error}`;
       } catch { }
-      return `❌ Error: Server returned ${res.status}. Please check if 9router is running and providers are configured.`;
+      return `❌ Error: Server returned ${res.status}.`;
     }
 
     if (onChunk && res.body) {
@@ -648,12 +648,12 @@ export const aiChat = async (
           onChunk(fullReply);
         }
       }
-      return fullReply || 'No response received. Make sure 9router is running.';
+      return fullReply || 'No response received from the AI model.';
     }
 
     const data = await res.json();
-    const reply = data.reply || '';
-    return reply || 'No response received. Make sure 9router is running.';
+    const reply = data.choices?.[0]?.message?.content || data.reply || '';
+    return reply || 'No response received from the AI model.';
   } catch (e) {
     console.error('Chat API Error', e);
     return '❌ Connection failed. Please try a different model or check your connection.';
