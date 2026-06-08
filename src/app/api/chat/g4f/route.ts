@@ -382,60 +382,113 @@ export async function POST(req: Request) {
           console.error(`[Fallback] Direct fetch also failed: ${directErr.message || directErr}`);
         }
 
-        // ── Ultimate Fallback: Pollinations.ai ──
-        console.log(`[Ultimate Fallback] Routing to text.pollinations.ai...`);
-        try {
-          // Map g4f model to pollinations model
-          let pollinationsModel = 'openai';
-          const lowerModel = g4fModel.toLowerCase();
-          if (lowerModel.includes('deepseek')) pollinationsModel = 'deepseek-chat';
-          else if (lowerModel.includes('claude')) pollinationsModel = 'claude-hybrid';
-          else if (lowerModel.includes('mini')) pollinationsModel = 'openai-large';
+        // ── DeepSeek Fallback: DuckDuckGo AI Chat ──
+        // g4f.space blocks DeepSeek with "Not authenticated", so we fallback to DDG
+        if (g4fModel.toLowerCase().includes('deepseek')) {
+          console.log(`[DeepSeek-Fallback] g4f.space failed for DeepSeek. Trying DuckDuckGo AI Chat...`);
+          try {
+            // Step 1: Get VQD token from DDG
+            const statusRes = await nodeFetch('https://duckduckgo.com/duckchat/v1/status', {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'x-vqd-accept': '1',
+                'Referer': 'https://duckduckgo.com/',
+                'Origin': 'https://duckduckgo.com',
+              }
+            });
+            const vqd = statusRes.headers.get('x-vqd-4');
+            if (!vqd) throw new Error(`VQD token fetch failed (HTTP ${statusRes.status})`);
 
-          const pollRes = await nodeFetch('https://text.pollinations.ai/openai/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': stream ? 'text/event-stream' : 'application/json'
-            },
-            body: JSON.stringify({
-              model: pollinationsModel,
-              messages: body.messages || [{ role: 'user', content: body.message || '' }],
-              stream: stream
-            })
-          });
+            // Step 2: Send chat to DDG with deepseek-r1
+            const ddgMessages = (body.messages || [{ role: 'user', content: body.message || '' }])
+              .filter((m: any) => m.role !== 'system')
+              .map((m: any) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : String(m.content) }));
 
-          if (pollRes.ok) {
-            console.log(`[Ultimate Fallback] Pollinations success!`);
-            if (stream) {
-              const bodyStream = new ReadableStream({
+            const chatRes = await nodeFetch('https://duckduckgo.com/duckchat/v1/chat', {
+              method: 'POST',
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Accept': 'text/event-stream',
+                'Content-Type': 'application/json',
+                'Referer': 'https://duckduckgo.com/',
+                'Origin': 'https://duckduckgo.com',
+                'x-vqd-4': vqd,
+              },
+              body: JSON.stringify({ model: 'deepseek-r1', messages: ddgMessages }),
+            });
+
+            if (!chatRes.ok) throw new Error(`DDG chat error: HTTP ${chatRes.status}`);
+
+            if (stream && chatRes.body) {
+              console.log(`[DeepSeek-Fallback] DDG streaming response started`);
+              // Convert DDG SSE stream → OpenAI-compatible SSE stream
+              const encoder = new TextEncoder();
+              let buffer = '';
+              const transformedStream = new ReadableStream({
                 start(controller) {
-                  (pollRes.body as any).on('data', (chunk: Buffer) => controller.enqueue(chunk));
-                  (pollRes.body as any).on('end', () => controller.close());
-                  (pollRes.body as any).on('error', (err: Error) => controller.error(err));
+                  (chatRes.body as any).on('data', (chunk: Buffer) => {
+                    buffer += chunk.toString();
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // keep incomplete line in buffer
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6).trim();
+                        if (dataStr === '[DONE]') {
+                          const finalChunk = { id: `chatcmpl-ddg-${Date.now()}`, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: 'deepseek-r1', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] };
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
+                          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                          return;
+                        }
+                        try {
+                          const parsed = JSON.parse(dataStr);
+                          if (parsed.message != null) {
+                            const openaiChunk = { id: `chatcmpl-ddg-${Date.now()}`, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: 'deepseek-r1', choices: [{ index: 0, delta: { content: parsed.message }, finish_reason: null }] };
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+                          }
+                        } catch {}
+                      }
+                    }
+                  });
+                  (chatRes.body as any).on('end', () => controller.close());
+                  (chatRes.body as any).on('error', (err: Error) => controller.error(err));
                 },
-                cancel() { (pollRes.body as any).destroy(); }
+                cancel() { (chatRes.body as any).destroy(); }
               });
-              return new Response(bodyStream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+              return new Response(transformedStream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
             }
-            return NextResponse.json(await pollRes.json());
+
+            // Non-streaming: collect full response
+            const sseTxt = await chatRes.text();
+            let content = '';
+            for (const line of sseTxt.split('\n')) {
+              if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                try {
+                  const parsed = JSON.parse(line.slice(6));
+                  if (parsed.message) content += parsed.message;
+                } catch {}
+              }
+            }
+            if (content) {
+              console.log(`[DeepSeek-Fallback] DDG success! Response length: ${content.length}`);
+              return NextResponse.json({
+                id: `chatcmpl-ddg-${Date.now()}`,
+                object: 'chat.completion',
+                created: Math.floor(Date.now() / 1000),
+                model: 'deepseek-r1',
+                choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }]
+              });
+            }
+            throw new Error('Empty DDG response');
+          } catch (ddgErr: any) {
+            console.error(`[DeepSeek-Fallback] DDG also failed: ${ddgErr.message || ddgErr}`);
           }
-        } catch (pollErr: any) {
-          console.error(`[Ultimate Fallback] Pollinations also failed: ${pollErr.message || pollErr}`);
         }
 
-        // If ALL fail, generate a friendly simulated response instead of an error crash
-        return NextResponse.json({
-          id: `chatcmpl-fallback-${Date.now()}`,
-          object: 'chat.completion',
-          created: Math.floor(Date.now() / 1000),
-          model: g4fModel,
-          choices: [{ 
-            index: 0, 
-            message: { role: 'assistant', content: "I'm currently experiencing high traffic and network issues. Please try again in a few moments!" }, 
-            finish_reason: 'stop' 
-          }]
-        });
+        return NextResponse.json(
+          { ok: false, engine: "proxy", error: `All raced proxies failed. Last error: ${errors}` },
+          { status: 502 }
+        );
       }
     }
 
