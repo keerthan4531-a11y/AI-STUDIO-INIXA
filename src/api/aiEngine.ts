@@ -32,17 +32,7 @@ export const AI_MODELS: AIModel[] = [
   // These hit Pollinations.ai and DuckDuckGo DIRECTLY — no G4F, no proxies needed!
 
 
-  {
-    id: 'g4f-deepseek-v4-pro',
-    label: 'DeepSeek-V4 Pro',
-    engine: 'g4f',
-    modelStr: 'g4f/srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Pro',
-    badge: 'NEW',
-    badgeColor: 'purple',
-    icon: 'Sparkles',
-    iconColor: '#a855f7',
-    description: 'DeepSeek V4 Pro via Proxy Pool'
-  },
+
   {
     id: 'g4f-deepseek-v3',
     label: 'DeepSeek V3',
@@ -176,6 +166,17 @@ export const AI_MODELS: AIModel[] = [
     description: 'Perplexity Turbo via Proxy Pool'
   },
   {
+    id: 'g4f-perplexity-fast',
+    label: 'Perplexity Fast',
+    engine: 'g4f',
+    modelStr: 'g4f/perplexity-fast',
+    badge: 'SEARCH LIVE',
+    badgeColor: 'green',
+    icon: 'Globe',
+    iconColor: '#10b981',
+    description: 'Real-time Web Search via G4F'
+  },
+  {
     id: 'gemini-3.5-flash',
     label: 'Gemini 3.5 Flash',
     engine: 'cloudflare',
@@ -231,6 +232,129 @@ export const AI_MODELS: AIModel[] = [
     description: 'Stable coding and reasoning'
   },
 
+  // ── Qwen Custom Worker Models ──
+  {
+    id: 'qw-qwen3.7-max',
+    label: 'Qwen 3.7 Max',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-max',
+    badge: 'NEW',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Max'
+  },
+  {
+    id: 'qw-qwen3.7-plus',
+    label: 'Qwen 3.7 Plus',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-plus',
+    badge: 'NEW',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Plus'
+  },
+  {
+    id: 'qw-qwen3.6-plus',
+    label: 'Qwen 3.6 Plus',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.6-plus',
+    icon: 'Star',
+    iconColor: '#f59e0b',
+    description: 'Alibaba Qwen 3.6 Plus'
+  },
+
+  // ── DeepInfra Models (via Proxy Pool) ──
+  {
+    id: 'di-nemotron-3-ultra',
+    label: 'Nemotron 3 Ultra 550B',
+    engine: 'g4f',
+    modelStr: 'deepinfra/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'NVIDIA 550B MoE via DeepInfra'
+  },
+  {
+    id: 'di-nemotron-3-nano-omni',
+    label: 'Nemotron Omni 30B',
+    engine: 'g4f',
+    modelStr: 'deepinfra/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'NVIDIA Omni Reasoning 30B via DeepInfra'
+  },
+
+  {
+    id: 'di-deepseek-v4-pro',
+    label: 'DeepSeek V4 pro',
+    engine: 'g4f',
+    modelStr: 'deepinfra/deepseek-ai/DeepSeek-V4-Flash',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Zap',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V4 Flash via DeepInfra'
+  },
+  {
+    id: 'di-kimi-k2.6',
+    label: 'Kimi K2.6',
+    engine: 'g4f',
+    modelStr: 'deepinfra/moonshotai/Kimi-K2.6',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Star',
+    iconColor: '#3b82f6',
+    description: 'Moonshot Kimi K2.6 via DeepInfra'
+  },
+  {
+    id: 'di-mimo-v2.5',
+    label: 'MiMo V2.5',
+    engine: 'g4f',
+    modelStr: 'deepinfra/XiaomiMiMo/MiMo-V2.5',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Xiaomi MiMo V2.5 via DeepInfra'
+  },
+  {
+    id: 'di-qwen-3.6-35b',
+    label: 'Qwen3.6 35B',
+    engine: 'g4f',
+    modelStr: 'deepinfra/Qwen/Qwen3.6-35B-A3B',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Alibaba Qwen3.6 35B via DeepInfra'
+  },
+  {
+    id: 'di-glm-5.1',
+    label: 'GLM-5.1',
+    engine: 'g4f',
+    modelStr: 'deepinfra/zai-org/GLM-5.1',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Z-AI GLM-5.1 via DeepInfra'
+  },
+  {
+    id: 'di-gemma-4-31b',
+    label: 'Gemma 4 31B',
+    engine: 'g4f',
+    modelStr: 'deepinfra/google/gemma-4-31B-it',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Star',
+    iconColor: '#3b82f6',
+    description: 'Google Gemma 4 31B via DeepInfra'
+  },
 
   // ── Auto-Scraped Models (from free-llm-api-keys GitHub repo) ──
   // Only models with verified working keys are listed here
@@ -374,17 +498,32 @@ export const AI_MODELS: AIModel[] = [
 ];
 
 // ─── Model Selection Helpers ───────────────────────────────────────
+// Clear saved model on page load/refresh so it always defaults to MiMo V2.5
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('inixa_ai_model');
+  } catch (e) { }
+}
+
 export const getSelectedModel = (): AIModel => {
-  const savedId = localStorage.getItem('inixa_ai_model');
-  if (savedId) {
-    const model = AI_MODELS.find(m => m.id === savedId);
-    if (model) return model;
+  if (typeof window !== 'undefined') {
+    try {
+      const savedId = localStorage.getItem('inixa_ai_model');
+      if (savedId) {
+        const model = AI_MODELS.find(m => m.id === savedId);
+        if (model) return model;
+      }
+    } catch (e) { }
   }
-  return AI_MODELS.find(m => m.id === 'auto-gemini-2.5-flash') || AI_MODELS[0];
+  return AI_MODELS.find(m => m.id === 'di-mimo-v2.5') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {
-  localStorage.setItem('inixa_ai_model', id);
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('inixa_ai_model', id);
+    } catch (e) { }
+  }
 };
 
 // ─── Image Generation (Pollinations — Free, no key) ────────────────
@@ -453,7 +592,7 @@ export const CF_WORKER_URL = 'https://divine-leaf-d1cf.antigravity4531.workers.d
 async function callPollinationsDirect(
   messages: any[],
   modelName: string,
-  onChunk?: (c: string) => void
+  onChunk?: (c: string, citations?: string[]) => void
 ): Promise<string> {
   console.log(`[Pollinations] Routing to CF Worker /pollinations with model: ${modelName}`);
 
@@ -534,11 +673,83 @@ async function callDDGDirect(
   return callPollinationsDirect(messages, 'openai', onChunk);
 }
 
+// ─── Helper: Handle SSE Streaming ─────────────────────────────────
+async function handleSSEStream(res: Response, onChunk: (c: string, citations?: string[]) => void): Promise<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let fullReply = '';
+  let buffer = '';
+  let citations: string[] | undefined = undefined;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let changed = false;
+    let boundary = buffer.indexOf('\n');
+    while (boundary !== -1) {
+      const line = buffer.slice(0, boundary).trim();
+      buffer = buffer.slice(boundary + 1);
+
+      if (line.startsWith('data: ')) {
+        const dataStr = line.slice(6).trim();
+        if (dataStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
+          const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
+          if (content) {
+            fullReply += content;
+            changed = true;
+          }
+        } catch (e) {
+          // Ignore partial JSON parsing errors if any
+        }
+      }
+      boundary = buffer.indexOf('\n');
+    }
+
+    if (changed) {
+      onChunk(fullReply, citations);
+    }
+  }
+  return fullReply || 'No response received from the AI model.';
+}
+
+// ─── Provider Rate Limit Cache Helpers ────────────────────────────
+function setProviderLimit(provider: string) {
+  try {
+    localStorage.setItem(`inixa_rate_limit_${provider}`, Date.now().toString());
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+}
+
+function checkProviderLimit(provider: string): boolean {
+  try {
+    const stored = localStorage.getItem(`inixa_rate_limit_${provider}`);
+    if (!stored) return false;
+
+    const timestamp = parseInt(stored, 10);
+    const ONE_HOUR = 60 * 60 * 1000;
+
+    if (Date.now() - timestamp < ONE_HOUR) {
+      return true; // Limit is active
+    } else {
+      localStorage.removeItem(`inixa_rate_limit_${provider}`); // Expired
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+}
+
 // ─── Main Chat Engine ─────────────────────────────────────────────
 // All requests go through our Next.js API route (/api/chat)
 export const aiChat = async (
   messages: any[],
-  onChunk?: (c: string) => void,
+  onChunk?: (c: string, citations?: string[]) => void,
   modelOverride?: any
 ): Promise<string> => {
   try {
@@ -577,6 +788,62 @@ export const aiChat = async (
       fetchUrl = `${CF_WORKER_URL}/v1/chat/completions`;
       console.log(`[aiChat] Direct routing via CF Worker: ${fetchUrl}`);
     } else if (model.engine === 'g4f') {
+      // ── Client-Side Direct Fetch Attempt (User IP) ──
+      let directEndpoint = '';
+      let directModelStr = '';
+
+      let provider = 'g4f';
+      if (modelStr.startsWith('deepinfra/')) {
+        directModelStr = modelStr.replace('deepinfra/', '');
+        directEndpoint = 'https://api.deepinfra.com/v1/openai/chat/completions';
+        provider = 'deepinfra';
+      } else if (modelStr.startsWith('qwen_worker/')) {
+        directModelStr = modelStr.replace('qwen_worker/', '');
+        directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+        provider = 'qwen_worker';
+      } else {
+        directModelStr = modelStr.replace('g4f/', '');
+        directEndpoint = 'https://g4f.space/v1/chat/completions';
+        provider = 'g4f';
+      }
+
+      if (checkProviderLimit(provider)) {
+        console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 1 hour.`);
+      } else {
+        console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
+        try {
+          const directRes = await fetch(directEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': onChunk ? 'text/event-stream' : 'application/json'
+            },
+            body: JSON.stringify({
+              messages: conversationHistory,
+              model: directModelStr,
+              stream: !!onChunk
+            })
+          });
+
+          if (directRes.ok) {
+            console.log(`[Frontend Fetch] Success from User IP!`);
+            if (onChunk && directRes.body) {
+              return await handleSSEStream(directRes, onChunk);
+            } else {
+              const data = await directRes.json();
+              return data.choices?.[0]?.message?.content || data.reply || '';
+            }
+          } else {
+            console.warn(`[Frontend Fetch] Failed with status ${directRes.status}. Falling back to Backend Proxy Pool...`);
+            setProviderLimit(provider);
+          }
+        } catch (err) {
+          console.warn(`[Frontend Fetch] Network error: ${err}. Falling back to Backend Proxy Pool...`);
+          setProviderLimit(provider);
+        }
+      } // End of else block for checkProviderLimit
+
+      // Fallback: Use our Backend Proxy Pool
       endpointPath = '/api/chat/g4f';
       fetchUrl = `${API_BASE}${endpointPath}`;
     } else {
@@ -586,7 +853,7 @@ export const aiChat = async (
 
     const res = await fetch(fetchUrl, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json'
         // Security update: Removed static secret. Backend now uses Origin + Rate Limiting.
       },
@@ -611,44 +878,7 @@ export const aiChat = async (
     }
 
     if (onChunk && res.body) {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let fullReply = '';
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let changed = false;
-        let boundary = buffer.indexOf('\n');
-        while (boundary !== -1) {
-          const line = buffer.slice(0, boundary).trim();
-          buffer = buffer.slice(boundary + 1);
-
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(dataStr);
-              const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
-              if (content) {
-                fullReply += content;
-                changed = true;
-              }
-            } catch (e) {
-              // Ignore partial JSON parsing errors if any
-            }
-          }
-          boundary = buffer.indexOf('\n');
-        }
-
-        if (changed) {
-          onChunk(fullReply);
-        }
-      }
-      return fullReply || 'No response received from the AI model.';
+      return await handleSSEStream(res, onChunk);
     }
 
     const data = await res.json();

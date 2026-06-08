@@ -316,7 +316,33 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
       let thinkContent = '';
       let answerContent = '';
 
-      const result = await aiChat(msgsForAI, (chunk) => {
+      let receivedSources: string[] = [];
+
+      const result = await aiChat(msgsForAI, (chunk, citations) => {
+         if (citations && citations.length > 0) {
+            receivedSources = citations;
+            // Map to SearchSource format
+            const mappedSources: SearchSource[] = citations.map((url, i) => {
+               try {
+                  const domain = new URL(url).hostname.replace('www.', '');
+                  return { title: domain, link: url, snippet: '', status: 'done' };
+               } catch {
+                  return { title: `Source ${i+1}`, link: url, snippet: '', status: 'done' };
+               }
+            });
+            setSearchSources(mappedSources);
+            
+            // Also append to the last message real-time
+            setMessages(prev => {
+               const newMsgs = [...prev];
+               newMsgs[newMsgs.length - 1] = {
+                  ...newMsgs[newMsgs.length - 1],
+                  sources: mappedSources
+               };
+               return newMsgs;
+            });
+         }
+
          setIsStreaming(true);
          const thinkMatch = chunk.match(/<think>([\s\S]*?)(?:<\/think>|$)/);
          if (thinkMatch) {
@@ -383,8 +409,27 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
     setMessages(msgsUpTo); setLoading(true); setIsStreaming(false); setStreamingText(''); setThinkingContent('');
     let answerContent = '';
     try { 
-      const r = await aiChat(msgsUpTo, (chunk) => {
-         setIsStreaming(true);
+      const r = await aiChat(msgsUpTo, (chunk, citations) => {
+        if (citations && citations.length > 0) {
+          const mappedSources: SearchSource[] = citations.map((url, i) => {
+             try {
+                const domain = new URL(url).hostname.replace('www.', '');
+                return { title: domain, link: url, snippet: '', status: 'done' };
+             } catch {
+                return { title: `Source ${i+1}`, link: url, snippet: '', status: 'done' };
+             }
+          });
+          setSearchSources(mappedSources);
+          setMessages(prev => {
+             const newMsgs = [...prev];
+             newMsgs[newMsgs.length - 1] = {
+                ...newMsgs[newMsgs.length - 1],
+                sources: mappedSources
+             };
+             return newMsgs;
+          });
+        }
+        setIsStreaming(true);
          answerContent = chunk.replace(/<think>[\s\S]*?<\/think>/g, '').trimStart();
          setStreamingText(answerContent);
       }); 

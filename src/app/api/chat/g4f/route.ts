@@ -259,9 +259,20 @@ export async function POST(req: Request) {
       return NextResponse.json(await backendRes.json());
     }
 
-    // 2. G4F Model Routing
-    if (model.startsWith('g4f/')) {
-      const g4fModel = model.replace('g4f/', '');
+    // 2. G4F / DeepInfra / Qwen Model Routing
+    if (model.startsWith('g4f/') || model.startsWith('deepinfra/') || model.startsWith('qwen_worker/')) {
+      let g4fModel = model;
+      let targetEndpoint = 'https://g4f.space/v1/chat/completions';
+      
+      if (model.startsWith('deepinfra/')) {
+        g4fModel = model.replace('deepinfra/', '');
+        targetEndpoint = 'https://api.deepinfra.com/v1/openai/chat/completions';
+      } else if (model.startsWith('qwen_worker/')) {
+        g4fModel = model.replace('qwen_worker/', '');
+        targetEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+      } else {
+        g4fModel = model.replace('g4f/', '');
+      }
       
       await refreshProxyPool();
       
@@ -269,8 +280,7 @@ export async function POST(req: Request) {
         throw new Error('No proxies available in the pool.');
       }
 
-      console.log(`[G4F-ProxyPool] Racing multiple proxies for model: ${g4fModel}`);
-      let targetEndpoint = 'https://g4f.space/v1/chat/completions';
+      console.log(`[ProxyPool] Racing multiple proxies for model: ${g4fModel} at ${targetEndpoint}`);
       
       // Grab 12 random proxies to race
       const numToRace = Math.min(12, proxyPool.length);
@@ -303,16 +313,18 @@ export async function POST(req: Request) {
               requestBody.provider = body.provider;
             }
 
+            const fetchHeaders: any = {
+              'Content-Type': 'application/json',
+              'Accept': stream ? 'text/event-stream' : 'application/json',
+              'Origin': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev' : 'https://g4f.dev'),
+              'Referer': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com/' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev/' : 'https://g4f.dev/'),
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'X-Forwarded-For': fakeIP
+            };
+
             const g4fRes = await nodeFetch(targetEndpoint, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': stream ? 'text/event-stream' : 'application/json',
-                'Origin': 'https://g4f.dev',
-                'Referer': 'https://g4f.dev/',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'X-Forwarded-For': fakeIP
-              },
+              headers: fetchHeaders,
               body: JSON.stringify(requestBody),
               agent: agent,
               signal: controller.signal as any
@@ -364,16 +376,18 @@ export async function POST(req: Request) {
           const requestBody: any = { ...body, model: g4fModel };
           if (body.provider) requestBody.provider = body.provider;
 
+          const fallbackHeaders: any = {
+            'Content-Type': 'application/json',
+            'Accept': stream ? 'text/event-stream' : 'application/json',
+            'Origin': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev' : 'https://g4f.dev'),
+            'Referer': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com/' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev/' : 'https://g4f.dev/'),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'X-Forwarded-For': fakeIP
+          };
+
           const directRes = await nodeFetch(targetEndpoint, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': stream ? 'text/event-stream' : 'application/json',
-              'Origin': 'https://g4f.dev',
-              'Referer': 'https://g4f.dev/',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-              'X-Forwarded-For': fakeIP
-            },
+            headers: fallbackHeaders,
             body: JSON.stringify(requestBody)
           });
 
