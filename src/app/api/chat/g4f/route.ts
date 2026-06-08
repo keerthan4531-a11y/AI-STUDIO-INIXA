@@ -63,7 +63,7 @@ async function refreshProxyPool() {
   }
 
   try {
-    console.log('[ProxyPool] Fetching fresh working SOCKS proxies from multiple sources...');
+    console.log('[ProxyPool] Fetching fresh working HTTP and SOCKS proxies from multiple sources...');
     const newProxies = new Set<string>();
 
     // Source 1: ProxyScrape SOCKS5
@@ -80,9 +80,16 @@ async function refreshProxyPool() {
       psText4.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`socks4://${p.trim()}`));
     } catch(e) {}
 
-    // Source 3: Geonode API SOCKS
+    // Source 3: ProxyScrape HTTP (High Quality)
     try {
-      const geoRes = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=socks5%2Csocks4');
+      const psResH = await nodeFetch('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=4000&country=all&ssl=yes&anonymity=anonymous,elite');
+      const psTextH = await psResH.text();
+      psTextH.split('\n').filter((l: string) => l.trim().length > 0).forEach((p: string) => newProxies.add(`http://${p.trim()}`));
+    } catch(e) {}
+
+    // Source 4: Geonode API SOCKS & HTTP
+    try {
+      const geoRes = await nodeFetch('https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=socks5%2Csocks4%2Chttp%2Chttps');
       const geoData = await geoRes.json();
       if (geoData && geoData.data) {
         geoData.data
@@ -96,21 +103,32 @@ async function refreshProxyPool() {
       proxyPool = Array.from(newProxies).sort(() => 0.5 - Math.random());
       lastProxyScrape = now;
       currentProxyIndex = 0;
-      console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast SOCKS proxies.`);
+      console.log(`[ProxyPool] Successfully loaded ${proxyPool.length} fast proxies (Mixed SOCKS/HTTP).`);
       return;
     }
 
-    // Source 4: Fallback TheSpeedX SOCKS5
+    // Source 5: Fallback TheSpeedX SOCKS5
     const fallbackRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt');
     const fallbackText = await fallbackRes.text();
     const lines = fallbackText.split('\n').filter((l: string) => l.trim().length > 0);
-    const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 200);
-    proxyPool = shuffled.map((p: string) => `socks5://${p.trim()}`);
+    const shuffled = lines.sort(() => 0.5 - Math.random()).slice(0, 100);
+    shuffled.forEach((p: string) => newProxies.add(`socks5://${p.trim()}`));
+    
+    // Source 6: Fallback TheSpeedX HTTP
+    try {
+      const fallbackHRes = await nodeFetch('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt');
+      const fallbackHText = await fallbackHRes.text();
+      const hLines = fallbackHText.split('\n').filter((l: string) => l.trim().length > 0);
+      const hShuffled = hLines.sort(() => 0.5 - Math.random()).slice(0, 100);
+      hShuffled.forEach((p: string) => newProxies.add(`http://${p.trim()}`));
+    } catch(e) {}
+
+    proxyPool = Array.from(newProxies).sort(() => 0.5 - Math.random());
     lastProxyScrape = now;
     currentProxyIndex = 0;
-    console.log(`[ProxyPool] Fallback loaded ${proxyPool.length} SOCKS5 proxies.`);
+    console.log(`[ProxyPool] Fallback loaded ${proxyPool.length} Mixed proxies.`);
   } catch (e) {
-    console.error('[ProxyPool] Error fetching SOCKS proxies:', e);
+    console.error('[ProxyPool] Error fetching proxies:', e);
   }
 }
 
@@ -290,6 +308,47 @@ export async function POST(req: Request) {
         // All raced proxies failed
         const errors = aggregateError.errors ? aggregateError.errors.join(' | ') : (aggregateError.message || aggregateError);
         console.error(`[Proxy-Race Failed] All ${numToRace} proxies failed. Errors: ${errors}`);
+
+        // ── Direct Fetch Fallback ──
+        console.log(`[Fallback] Trying direct fetch without proxies...`);
+        try {
+          const fakeIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+          const requestBody: any = { ...body, model: g4fModel };
+          if (body.provider) requestBody.provider = body.provider;
+
+          const directRes = await nodeFetch(targetEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': stream ? 'text/event-stream' : 'application/json',
+              'Origin': 'https://g4f.dev',
+              'Referer': 'https://g4f.dev/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'X-Forwarded-For': fakeIP
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (directRes.ok) {
+            console.log(`[Fallback] Direct fetch succeeded!`);
+            if (stream) {
+              const bodyStream = new ReadableStream({
+                start(controller) {
+                  (directRes.body as any).on('data', (chunk: Buffer) => controller.enqueue(chunk));
+                  (directRes.body as any).on('end', () => controller.close());
+                  (directRes.body as any).on('error', (err: Error) => controller.error(err));
+                },
+                cancel() { (directRes.body as any).destroy(); }
+              });
+              return new Response(bodyStream, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+            }
+            return NextResponse.json(await directRes.json());
+          } else {
+            console.error(`[Fallback] Direct fetch returned status ${directRes.status}`);
+          }
+        } catch (directErr: any) {
+          console.error(`[Fallback] Direct fetch also failed: ${directErr.message || directErr}`);
+        }
 
         // ── DeepSeek Fallback: DuckDuckGo AI Chat ──
         // g4f.space blocks DeepSeek with "Not authenticated", so we fallback to DDG
