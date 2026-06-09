@@ -334,7 +334,18 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#3b82f6',
     description: 'Xiaomi MiMo V2.5 Pro via DeepInfra'
   },
-
+  {
+    id: 'perplexity-turbo',
+    label: 'Perplexity Turbo',
+    engine: 'g4f',
+    modelStr: 'perplexity/turbo',
+    provider: 'Perplexity',
+    badge: 'SEARCH',
+    badgeColor: 'orange',
+    icon: 'Globe',
+    iconColor: '#f97316',
+    description: 'Perplexity Web Search (Real-time)'
+  },
   {
     id: 'di-qwen-3.6-35b',
     label: 'Qwen3.6 35B',
@@ -814,6 +825,10 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
+      } else if (modelStr.startsWith('perplexity/')) {
+        directModelStr = modelStr.replace('perplexity/', '');
+        directEndpoint = ''; // Do NOT fetch from frontend due to CORS Origin block
+        provider = 'perplexity';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
@@ -822,7 +837,7 @@ export const aiChat = async (
 
       if (checkProviderLimit(provider)) {
         console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 1 hour.`);
-      } else {
+      } else if (directEndpoint) {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
         try {
           const directRes = await fetch(directEndpoint, {
@@ -856,8 +871,12 @@ export const aiChat = async (
         }
       } // End of else block for checkProviderLimit
 
-      // Fallback: Use our Backend Proxy Pool
-      endpointPath = '/api/chat/g4f';
+      // Fallback: Use our Backend Proxy Pool or specific proxies
+      if (provider === 'perplexity') {
+        endpointPath = '/api/perplexity';
+      } else {
+        endpointPath = '/api/chat/g4f';
+      }
       fetchUrl = `${API_BASE}${endpointPath}`;
     } else {
       endpointPath = '/api/chat/completions';
