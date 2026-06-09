@@ -144,7 +144,28 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#f97316',
     description: 'Moonshot Kimi k2.6 via Proxy Pool'
   },
-
+  {
+    id: 'g4f-turbo',
+    label: 'Perplexity Turbo',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkopv2kp2e0038cdf550:turbo',
+    badge: 'SEARCH',
+    badgeColor: 'cyan',
+    icon: 'Globe',
+    iconColor: '#06b6d4',
+    description: 'Perplexity Turbo via Proxy Pool'
+  },
+  {
+    id: 'g4f-perplexity-fast',
+    label: 'Perplexity Fast',
+    engine: 'g4f',
+    modelStr: 'g4f/perplexity-fast',
+    badge: 'SEARCH LIVE',
+    badgeColor: 'green',
+    icon: 'Globe',
+    iconColor: '#10b981',
+    description: 'Real-time Web Search via G4F'
+  },
   {
     id: 'gemini-3.5-flash',
     label: 'Gemini 3.5 Flash',
