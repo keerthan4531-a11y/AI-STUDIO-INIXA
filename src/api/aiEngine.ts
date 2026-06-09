@@ -302,17 +302,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'Moonshot Kimi K2.6 via DeepInfra'
   },
   {
-    id: 'di-kimi-k2.5',
-    label: 'Kimi K2.5',
-    engine: 'g4f',
-    modelStr: 'deepinfra/moonshotai/Kimi-K2.5',
-    badge: 'DEEPINFRA',
-    badgeColor: 'blue',
-    icon: 'Star',
-    iconColor: '#3b82f6',
-    description: 'Moonshot Kimi K2.5 via DeepInfra'
-  },
-  {
     id: 'di-mimo-v2.5',
     label: 'MiMo V2.5',
     engine: 'g4f',
@@ -338,7 +327,7 @@ export const AI_MODELS: AIModel[] = [
     id: 'perplexity-turbo',
     label: 'Perplexity Turbo',
     engine: 'g4f',
-    modelStr: 'perplexity/turbo',
+    modelStr: 'turbo',
     provider: 'Perplexity',
     badge: 'SEARCH',
     badgeColor: 'orange',
@@ -825,9 +814,9 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
-      } else if (modelStr.startsWith('perplexity/')) {
-        directModelStr = modelStr.replace('perplexity/', '');
-        directEndpoint = ''; // Do NOT fetch from frontend due to CORS Origin block
+      } else if (modelStr === 'turbo' && model.provider === 'Perplexity') {
+        directModelStr = 'turbo';
+        directEndpoint = 'https://perplexity.g4f-dev.workers.dev/chat/completions';
         provider = 'perplexity';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
@@ -837,7 +826,7 @@ export const aiChat = async (
 
       if (checkProviderLimit(provider)) {
         console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 1 hour.`);
-      } else if (directEndpoint) {
+      } else {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
         try {
           const directRes = await fetch(directEndpoint, {
@@ -871,12 +860,8 @@ export const aiChat = async (
         }
       } // End of else block for checkProviderLimit
 
-      // Fallback: Use our Backend Proxy Pool or specific proxies
-      if (provider === 'perplexity') {
-        endpointPath = '/api/perplexity';
-      } else {
-        endpointPath = '/api/chat/g4f';
-      }
+      // Fallback: Use our Backend Proxy Pool
+      endpointPath = '/api/chat/g4f';
       fetchUrl = `${API_BASE}${endpointPath}`;
     } else {
       endpointPath = '/api/chat/completions';

@@ -260,7 +260,7 @@ export async function POST(req: Request) {
     }
 
     // 2. G4F / DeepInfra / Qwen Model Routing
-    if (model.startsWith('g4f/') || model.startsWith('deepinfra/') || model.startsWith('qwen_worker/')) {
+    if (model.startsWith('g4f/') || model.startsWith('deepinfra/') || model.startsWith('qwen_worker/') || model === 'turbo') {
       let g4fModel = model;
       let targetEndpoint = 'https://g4f.space/v1/chat/completions';
       
@@ -270,6 +270,9 @@ export async function POST(req: Request) {
       } else if (model.startsWith('qwen_worker/')) {
         g4fModel = model.replace('qwen_worker/', '');
         targetEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+      } else if (model === 'turbo') {
+        g4fModel = 'turbo';
+        targetEndpoint = 'https://perplexity.g4f-dev.workers.dev/chat/completions';
       } else {
         g4fModel = model.replace('g4f/', '');
       }
