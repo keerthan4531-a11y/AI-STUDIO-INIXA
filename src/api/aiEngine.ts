@@ -327,7 +327,7 @@ export const AI_MODELS: AIModel[] = [
     id: 'perplexity-turbo',
     label: 'Perplexity Turbo',
     engine: 'g4f',
-    modelStr: 'turbo',
+    modelStr: 'perplexity/turbo',
     provider: 'Perplexity',
     badge: 'SEARCH',
     badgeColor: 'orange',
@@ -814,6 +814,10 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
+      } else if (modelStr.startsWith('perplexity/')) {
+        directModelStr = modelStr.replace('perplexity/', '');
+        directEndpoint = 'https://perplexity.g4f-dev.workers.dev/chat/completions';
+        provider = 'perplexity';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
