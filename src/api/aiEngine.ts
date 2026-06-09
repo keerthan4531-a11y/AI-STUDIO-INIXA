@@ -302,6 +302,17 @@ export const AI_MODELS: AIModel[] = [
     description: 'Moonshot Kimi K2.6 via DeepInfra'
   },
   {
+    id: 'di-kimi-k2.5',
+    label: 'Kimi K2.5',
+    engine: 'g4f',
+    modelStr: 'deepinfra/moonshotai/Kimi-K2.5',
+    badge: 'DEEPINFRA',
+    badgeColor: 'blue',
+    icon: 'Star',
+    iconColor: '#3b82f6',
+    description: 'Moonshot Kimi K2.5 via DeepInfra'
+  },
+  {
     id: 'di-mimo-v2.5',
     label: 'MiMo V2.5',
     engine: 'g4f',
