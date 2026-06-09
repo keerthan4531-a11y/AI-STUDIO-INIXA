@@ -324,6 +324,18 @@ export const AI_MODELS: AIModel[] = [
     description: 'Xiaomi MiMo V2.5 Pro via DeepInfra'
   },
   {
+    id: 'perplexity-turbo',
+    label: 'Perplexity Turbo',
+    engine: 'g4f',
+    modelStr: 'turbo',
+    provider: 'Perplexity',
+    badge: 'SEARCH',
+    badgeColor: 'orange',
+    icon: 'Globe',
+    iconColor: '#f97316',
+    description: 'Perplexity Web Search (Real-time)'
+  },
+  {
     id: 'di-qwen-3.6-35b',
     label: 'Qwen3.6 35B',
     engine: 'g4f',
