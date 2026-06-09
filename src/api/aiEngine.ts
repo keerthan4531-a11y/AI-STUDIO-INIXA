@@ -313,6 +313,17 @@ export const AI_MODELS: AIModel[] = [
     description: 'Xiaomi MiMo V2.5 via DeepInfra'
   },
   {
+    id: 'di-mimo-v2.5-pro',
+    label: 'MiMo V2.5 Pro',
+    engine: 'g4f',
+    modelStr: 'deepinfra/XiaomiMiMo/MiMo-V2.5-Pro',
+    badge: 'PRO',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Xiaomi MiMo V2.5 Pro via DeepInfra'
+  },
+  {
     id: 'di-qwen-3.6-35b',
     label: 'Qwen3.6 35B',
     engine: 'g4f',
