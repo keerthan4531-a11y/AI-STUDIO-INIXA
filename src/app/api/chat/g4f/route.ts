@@ -260,7 +260,7 @@ export async function POST(req: Request) {
     }
 
     // 2. G4F / DeepInfra / Qwen Model Routing
-    if (model.startsWith('g4f/') || model.startsWith('deepinfra/') || model.startsWith('qwen_worker/')) {
+    if (model.startsWith('g4f/') || model.startsWith('deepinfra/') || model.startsWith('qwen_worker/') || model === 'fable-5') {
       let g4fModel = model;
       let targetEndpoint = 'https://g4f.space/v1/chat/completions';
       
@@ -270,6 +270,9 @@ export async function POST(req: Request) {
       } else if (model.startsWith('qwen_worker/')) {
         g4fModel = model.replace('qwen_worker/', '');
         targetEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+      } else if (model === 'fable-5') {
+        g4fModel = 'fable-5-pro-flagship';
+        targetEndpoint = 'https://fable-internal-sandbox.vercel.app/api/fable-v5';
       } else {
         g4fModel = model.replace('g4f/', '');
       }
@@ -321,6 +324,12 @@ export async function POST(req: Request) {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
               'X-Forwarded-For': fakeIP
             };
+            
+            if (targetEndpoint.includes('fable-internal-sandbox')) {
+              fetchHeaders['Authorization'] = 'Bearer sk_pro_institutional_dev_bypass_token';
+              fetchHeaders['X-Real-IP'] = fakeIP;
+              fetchHeaders['CF-Connecting-IP'] = fakeIP;
+            }
 
             const g4fRes = await nodeFetch(targetEndpoint, {
               method: 'POST',
