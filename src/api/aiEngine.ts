@@ -499,7 +499,7 @@ export const AI_MODELS: AIModel[] = [
 ];
 
 // ─── Model Selection Helpers ───────────────────────────────────────
-// Clear saved model on page load/refresh so it always defaults to MiMo V2.5
+// Clear saved model on page load/refresh so it always defaults to MiMo V2.5 Pro
 if (typeof window !== 'undefined') {
   try {
     localStorage.removeItem('inixa_ai_model');
