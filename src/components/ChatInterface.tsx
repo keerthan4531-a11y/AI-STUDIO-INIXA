@@ -531,26 +531,26 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
               >
                 {/* User message */}
                 {isUser && (
-                  <div className="flex justify-end mb-1">
-                    <div className="max-w-[85%] sm:max-w-[75%]">
+                  <div className="flex justify-end mb-1 w-full">
+                    <div className="max-w-[85%] sm:max-w-[75%] flex flex-col items-end">
                       {/* Attached files in user msg */}
                       {Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url') && (
-                        <div className="flex justify-end mb-2 gap-2 flex-wrap">
+                        <div className="flex justify-end mb-3 gap-2 flex-wrap">
                           {m.content.filter((c: any) => c.type === 'image_url').map((c: any, idx: number) => (
-                            <img key={idx} src={c.image_url.url} alt="" className="max-h-[160px] w-auto rounded-2xl border border-white/10 shadow-lg" />
+                            <img key={idx} src={c.image_url.url} alt="" className="max-h-[160px] w-auto rounded-2xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.2)] object-cover" />
                           ))}
                         </div>
                       )}
-                      <div className="bg-indigo-600 text-white px-4 py-3 rounded-2xl rounded-tr-md shadow-lg">
+                      <div className="bg-white/10 backdrop-blur-md text-white/95 px-5 py-3.5 rounded-3xl rounded-tr-sm shadow-sm border border-white/10 font-medium leading-relaxed">
                         <div className="user-message-markdown">
                           <MessageContent content={textContent.split('\n--- File:')[0].trim()} isCodex={!!isCodex} onOpenArtifact={(type, data, title) => setActiveArtifact({type, data, title})} />
                         </div>
                         {/* Show attached file names */}
                         {textContent.includes('--- File:') && (
-                          <div className="mt-2 pt-2 border-t border-white/20 flex flex-wrap gap-1.5">
+                          <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-2">
                             {textContent.match(/--- File: (.+?) ---/g)?.map((match, idx) => (
-                              <span key={idx} className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <FileText className="w-3 h-3" />{match.replace(/--- File: | ---/g, '')}
+                              <span key={idx} className="text-[11px] font-semibold bg-black/20 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-white/5">
+                                <FileText className="w-3.5 h-3.5 text-indigo-300" />{match.replace(/--- File: | ---/g, '')}
                               </span>
                             ))}
                           </div>
@@ -562,18 +562,18 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
 
                 {/* AI message - full width, centered like ChatGPT */}
                 {!isUser && (
-                  <div className="w-full">
+                  <div className="w-full flex flex-col items-start group">
                     {/* Model label */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                        <InixaLogo size={14} className="text-white" />
+                    <div className="flex items-center gap-3 mb-2 ml-1">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md border border-white/5">
+                        <InixaLogo size={16} className="text-white drop-shadow-sm" />
                       </div>
-                      <span className="text-[12px] font-semibold text-white/50">{currentModel.label}</span>
+                      <span className="text-[13px] font-bold text-white/70 tracking-wide">{currentModel.label}</span>
                     </div>
 
                     {/* Web Search Sources */}
                     {m.sources && m.sources.length > 0 && (
-                      <div className="pl-9 mb-4 pr-4">
+                      <div className="pl-11 mb-4 pr-4 w-full">
                         <WebSearchPanel isSearching={false} sources={m.sources} query="" />
                       </div>
                     )}
@@ -582,7 +582,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                     {m.thinking && <DeepThinkPanel thinkingContent={m.thinking} isThinking={false} modelName={currentModel.label} />}
 
                     {/* Response body - no bubble, clean like ChatGPT */}
-                    <div className="pl-9">
+                    <div className="pl-11 text-white/90 font-medium leading-relaxed w-full max-w-full">
                       <MessageContent content={textContent} isCodex={!!isCodex} onOpenArtifact={(type, data, title) => setActiveArtifact({type, data, title})} />
                     </div>
 

@@ -218,10 +218,10 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
                       <button
                         onClick={() => { onSelectSession?.(session.id); vibrate(15); }}
                         className={cn(
-                          "w-full px-2.5 py-2 text-[12px] rounded-lg text-left truncate transition-all font-medium pr-7",
+                          "w-full px-3 py-2.5 text-[12px] rounded-lg text-left truncate transition-all font-medium pr-8",
                           activeSessionId === session.id
-                            ? "bg-indigo-500/10 text-indigo-300"
-                            : "text-white/30 hover:text-white/60 hover:bg-white/[0.03]"
+                            ? "bg-white/10 text-white shadow-sm"
+                            : "text-white/40 hover:text-white hover:bg-white/[0.04]"
                         )}
                       >
                         {session.title || "New conversation"}

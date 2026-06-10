@@ -10,6 +10,7 @@
     "vibe-engine": "cd vibe-studio-bolt && npm run dev"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.69",
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
@@ -27,6 +28,7 @@
     "@splinetool/runtime": "^1.12.95",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/ws": "^8.18.1",
+    "ai": "^6.0.199",
     "cheerio": "^1.2.0",
     "chrome-cookies-secure": "^3.0.2",
     "class-variance-authority": "^0.7.1",
@@ -64,7 +66,6 @@
     "socks-proxy-agent": "^10.0.0",
     "tailwind-merge": "^3.6.0",
     "tough-cookie": "^6.0.1",
-    "undici": "^8.4.1",
     "uuid": "^14.0.0",
     "ws": "^8.21.0"
   },
