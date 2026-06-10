@@ -23,11 +23,10 @@ export async function POST(req: Request) {
       model: customProvider(requestedModel),
       messages,
       temperature: 0.7,
-      maxTokens: 4000,
     });
 
     // Return the streaming response directly to the client
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error('Vercel AI Route Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {

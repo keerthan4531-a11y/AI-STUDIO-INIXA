@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { HttpProxyAgent } from 'http-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { fetch as undiciFetch, Agent as UndiciAgent, setGlobalDispatcher } from 'undici';
 // @ts-ignore
 import nodeFetch from 'node-fetch';
 
@@ -316,20 +315,12 @@ export async function POST(req: Request) {
 
             const fetchHeaders: any = {
               'Content-Type': 'application/json',
-              'Accept': 'application/json, text/plain, */*',
-              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept': stream ? 'text/event-stream' : 'application/json',
               'Origin': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev' : 'https://g4f.dev'),
               'Referer': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com/' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev/' : 'https://g4f.dev/'),
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-              'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-              'Sec-Ch-Ua-Mobile': '?0',
-              'Sec-Ch-Ua-Platform': '"Windows"',
-              'Sec-Fetch-Dest': 'empty',
-              'Sec-Fetch-Mode': 'cors',
-              'Sec-Fetch-Site': 'same-site',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
               'X-Forwarded-For': fakeIP
             };
-
 
             const g4fRes = await nodeFetch(targetEndpoint, {
               method: 'POST',
@@ -387,17 +378,10 @@ export async function POST(req: Request) {
 
           const fallbackHeaders: any = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': stream ? 'text/event-stream' : 'application/json',
             'Origin': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev' : 'https://g4f.dev'),
             'Referer': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com/' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev/' : 'https://g4f.dev/'),
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             'X-Forwarded-For': fakeIP
           };
 

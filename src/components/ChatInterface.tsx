@@ -475,17 +475,13 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         
         {/* Landing */}
         {isLanding && !isPdfMode && (
-          <div className="flex flex-col items-center justify-center text-center mt-8 sm:mt-16 mb-8 space-y-7 max-w-3xl mx-auto px-4">
-            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-white/10 flex items-center justify-center shadow-[0_0_60px_rgba(99,102,241,0.15)] relative group cursor-default">
-              <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <InixaLogo size={36} className="text-white relative z-10 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+          <div className="flex flex-col items-center justify-center text-center mt-12 sm:mt-24 mb-8 space-y-6 max-w-2xl mx-auto px-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shadow-sm">
+              <InixaLogo size={24} className="text-white" />
             </motion.div>
-            <motion.h2 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="text-4xl sm:text-5xl lg:text-[64px] font-['Playfair_Display'] font-medium tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-white/90 to-white/60 leading-[1.1]">
-              Hi, {userName || 'there'}!
-            </motion.h2>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-lg sm:text-[22px] font-['DM_Sans'] text-white/40 tracking-wide">
+            <motion.h2 initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-2xl sm:text-3xl font-semibold text-white/90">
               How can I help you today?
-            </motion.p>
+            </motion.h2>
           </div>
         )}
 
@@ -681,9 +677,9 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
       {/* Input area */}
       <div className={cn(
         "z-[300] pointer-events-none transition-all",
-        isLanding ? "relative mt-4 mb-12 sm:mb-20 w-full max-w-3xl mx-auto px-4" : "absolute bottom-0 left-0 right-0"
+        isLanding ? "relative mt-4 mb-12 sm:mb-20 w-full max-w-3xl mx-auto px-4" : "absolute bottom-0 left-0 right-0 bg-[#212121]"
       )}>
-        <div className={cn("max-w-3xl mx-auto px-4 flex flex-col items-center gap-3", !isLanding && "pb-6 sm:pb-8 pt-6 bg-gradient-to-t from-[#0b0c14] via-[#0b0c14]/90 to-transparent")}>
+        <div className={cn("max-w-3xl mx-auto px-4 flex flex-col items-center gap-3", !isLanding && "pb-6 sm:pb-8 pt-6 bg-[#212121]")}>
           <div className="w-full pointer-events-auto flex flex-col gap-3">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,.pdf,.docx,.txt,.csv,.json,.md,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.log,.sql,.sh,.bat,.c,.cpp,.h,.java,.go,.rs,.rb,.php,.swift,.kt" className="hidden" multiple />
             
