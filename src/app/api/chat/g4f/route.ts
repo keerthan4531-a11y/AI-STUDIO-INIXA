@@ -387,10 +387,17 @@ export async function POST(req: Request) {
 
           const fallbackHeaders: any = {
             'Content-Type': 'application/json',
-            'Accept': stream ? 'text/event-stream' : 'application/json',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.9',
             'Origin': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev' : 'https://g4f.dev'),
             'Referer': targetEndpoint.includes('deepinfra') ? 'https://deepinfra.com/' : (targetEndpoint.includes('qwen') ? 'https://qwen.g4f-dev.workers.dev/' : 'https://g4f.dev/'),
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
             'X-Forwarded-For': fakeIP
           };
 

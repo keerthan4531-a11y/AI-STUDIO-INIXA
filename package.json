@@ -39,7 +39,7 @@
     "framer-motion": "^12.40.0",
     "got-scraping": "^4.2.1",
     "html2canvas": "^1.4.1",
-    "https-proxy-agent": "^9.0.0",
+    "https-proxy-agent": "^9.1.0",
     "katex": "^0.17.0",
     "localforage": "^1.10.0",
     "lucide-react": "^1.16.0",
@@ -64,6 +64,7 @@
     "socks-proxy-agent": "^10.0.0",
     "tailwind-merge": "^3.6.0",
     "tough-cookie": "^6.0.1",
+    "undici": "^8.4.1",
     "uuid": "^14.0.0",
     "ws": "^8.21.0"
   },
