@@ -57,18 +57,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'DeepSeek V4 Pro via Proxy Pool'
   },
   {
-    id: 'fable-5-pro',
-    label: 'Fable 5 Pro (Bypass)',
-    engine: 'g4f',
-    modelStr: 'fable-5',
-    provider: 'Fable',
-    badge: 'PRO',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Fable 5 Pro via Internal Staging Bypass'
-  },
-  {
     id: 'g4f-gemini-3-flash-preview',
     label: 'Gemini 3 Flash Preview',
     engine: 'g4f',
@@ -814,10 +802,6 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
-      } else if (modelStr === 'fable-5') {
-        directModelStr = 'fable-5-pro-flagship';
-        directEndpoint = 'https://fable-internal-sandbox.vercel.app/api/fable-v5';
-        provider = 'fable';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
