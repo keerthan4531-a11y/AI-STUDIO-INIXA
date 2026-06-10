@@ -57,6 +57,17 @@ export const AI_MODELS: AIModel[] = [
     description: 'DeepSeek V4 Pro via Proxy Pool'
   },
   {
+    id: 'fable-5-pro',
+    label: 'Claude Fable 5',
+    engine: 'g4f',
+    modelStr: 'g4f/anthropic/claude-fable-5',
+    badge: 'PRO',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Anthropic Fable 5 (OpenRouter / Proxy)'
+  },
+  {
     id: 'g4f-gemini-3-flash-preview',
     label: 'Gemini 3 Flash Preview',
     engine: 'g4f',
