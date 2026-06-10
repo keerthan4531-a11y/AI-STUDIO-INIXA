@@ -516,7 +516,7 @@ export const getSelectedModel = (): AIModel => {
       }
     } catch (e) { }
   }
-  return AI_MODELS.find(m => m.id === 'di-mimo-v2.5') || AI_MODELS[0];
+  return AI_MODELS.find(m => m.id === 'di-mimo-v2.5-pro') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {
