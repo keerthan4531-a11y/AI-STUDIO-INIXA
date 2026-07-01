@@ -120,10 +120,18 @@ export default function App() {
   };
 
   return (
-    <div className="h-[100dvh] bg-[#212121] text-white flex relative tracking-tight selection:bg-indigo-500/30 overflow-hidden font-sans">
+    <div className="h-[100dvh] bg-[#030712] text-white flex relative tracking-tight selection:bg-indigo-500/30 overflow-hidden font-sans">
+      {/* Static Premium Glass Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#030712]">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-500/10 blur-[150px] rounded-full" />
+        <div className="absolute top-[30%] right-[20%] w-[40%] h-[40%] bg-blue-500/5 blur-[150px] rounded-full" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')] opacity-[0.035] mix-blend-overlay" />
+      </div>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-        body { font-family: 'Inter', 'Plus Jakarta Sans', sans-serif; background-color: #212121; }
+        body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; background-color: #030712; }
         .font-serif { font-family: 'Playfair Display', serif; }
       `}</style>
 
@@ -132,25 +140,25 @@ export default function App() {
 
       <div className="flex-1 flex flex-col min-w-0 relative h-[100dvh]">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-5 py-4 bg-[#212121] border-b border-white/[0.08]">
+        <header className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-5 py-4 apple-glass border-b border-white/[0.05]">
           <div className="flex items-center gap-3">
             {user && (
-              <motion.button whileTap={{ scale: 0.9 }} onClick={toggleSidebar} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 mr-2 hover:bg-white/5 transition-colors">
-                {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <motion.button whileTap={{ scale: 0.9 }} onClick={toggleSidebar} className="w-9 h-9 rounded-xl apple-glass flex items-center justify-center text-white/60 mr-2">
+                {showSidebar ? <X className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
               </motion.button>
             )}
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl apple-glass-thick flex items-center justify-center">
               <InixaLogo size={20} className="text-white" />
             </div>
-            <h1 className="text-[15px] font-bold tracking-tight text-white">Inixa</h1>
+            <h1 className="text-[15px] font-black tracking-tight uppercase text-white">Inixa</h1>
           </div>
           {user && (
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setShowModelSelector(true)} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/5 border border-white/10 text-[11px] font-medium text-white/70 hover:text-white transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full apple-glass border border-white/10 text-[10px] font-bold text-white/40 hover:text-white transition-all"
               >
-                {currentModel.label.split(' ')[0]} <ChevronDown className="w-3 h-3 opacity-50" />
+                {currentModel.label.split(' ')[0]} <ChevronDown className="w-3 h-3 opacity-30" />
               </button>
             </div>
           )}

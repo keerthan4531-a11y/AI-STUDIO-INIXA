@@ -1,0 +1,9 @@
+name = "inixa-ai-gateway"
+main = "inixa-ai-gateway.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ENVIRONMENT = "production"
+# Optional: Set PUTER_API_KEY for Puter provider support
+# Get free key from: https://github.com/HeyPuter/puter-cli
+# PUTER_API_KEY = "your-puter-api-key-here"

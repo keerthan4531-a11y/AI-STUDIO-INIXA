@@ -223,12 +223,17 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
     } catch (error: unknown) {
       console.log(error);
 
+      if (error instanceof Response) {
+        return error;
+      }
+
       const errorResponse = {
         error: true,
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
+        message: error instanceof Error ? error.message : (error && typeof error === 'object' && 'message' in error ? String((error as any).message) : String(error)),
         statusCode: (error as any).statusCode || 500,
         isRetryable: (error as any).isRetryable !== false,
         provider: (error as any).provider || 'unknown',
+        stack: error instanceof Error ? error.stack : undefined,
       };
 
       if (error instanceof Error && error.message?.includes('API key')) {

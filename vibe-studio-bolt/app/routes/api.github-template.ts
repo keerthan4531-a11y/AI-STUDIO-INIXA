@@ -211,8 +211,12 @@ export async function loader({ request, context }: { request: Request; context: 
 
   try {
     // Access environment variables from Cloudflare context or process.env
-    const githubToken =
+    let githubToken =
       context?.cloudflare?.env?.GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_ACCESS_TOKEN;
+
+    if (githubToken === 'your_github_personal_access_token_here') {
+      githubToken = undefined;
+    }
 
     let fileList;
 

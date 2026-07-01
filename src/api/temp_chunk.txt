@@ -1,0 +1,674 @@
+// ── High Priority Missing Powerful Models ──
+  {
+    id: 'g4f-groq-gpt-oss-120b',
+    label: 'GPT-OSS 120B (Groq)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkom688d57c76d8a3542:openai/gpt-oss-120b',
+    badge: 'ULTRAFAST',
+    badgeColor: 'orange',
+    icon: 'Zap',
+    iconColor: '#f97316',
+    description: 'GPT Open Source 120B via Groq (Insanely fast)'
+  },
+  {
+    id: 'g4f-groq-llama-70b',
+    label: 'Llama 3.3 70B (Groq)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkom688d57c76d8a3542:llama-3.3-70b-versatile',
+    badge: 'ULTRAFAST',
+    badgeColor: 'orange',
+    icon: 'Zap',
+    iconColor: '#f97316',
+    description: 'Llama 3.3 70B via Groq (Fastest model)'
+  },
+  {
+    id: 'g4f-nvidia-nemotron-ultra-550b',
+    label: 'Nemotron Ultra 550B',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkombumpae45db46dcb8:nvidia/nemotron-3-ultra-550b-a55b',
+    badge: '550B',
+    badgeColor: 'red',
+    icon: 'Brain',
+    iconColor: '#ef4444',
+    description: 'Massive 550B model by NVIDIA'
+  },
+  {
+    id: 'g4f-qwen3-coder-480b',
+    label: 'Qwen3 Coder 480B',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:qwen3-coder:480b',
+    badge: '480B CODE',
+    badgeColor: 'blue',
+    icon: 'Code',
+    iconColor: '#3b82f6',
+    description: 'Massive 480B coding model by Alibaba'
+  },
+  {
+    id: 'g4f-qwen3-coder-next',
+    label: 'Qwen3 Coder Next',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:qwen3-coder-next',
+    badge: 'CODE NEXT',
+    badgeColor: 'blue',
+    icon: 'Code',
+    iconColor: '#3b82f6',
+    description: 'Next generation Qwen coding model'
+  },
+  {
+    id: 'g4f-kimi-k2-7-code',
+    label: 'Kimi K2.7 Code',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:kimi-k2.7-code',
+    badge: 'KIMI CODE',
+    badgeColor: 'orange',
+    icon: 'Code',
+    iconColor: '#f97316',
+    description: 'Specialized coding model from Moonshot AI'
+  },
+  {
+    id: 'g4f-glm-5-2',
+    label: 'GLM 5.2',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:glm-5.2',
+    badge: 'NEW',
+    badgeColor: 'purple',
+    icon: 'Brain',
+    iconColor: '#a855f7',
+    description: 'Latest GLM 5.2 model'
+  },
+  {
+    id: 'g4f-deepseek-v4-flash',
+    label: 'DeepSeek V4 Flash',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:deepseek-v4-flash',
+    badge: 'FAST',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Fast variant of DeepSeek V4'
+  },
+  {
+    id: 'g4f-openrouter-free',
+    label: 'OpenRouter Auto (Free)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_monk1pkz433a519ff2be:openrouter/free',
+    badge: 'AUTO',
+    badgeColor: 'cyan',
+    icon: 'Globe',
+    iconColor: '#06b6d4',
+    description: 'Automatically routes to the best free model'
+  },
+  {
+    id: 'g4f-nvidia-nemotron-nano-30b',
+    label: 'Nemotron Nano 30B',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkombumpae45db46dcb8:nvidia/nemotron-3-nano-30b-a3b',
+    badge: 'FAST',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Super fast lightweight 30B model by NVIDIA'
+  },
+  {
+    id: 'g4f-openrouter-nemotron-super-120b',
+    label: 'Nemotron Super 120B (Free)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_monk1pkz433a519ff2be:nvidia/nemotron-3-super-120b-a12b:free',
+    badge: '120B FREE',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Massive 120B free model via OpenRouter'
+  },
+  {
+    id: 'g4f-poolside-laguna',
+    label: 'Poolside Laguna M.1',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_monk1pkz433a519ff2be:poolside/laguna-m.1:free',
+    badge: 'CODE',
+    badgeColor: 'blue',
+    icon: 'Code',
+    iconColor: '#3b82f6',
+    description: 'New coding-focused model'
+  },
+  {
+    id: 'g4f-mistral-large-675b-nvidia',
+    label: 'Mistral Large 675B (NVIDIA)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mkombumpae45db46dcb8:mistralai/mistral-large-3-675b-instruct-2512',
+    badge: '675B',
+    badgeColor: 'red',
+    icon: 'Brain',
+    iconColor: '#ef4444',
+    description: 'Massive 675B model via NVIDIA server'
+  },
+  {
+    id: 'g4f-qwen-3-7-max-official',
+    label: 'Qwen 3.7 Max (Official)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mpq6idkk49907f3c4a5b:qwen3.7-max',
+    badge: 'MAX',
+    badgeColor: 'violet',
+    icon: 'Star',
+    iconColor: '#8b5cf6',
+    description: 'Qwen 3.7 Max official endpoint'
+  },
+  {
+    id: 'g4f-ollama-deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro (Ollama)',
+    engine: 'g4f',
+    modelStr: 'g4f/srv_mp2i8rco3148dd85bec1:deepseek-v4-pro',
+    badge: 'PRO',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V4 Pro via Ollama Pro'
+  }
+];
+
+// ─── Model Selection Helpers ───────────────────────────────────────
+// Clear saved model on page load/refresh so it always defaults to Grok Large
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('inixa_ai_model');
+  } catch (e) { }
+}
+
+export const getSelectedModel = (): AIModel => {
+  if (typeof window !== 'undefined') {
+    try {
+      const savedId = localStorage.getItem('inixa_ai_model');
+      if (savedId) {
+        const model = AI_MODELS.find(m => m.id === savedId);
+        if (model) return model;
+      }
+    } catch (e) { }
+  }
+  return AI_MODELS.find(m => m.id === 'g4f-grok-large') || AI_MODELS[0];
+};
+
+export const setSelectedModel = (id: string) => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('inixa_ai_model', id);
+    } catch (e) { }
+  }
+};
+
+// ─── Image Generation (Pollinations — Free, no key) ────────────────
+export type ImageModelType = 'flux' | 'flux-realism' | 'any-dark' | 'flux-anime' | 'flux-3d' | 'turbo-v';
+
+export const IMAGE_MODELS: { id: ImageModelType; label: string }[] = [
+  { id: 'flux', label: 'FLUX.1 Pro (Ultimate)' },
+  { id: 'flux-realism', label: 'FLUX.1 Realism (Ultra)' },
+  { id: 'flux-anime', label: 'FLUX Anime (Stylized)' },
+  { id: 'flux-3d', label: 'FLUX 3D (Rendered)' },
+  { id: 'any-dark', label: 'Cinematic Dark (Elite)' },
+  { id: 'turbo-v', label: 'DreamShaper Fast' },
+];
+
+export const aiGenerateImageWithProgress = async (
+  prompt: string,
+  onProgress?: (pct: number) => void,
+  options?: { width?: number; height?: number; seed?: number; model?: ImageModelType }
+): Promise<string> => {
+  // Simulate progress
+  if (onProgress) {
+    let p = 0;
+    const interval = setInterval(() => {
+      p += 15;
+      if (p >= 90) clearInterval(interval);
+      onProgress(Math.min(p, 90));
+    }, 500);
+  }
+
+  const { width = 1024, height = 1024, seed = Math.floor(Math.random() * 99999), model = 'flux' } = options || {};
+
+  const headers = await createSignedHeaders({ prompt, model, width, height, seed });
+  headers['Content-Type'] = 'application/json';
+
+  const response = await fetch(`/api/generate-image`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt, model, width, height, seed })
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Image generation failed';
+    try {
+      const errData = await response.json();
+      if (errData.error) errorMsg = errData.error;
+    } catch (e) {
+      // Ignore parse error
+    }
+    throw new Error(errorMsg);
+  }
+
+  const blob = await response.blob();
+  if (onProgress) onProgress(100);
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+// ─── Direct CF Worker Calls Removed for Security ──────────────────
+
+// ─── Helper: Handle SSE Streaming ─────────────────────────────────
+async function handleSSEStream(res: Response, onChunk: (c: string, citations?: string[]) => void): Promise<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let fullReply = '';
+  let buffer = '';
+  let citations: string[] | undefined = undefined;
+
+  let hasStartedThinking = false;
+  let hasFinishedThinking = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let changed = false;
+    let boundary = buffer.indexOf('\n');
+    while (boundary !== -1) {
+      const line = buffer.slice(0, boundary).trim();
+      buffer = buffer.slice(boundary + 1);
+
+      if (line.startsWith('data: ')) {
+        const dataStr = line.slice(6).trim();
+        if (dataStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
+
+          const delta = parsed.choices?.[0]?.delta || {};
+          const msgContent = delta.content || parsed.message || '';
+          const reasoningContent = delta.reasoning_content || delta.reasoning || '';
+
+          if (reasoningContent) {
+            if (!hasStartedThinking) {
+              fullReply += '<think>\n';
+              hasStartedThinking = true;
+            }
+            fullReply += reasoningContent;
+            changed = true;
+          }
+
+          if (msgContent) {
+            if (hasStartedThinking && !hasFinishedThinking) {
+              fullReply += '\n</think>\n\n';
+              hasFinishedThinking = true;
+            }
+            fullReply += msgContent;
+            changed = true;
+          }
+        } catch (e) {
+          // Ignore partial JSON parsing errors if any
+        }
+      }
+      boundary = buffer.indexOf('\n');
+    }
+
+    if (changed) {
+      onChunk(fullReply, citations);
+    }
+  }
+
+  if (hasStartedThinking && !hasFinishedThinking) {
+    fullReply += '\n</think>\n';
+  }
+
+  return fullReply || 'No response received from the AI model.';
+}
+
+// ─── Provider Rate Limit Cache Helpers ────────────────────────────
+function setProviderLimit(provider: string) {
+  try {
+    localStorage.setItem(`inixa_rate_limit_${provider}`, Date.now().toString());
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+}
+
+function checkProviderLimit(provider: string): boolean {
+  try {
+    const stored = localStorage.getItem(`inixa_rate_limit_${provider}`);
+    if (!stored) return false;
+
+    const timestamp = parseInt(stored, 10);
+    const ONE_HOUR = 60 * 60 * 1000;
+
+    if (Date.now() - timestamp < ONE_HOUR) {
+      return true; // Limit is active
+    } else {
+      localStorage.removeItem(`inixa_rate_limit_${provider}`); // Expired
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+}
+
+// ─── Direct Client-Side Provider Fetch ────────────────────────────
+async function attemptDirectClientCall(
+  modelStr: string,
+  messages: any[],
+  stream: boolean
+): Promise<Response> {
+  const reqBody = {
+    model: modelStr,
+    messages: messages,
+    stream: stream
+  };
+
+  if (modelStr.startsWith('unlimited/')) {
+    const actualModel = modelStr.replace('unlimited/', '');
+    return fetch('https://fancy-hall-310d.bearinthenorth29.workers.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: actualModel })
+    });
+  }
+
+  if (modelStr.startsWith('unlimited/')) {
+    const actualModel = modelStr.replace('unlimited/', '');
+    return fetch('https://fancy-hall-310d.bearinthenorth29.workers.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: actualModel })
+    });
+  }
+
+
+
+  if (modelStr.startsWith('qwen_worker/')) {
+    const qwenModel = modelStr.replace('qwen_worker/', '');
+    return fetch('https://qwen.g4f-dev.workers.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: qwenModel })
+    });
+  }
+
+  if (modelStr.startsWith('poll/')) {
+    return fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: 'openai' })
+    });
+  }
+
+  if (modelStr.startsWith('ddg/')) {
+    const ddgModel = modelStr.replace('ddg/', '');
+    const statusRes = await fetch('https://duckduckgo.com/duckchat/v1/status', {
+      headers: { 'x-vqd-accept': '1' }
+    });
+    const vqd = statusRes.headers.get('x-vqd-4');
+    if (!vqd) throw new Error('Failed to fetch DDG VQD token');
+
+    return fetch('https://duckduckgo.com/duckchat/v1/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-vqd-4': vqd,
+        'Accept': stream ? 'text/event-stream' : 'application/json'
+      },
+      body: JSON.stringify({ model: ddgModel, messages: messages })
+    });
+  }
+
+  if (modelStr.startsWith('auto/')) {
+    return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody)
+    });
+  }
+
+  if (modelStr.startsWith('qwen-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_QWEN_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side QWEN_FREE_API_URL not configured. Routing through server instead.');
+    const qwenModel = modelStr.replace('qwen-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: qwenModel })
+    });
+  }
+
+  if (modelStr.startsWith('kimi-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_KIMI_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side KIMI_FREE_API_URL not configured. Routing through server instead.');
+    const kimiModel = modelStr.replace('kimi-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: kimiModel })
+    });
+  }
+
+  if (modelStr.startsWith('glm-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_GLM_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side GLM_FREE_API_URL not configured. Routing through server instead.');
+    const glmModel = modelStr.replace('glm-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: glmModel })
+    });
+  }
+
+  if (modelStr.startsWith('step-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_STEP_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side STEP_FREE_API_URL not configured. Routing through server instead.');
+    const stepModel = modelStr.replace('step-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: stepModel })
+    });
+  }
+
+  if (modelStr.startsWith('spark-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_SPARK_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side SPARK_FREE_API_URL not configured. Routing through server instead.');
+    const sparkModel = modelStr.replace('spark-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: sparkModel })
+    });
+  }
+
+  if (modelStr.startsWith('metaso-free/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_METASO_FREE_API_URL;
+    if (!baseUrl) throw new Error('Client-side METASO_FREE_API_URL not configured. Routing through server instead.');
+    const metasoModel = modelStr.replace('metaso-free/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: metasoModel })
+    });
+  }
+
+  if (modelStr.startsWith('parallel-chat/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_PARALLEL_CHAT_URL;
+    if (!baseUrl) throw new Error('Client-side PARALLEL_CHAT_URL not configured. Routing through server instead.');
+    const targetModel = modelStr.replace('parallel-chat/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: targetModel })
+    });
+  }
+
+  if (modelStr.startsWith('coze/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_COZE_PROXY_URL;
+    if (!baseUrl) throw new Error('Client-side COZE_PROXY_URL not configured. Routing through server instead.');
+    const targetModel = modelStr.replace('coze/', '');
+    return fetch(`${baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: targetModel })
+    });
+  }
+
+  if (modelStr.startsWith('g4f/')) {
+    const g4fModel = modelStr.replace('g4f/', '');
+    return fetch('https://g4f.space/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: g4fModel })
+    });
+  }
+
+  if (modelStr.startsWith('gemini/')) {
+    const geminiModel = modelStr.replace('gemini/', '');
+    return fetch(`https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reqBody, model: geminiModel })
+    });
+  }
+
+  throw new Error(`No direct endpoint mapped for ${modelStr}`);
+}
+
+// ─── Main Chat Engine ─────────────────────────────────────────────
+// All requests go through our Next.js API route (/api/chat)
+export const aiChat = async (
+  messages: any[],
+  onChunk?: (c: string, citations?: string[]) => void,
+  modelOverride?: any
+): Promise<string> => {
+  try {
+    const model = modelOverride || getSelectedModel();
+
+    // Extract the text content from the last message
+    const lastMessage = messages[messages.length - 1];
+
+    // Sanitize user inputs
+    const safeMessages = messages.map(m => {
+      let safeContent = m.content;
+      if (m.role === 'user' && typeof m.content === 'string') {
+        safeContent = sanitizeInput(m.content);
+      }
+      return { ...m, content: safeContent };
+    });
+
+    // Build full conversation history for context
+    const conversationHistory = safeMessages.map(m => ({
+      role: m.role as string,
+      content: typeof m.content === 'string'
+        ? m.content
+        : Array.isArray(m.content)
+          ? m.content.filter((c: any) => c.type === 'text').map((c: any) => c.text).join('\n')
+          : String(m.content)
+    }));
+
+    const modelStr = model.modelStr;
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
+    // Route everything internally to Next.js API routes
+    let endpointPath = '/api/chat/completions';
+    if (model.engine === 'g4f' || modelStr.startsWith('g4f/') || modelStr.startsWith('qwen_worker/')) {
+      endpointPath = '/api/chat/g4f';
+    }
+    const fetchUrl = `${API_BASE}${endpointPath}`;
+
+    // --- Try direct client-side fetch first (User IP) ---
+    try {
+      console.log(`[Client Fetch] Attempting direct fetch for ${model.label}...`);
+      const directResponse = await attemptDirectClientCall(modelStr, conversationHistory, !!onChunk);
+
+      if (directResponse.ok) {
+        console.log(`[Client Fetch] Direct fetch successful for ${model.label}!`);
+
+        if (onChunk && directResponse.body) {
+          return await handleSSEStream(directResponse, onChunk);
+        }
+
+        const data = await directResponse.json();
+        const reply = data.choices?.[0]?.message?.content || data.reply || '';
+        const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
+        if (reasoning) {
+          return `<think>\n${reasoning}\n</think>\n\n${reply}`;
+        }
+        if (reply) return reply;
+      } else {
+        console.warn(`[Client Fetch] Direct fetch returned ${directResponse.status}, falling back...`);
+      }
+    } catch (e) {
+      console.warn(`[Client Fetch Failed] Falling back to backend proxy. Reason:`, e);
+    }
+    // ----------------------------------------------------
+
+    const bodyData = {
+      messages: conversationHistory,
+      model: modelStr,
+      provider: model.provider,
+      stream: !!onChunk
+    };
+
+    const secureHeaders = await createSignedHeaders(bodyData);
+    secureHeaders['Content-Type'] = 'application/json';
+
+    const res = await fetch(fetchUrl, {
+      method: 'POST',
+      headers: secureHeaders,
+      body: JSON.stringify(bodyData)
+    });
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        return '⚠️ Rate limit exceeded. Please wait a moment and try again.';
+      }
+      try {
+        const errorData = await res.json();
+        if (errorData.reply) return errorData.reply;
+        if (errorData.error) return `⚠️ API Error: ${errorData.error}`;
+      } catch { }
+      return `❌ Error: Server returned ${res.status}.`;
+    }
+
+    if (onChunk && res.body) {
+      return await handleSSEStream(res, onChunk);
+    }
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content || data.reply || '';
+    const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
+    if (reasoning) {
+      return `<think>\n${reasoning}\n</think>\n\n${reply}`;
+    }
+    return reply || 'No response received from the AI model.';
+  } catch (e) {
+    console.error('Chat API Error', e);
+    return '❌ Connection failed. Please try a different model or check your connection.';
+  }
+};
+
+// ─── Web Search & Scrape ─────────────────────────────────────────────
+export const aiWebSearch = async (query: string): Promise<any[]> => {
+  try {
+    const safeQuery = sanitizeInput(query);
+    const bodyData = { query: safeQuery };
+    const secureHeaders = await createSignedHeaders(bodyData);
+    secureHeaders['Content-Type'] = 'application/json';
+
+    const res = await fetch(`/api/web-search`, {
+      method: 'POST',
+      headers: secureHeaders,
+      body: JSON.stringify(bodyData)
+    });
+    const data = await res.json();
+    if (data.ok && data.results) return data.results;
+  } catch (e) {
+    console.error('Web Search Error:', e);
+  }
+  return [

@@ -1,0 +1,10 @@
+[2026-06-13T07:51:01.101Z] kimi-k2.5 error: TypeError: fetch failed | TypeError: fetch failed
+[2026-06-13T09:01:00.330Z] claude-opus-4-7 error: Error: All proxies failed for key index 0
+[2026-06-14T18:27:31.832Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2 | Error: All proxies failed for key index 3 | Error: All proxies failed for key index 4 | Error: All proxies failed for key index 5
+[2026-06-19T14:15:31.771Z] kimi-k2.5 error: Error: All proxies failed for key index 0
+[2026-06-22T12:41:15.131Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2 | Error: All proxies failed for key index 3 | Error: All proxies failed for key index 4
+[2026-06-22T12:46:19.504Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2 | Error: All proxies failed for key index 3 | Error: All proxies failed for key index 4
+[2026-06-22T12:50:31.025Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2 | Error: All proxies failed for key index 3 | Error: All proxies failed for key index 4
+[2026-06-22T13:00:08.132Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2
+[2026-06-22T13:04:43.594Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2
+[2026-06-22T13:09:36.844Z] claude-opus-4-7 error: Error: All proxies failed for key index 0 | Error: All proxies failed for key index 1 | Error: All proxies failed for key index 2

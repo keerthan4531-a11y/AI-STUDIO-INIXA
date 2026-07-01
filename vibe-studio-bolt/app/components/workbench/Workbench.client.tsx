@@ -40,7 +40,7 @@ interface WorkspaceProps {
   setSelectedElement?: (element: ElementInfo | null) => void;
 }
 
-const viewTransition = { ease: cubicEasingFn };
+const viewTransition = { ease: cubicEasingFn, duration: 0.1 };
 
 const sliderOptions: SliderOptions<WorkbenchViewType> = {
   left: {
@@ -61,14 +61,14 @@ const workbenchVariants = {
   closed: {
     width: 0,
     transition: {
-      duration: 0.2,
+      duration: 0.1,
       ease: cubicEasingFn,
     },
   },
   open: {
     width: 'var(--workbench-width)',
     transition: {
-      duration: 0.2,
+      duration: 0.1,
       ease: cubicEasingFn,
     },
   },

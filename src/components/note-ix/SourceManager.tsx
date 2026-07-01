@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Notebook, NoteSource } from './NoteIXTypes';
 import { Plus, FileText, Globe, Image as ImageIcon, Music, Video, Book } from 'lucide-react';
-import { CF_WORKER_URL } from '../../api/aiEngine';
+// Removed CF_WORKER_URL import
 import { UploadSourcesModal } from './UploadSourcesModal';
 
 export function SourceManager({ notebook, setNotebook }: { notebook: Notebook; setNotebook: React.Dispatch<React.SetStateAction<Notebook>> }) {
@@ -72,14 +72,12 @@ export function SourceManager({ notebook, setNotebook }: { notebook: Notebook; s
             }
             parsedText = fullText;
           } else {
-            // Fallback to cloudflare worker for non-PDFs if needed, or decode locally
-            const response = await fetch(`${CF_WORKER_URL}/parse-document`, {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch(`/api/parse-document`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                mimeType: file.type || 'text/plain',
-                base64Data
-              })
+              body: formData,
             });
             const result = await response.json();
             if (!result.ok) throw new Error(result.error || 'Parsing failed');

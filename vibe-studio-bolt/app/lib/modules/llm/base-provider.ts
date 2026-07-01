@@ -173,9 +173,17 @@ export abstract class BaseProvider implements ProviderInfo {
 type OptionalApiKey = string | undefined;
 
 export function getOpenAILikeModel(baseURL: string, apiKey: OptionalApiKey, model: string) {
+  const timestamp = String(Date.now());
+  const signature = btoa(`fallback:${timestamp}:inixa-app-v2`);
+
   const openai = createOpenAI({
     baseURL,
     apiKey,
+    headers: {
+      'X-Timestamp': timestamp,
+      'X-App-Signature': signature,
+      'X-Device-Id': 'vibe-studio-bolt',
+    },
   });
 
   return openai(model);

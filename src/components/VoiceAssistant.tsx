@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Volume2, VolumeX, Send, Loader2, X, Settings2, ChevronDown } from 'lucide-react';
-import { aiChat, getSelectedModel, AI_MODELS, AIModel, CF_WORKER_URL } from '../api/aiEngine';
+import { aiChat, getSelectedModel, AI_MODELS, AIModel } from '../api/aiEngine';
 
 // ═══════════════════════════════════════════════════════════════════
 // 🎙️ Voice Assistant — Talk to AI, hear it respond
@@ -170,7 +170,7 @@ export default function VoiceAssistant() {
             formData.append('file', audioBlob, 'audio.webm');
             formData.append('model', 'whisper-large-v3-turbo');
             
-            const res = await fetch(`${CF_WORKER_URL}/v1/audio/transcriptions`, {
+            const res = await fetch(`/api/transcribe`, {
               method: 'POST',
               body: formData
             });

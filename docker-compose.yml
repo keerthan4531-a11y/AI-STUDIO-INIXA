@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  presenton:
+    image: ghcr.io/presenton/presenton:latest
+    container_name: presenton
+    ports:
+      - "5000:80"
+    environment:
+      - LLM=custom
+      - CUSTOM_LLM_URL=http://host.docker.internal:3000/api/presenton
+      - CUSTOM_LLM_API_KEY=no-key
+      - CUSTOM_MODEL=g4f/srv_mkoloq41e34074b6133e:grok
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD=adminpassword
+      - AUTH_OVERRIDE_FROM_ENV=true
+    volumes:
+      - ./presenton_data:/app_data
+    restart: unless-stopped
+
+  qwen-free-api:
+    image: vinlic/qwen-free-api:latest
+    container_name: qwen-free-api
+    platform: linux/amd64
+    ports:
+      - "8000:8000"
+    environment:
+      - REFRESH_TOKEN=${QWEN_REFRESH_TOKEN}
+    restart: unless-stopped
+
+  kimi-free-api:
+    image: vinlic/kimi-free-api:0.0.33
+    container_name: kimi-free-api
+    platform: linux/amd64
+    ports:
+      - "8001:8000"
+    environment:
+      - REFRESH_TOKEN=${KIMI_REFRESH_TOKEN}
+    restart: unless-stopped
+
+  glm-free-api:
+    image: vinlic/glm-free-api:latest
+    container_name: glm-free-api
+    platform: linux/amd64
+    ports:
+      - "8002:8000"
+    environment:
+      - REFRESH_TOKEN=${GLM_REFRESH_TOKEN}
+    restart: unless-stopped
+
+  step-free-api:
+    image: vinlic/step-free-api:0.0.10
+    container_name: step-free-api
+    platform: linux/amd64
+    ports:
+      - "8003:8000"
+    environment:
+      - REFRESH_TOKEN=${STEP_REFRESH_TOKEN}
+    restart: unless-stopped
+
+  spark-free-api:
+    image: vinlic/spark-free-api:latest
+    container_name: spark-free-api
+    platform: linux/amd64
+    ports:
+      - "8004:8000"
+    environment:
+      - REFRESH_TOKEN=${SPARK_REFRESH_TOKEN}
+    restart: unless-stopped
+
+  metaso-free-api:
+    image: vinlic/metaso-free-api:latest
+    container_name: metaso-free-api
+    platform: linux/amd64
+    ports:
+      - "8005:8000"
+    environment:
+      - REFRESH_TOKEN=${METASO_REFRESH_TOKEN}
+    restart: unless-stopped

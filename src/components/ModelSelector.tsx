@@ -42,7 +42,8 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
   const filteredModels = AI_MODELS.filter(m => {
     if (filter === 'all') return true;
     if (filter === 'puter') return m.engine === 'puter';
-    if (filter === 'free') return m.badge === 'FREE' || m.badge === 'DDG' || m.badge === 'POLL';
+    if (filter === 'chinese') return m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE' || m.engine.endsWith('-free') || m.engine === 'parallel-chat' || m.engine === 'coze-proxy';
+    if (filter === 'free') return m.badge === 'FREE' || m.badge === 'DDG' || m.badge === 'POLL' || m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE';
     if (filter === 'premium') return m.engine === 'llm7' || m.badge === 'PRO' || m.badge === 'ULTRA';
     return m.engine === filter;
   });
@@ -79,6 +80,7 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
         <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto hide-scrollbar bg-white/[0.02] border-b border-white/[0.05]">
           {[
             { id: 'all', label: 'All Models' },
+            { id: 'chinese', label: 'Chinese Proxies' },
             { id: 'puter', label: 'Puter Elite' },
             { id: 'premium', label: 'Premium' },
             { id: 'free', label: 'Free Models' }

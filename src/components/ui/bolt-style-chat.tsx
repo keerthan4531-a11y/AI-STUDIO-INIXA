@@ -96,7 +96,8 @@ export const BoltStyleChatInput = React.forwardRef((props: BoltStyleChatInputPro
 
   return (
     <div className={cn("relative w-full max-w-3xl mx-auto", className)}>
-      <div className="relative rounded-2xl bg-[#2F2F2F] border border-white/10 shadow-sm">
+      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
+      <div className="relative rounded-2xl bg-[#1e1e22] ring-1 ring-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_2px_20px_rgba(0,0,0,0.4)]">
         
         {/* Textarea */}
         <div className="relative">
@@ -106,7 +107,7 @@ export const BoltStyleChatInput = React.forwardRef((props: BoltStyleChatInputPro
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full resize-none bg-transparent text-[15px] sm:text-[16px] text-white/90 placeholder-white/40 px-4 pt-4 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
+            className="w-full resize-none bg-transparent text-[15px] sm:text-[16px] text-white placeholder-[#5a5a5f] px-5 pt-5 pb-3 focus:outline-none min-h-[80px] max-h-[200px]"
             style={{ height: '80px' }}
           />
         </div>

@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import { refreshProxyPool, getNextProxy, getCachedWorkingProxy, setCachedWorkingProxy, getProxyPool } from '@/lib/proxyPool';
+import { HttpProxyAgent } from 'http-proxy-agent';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import { SocksProxyAgent } from 'socks-proxy-agent';
+import nodeFetch from 'node-fetch';
 
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route — Forwards to 9router (decolua)
@@ -24,7 +29,7 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
     const entries: ScrapedKeyEntry[] = [];
 
     // Parse table rows: | `sk-XXX` | model-name | ... |
-    const tableRowRegex = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._-]+)\s*\|/g;
+    const tableRowRegex = /\|\s*`(sk-[a-zA-Z0-9_-]+)`\s*\|\s*([a-zA-Z0-9._\/-]+)\s*\|/g;
     let match;
     while ((match = tableRowRegex.exec(text)) !== null) {
       entries.push({ key: match[1], model: match[2] });
@@ -50,7 +55,7 @@ async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
   if (cachedScrapedKeys.length === 0) return [];
 
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.model.endsWith(targetModel));
     if (modelKeys.length > 0) {
       return modelKeys.map(e => e.key);
     }
@@ -74,7 +79,7 @@ async function getScrapedKey(targetModel?: string): Promise<string> {
 
   // Try to find a key for the specific model first
   if (targetModel) {
-    const modelKeys = cachedScrapedKeys.filter(e => e.model === targetModel);
+    const modelKeys = cachedScrapedKeys.filter(e => e.model.endsWith(targetModel));
     if (modelKeys.length > 0) {
       return modelKeys[Math.floor(Math.random() * modelKeys.length)].key;
     }
@@ -133,9 +138,44 @@ Rules for charts:
 
 export async function POST(req: Request) {
   try {
-    const ip = getClientIP(req);
+    const rawBodyText = await req.text();
+    let body;
+    try {
+      body = JSON.parse(rawBodyText);
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-    // ── IP Rate Limit: 50 requests per 15 minutes per IP ──
+    // ── Security Headers & Signature Validation ──
+    const timestamp = req.headers.get('X-Timestamp');
+    const signature = req.headers.get('X-App-Signature');
+    const deviceId = req.headers.get('X-Device-Id') || 'unknown-device';
+
+    if (!timestamp || Date.now() - parseInt(timestamp) > 300000) {
+      return NextResponse.json({ error: 'Request expired' }, { status: 403 });
+    }
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing app signature' }, { status: 403 });
+    }
+
+    // Strict signature check (optional but recommended since we added it)
+    const payload = rawBodyText + timestamp;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(payload);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const expectedSignature = btoa(`${hashHex}:${timestamp}:inixa-app-v2`);
+    const fallbackSignature = btoa(`fallback:${timestamp}:inixa-app-v2`);
+
+    if (signature !== expectedSignature && signature !== fallbackSignature) {
+      return NextResponse.json({ error: 'Invalid app signature' }, { status: 403 });
+    }
+
+    const ip = getClientIP(req);
+    const rateLimitKey = `${ip}-${deviceId}`;
+
+    // ── IP Rate Limit: 50 requests per 15 minutes per IP/Device ──
     const windowMs = 15 * 60 * 1000;
     const maxRequests = 50;
     const now = Date.now();
@@ -145,10 +185,10 @@ export async function POST(req: Request) {
     let remaining = maxRequests;
     let resetTime = now + windowMs;
 
-    if (rateLimitMap.has(ip)) {
-      const record = rateLimitMap.get(ip)!;
+    if (rateLimitMap.has(rateLimitKey)) {
+      const record = rateLimitMap.get(rateLimitKey)!;
       if (now > record.resetTime) {
-        rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+        rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + windowMs });
         remaining = maxRequests - 1;
         resetTime = now + windowMs;
       } else {
@@ -174,12 +214,11 @@ export async function POST(req: Request) {
         resetTime = record.resetTime;
       }
     } else {
-      rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+      rateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + windowMs });
       remaining = maxRequests - 1;
       resetTime = now + windowMs;
     }
 
-    const body = await req.json();
     const { messages, model, message, stream } = body;
 
     // Support both formats:
@@ -199,7 +238,7 @@ export async function POST(req: Request) {
       : [{ role: 'system', content: CHART_SYSTEM_PROMPT }, ...chatMessages];
 
     // ── Forward to Cloudflare Worker (UNIVERSAL PROXY) ──
-    const CF_WORKER_URL = 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
+    const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
     let ROUTER_URL = `${CF_WORKER_URL}/v1/chat/completions`;
     let ROUTER_API_KEY = '';
 
@@ -220,6 +259,117 @@ export async function POST(req: Request) {
     }
 
     console.log(`[Route] Final selectedModel = "${selectedModel}"`);
+
+    // ── Route: Chinese Reverse Proxies (Local & Configured) ──
+    const isChineseProxyModel = [
+      'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',
+      'spark-free/', 'metaso-free/', 'parallel-chat/', 'coze/'
+    ].some(prefix => selectedModel.startsWith(prefix));
+
+    if (isChineseProxyModel) {
+      let targetUrl = '';
+      let actualModel = '';
+      let authHeader = '';
+
+      if (selectedModel.startsWith('qwen-free/')) {
+        actualModel = selectedModel.replace('qwen-free/', '');
+        if (actualModel === 'qwen-max') actualModel = 'qwen-max';
+        else if (actualModel === 'qwen-plus') actualModel = 'qwen-plus';
+        else if (actualModel === 'qwen-3.6-plus') actualModel = 'qwen-plus';
+
+        targetUrl = `${process.env.QWEN_FREE_API_URL || 'http://localhost:8000'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('kimi-free/')) {
+        actualModel = selectedModel.replace('kimi-free/', '');
+        if (actualModel === 'kimi-k3') actualModel = 'kimi-k3';
+        else if (actualModel === 'kimi-k2.6') actualModel = 'kimi-k2.6';
+
+        targetUrl = `${process.env.KIMI_FREE_API_URL || 'http://localhost:8001'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('glm-free/')) {
+        actualModel = selectedModel.replace('glm-free/', '');
+        if (actualModel === 'glm-5') actualModel = 'glm-5';
+        else if (actualModel === 'glm-4-plus') actualModel = 'glm-4-plus';
+
+        targetUrl = `${process.env.GLM_FREE_API_URL || 'http://localhost:8002'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('step-free/')) {
+        actualModel = selectedModel.replace('step-free/', '');
+        if (actualModel === 'step-2') actualModel = 'step-2';
+
+        targetUrl = `${process.env.STEP_FREE_API_URL || 'http://localhost:8003'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('spark-free/')) {
+        actualModel = selectedModel.replace('spark-free/', '');
+        if (actualModel === 'spark-desk-v4.5') actualModel = 'spark-desk-v4.5';
+
+        targetUrl = `${process.env.SPARK_FREE_API_URL || 'http://localhost:8004'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('metaso-free/')) {
+        actualModel = selectedModel.replace('metaso-free/', '');
+        if (actualModel === 'metaso-search') actualModel = 'metaso-search';
+
+        targetUrl = `${process.env.METASO_FREE_API_URL || 'http://localhost:8005'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('parallel-chat/')) {
+        actualModel = selectedModel.replace('parallel-chat/', '');
+        targetUrl = `${process.env.PARALLEL_CHAT_URL || 'http://localhost:8006'}/v1/chat/completions`;
+      } else if (selectedModel.startsWith('coze/')) {
+        actualModel = selectedModel.replace('coze/', '');
+        targetUrl = `${process.env.COZE_PROXY_URL || 'http://localhost:8007'}/v1/chat/completions`;
+      }
+
+      console.log(`[Chinese Proxy Route] Routing model "${selectedModel}" (actual: "${actualModel}") strictly to local URL: "${targetUrl}"`);
+
+      try {
+        const reqHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': ip,
+          'X-Real-IP': ip,
+        };
+        if (authHeader) {
+          reqHeaders['Authorization'] = authHeader;
+        }
+
+        const proxyRes = await fetch(targetUrl, {
+          method: 'POST',
+          headers: reqHeaders,
+          body: JSON.stringify({
+            model: actualModel,
+            messages: formattedMessages,
+            stream: stream === true,
+            max_tokens: 8000,
+            temperature: 0.7
+          }),
+        });
+
+        if (proxyRes.ok) {
+          console.log(`[Chinese Proxy] Connection succeeded to local server ${targetUrl}`);
+          if (stream === true && proxyRes.body) {
+            return new Response(proxyRes.body as any, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-RateLimit-Limit': String(maxRequests),
+                'X-RateLimit-Remaining': String(remaining),
+                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+              },
+            });
+          }
+          const data = await proxyRes.json();
+          return NextResponse.json(data, {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          });
+        } else {
+          throw new Error(`Upstream API returned status ${proxyRes.status}`);
+        }
+      } catch (err: any) {
+        console.error(`[Chinese Proxy Connection Error] Failed to reach local proxy at ${targetUrl}: ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Chinese Proxy Connection Failed: Cannot reach local proxy at ${targetUrl}. Please ensure your local reverse proxy server is running.` },
+          { status: 502 }
+        );
+      }
+    }
 
     // ── Route: DDG engine (Direct DuckDuckGo AI Chat) ──
     // DDG blocks VQD from Cloudflare Workers, so we MUST call directly from Next.js server
@@ -431,6 +581,56 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: G4F / Qwen (Local forward to /api/chat/g4f) ──
+    if (selectedModel.startsWith('g4f/') || selectedModel.startsWith('qwen_worker/')) {
+       console.log(`[Route] Forwarding to /api/chat/g4f for model: ${selectedModel}`);
+       
+       const protocol = req.headers.get('x-forwarded-proto') || 'http';
+       const host = req.headers.get('host') || '127.0.0.1:3000';
+       const g4fUrl = `${protocol}://${host}/api/chat/g4f`;
+
+       try {
+         const g4fRes = await fetch(g4fUrl, {
+           method: 'POST',
+           headers: {
+              'Content-Type': 'application/json',
+              'x-forwarded-for': ip,
+              'x-real-ip': ip,
+              'authorization': 'Bearer g4f_internal_forward',
+              'origin': `http://${host}`,
+              'referer': `http://${host}/`
+           },
+           body: JSON.stringify({ ...body, model: selectedModel })
+         });
+
+         if (stream === true) {
+           return new Response(g4fRes.body, {
+             headers: {
+               'Content-Type': 'text/event-stream',
+               'Cache-Control': 'no-cache',
+               'Connection': 'keep-alive',
+               'X-RateLimit-Limit': String(maxRequests),
+               'X-RateLimit-Remaining': String(remaining),
+               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+             },
+           });
+         }
+
+         const g4fData = await g4fRes.json();
+         return NextResponse.json(g4fData, {
+             status: g4fRes.status,
+             headers: {
+               'X-RateLimit-Limit': String(maxRequests),
+               'X-RateLimit-Remaining': String(remaining),
+               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+             }
+         });
+       } catch (error: any) {
+         console.error('[G4F Forward] Error:', error);
+         return NextResponse.json({ error: 'Failed to forward to G4F route' }, { status: 500 });
+       }
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Forwarded-For': ip,
@@ -439,8 +639,35 @@ export async function POST(req: Request) {
 
     let proxyResponse: Response;
 
+    // Direct Google Gemini API routing
+    if (selectedModel.startsWith('gemini/')) {
+      const geminiModel = selectedModel.replace('gemini/', '');
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      
+      console.log(`[Gemini Route] Direct API routing to Google for model: ${geminiModel}`);
+      
+      const geminiHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (geminiApiKey) {
+        geminiHeaders['Authorization'] = `Bearer ${geminiApiKey}`;
+      }
+      
+      proxyResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+        method: 'POST',
+        headers: geminiHeaders,
+        body: JSON.stringify({
+          model: geminiModel,
+          messages: formattedMessages,
+          stream: stream === true,
+          max_tokens: 8000,
+          temperature: 0.7
+        }),
+      });
+    }
     // Experimental: Auto-scraped keys from free-llm-api-keys repo
-    if (selectedModel.startsWith('auto/')) {
+    else if (selectedModel.startsWith('auto/')) {
       const realModel = selectedModel.replace('auto/', '');
       const scrapedKeys = await getAllScrapedKeys(realModel);
 
@@ -449,24 +676,80 @@ export async function POST(req: Request) {
         selectedModel = realModel;
         console.log(`[Auto] Racing ${scrapedKeys.length} scraped keys for model: ${realModel}`);
 
+        await refreshProxyPool();
         const controllers = scrapedKeys.map(() => new AbortController());
 
         const fetchPromises = scrapedKeys.map((key, i) => {
-          const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
-          return fetch(ROUTER_URL, {
-            method: 'POST',
-            headers: reqHeaders,
-            body: JSON.stringify({
-              model: selectedModel,
-              messages: formattedMessages,
-              stream: stream === true,
-              max_tokens: 8000,
-              temperature: 0.7
-            }),
-            signal: controllers[i].signal
-          }).then(res => {
-            if (res.ok) return { res, index: i };
-            throw `Status ${res.status}`;
+          return new Promise<any>(async (resolve, reject) => {
+             const reqHeaders = { 
+              'Content-Type': 'application/json', 
+              'Authorization': `Bearer ${key}`,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json'
+             };
+             const bodyStr = JSON.stringify({
+                model: selectedModel,
+                messages: formattedMessages,
+                stream: stream === true,
+                max_tokens: 8000,
+                temperature: 0.7
+             });
+
+             try {
+                const directRes = await fetch(ROUTER_URL, {
+                  method: 'POST',
+                  headers: reqHeaders,
+                  body: bodyStr,
+                  signal: controllers[i].signal
+                });
+                if (directRes.ok) return resolve({ res: directRes, index: i });
+             } catch(e) {}
+
+             const proxyPool = getProxyPool();
+             if (proxyPool.length === 0) {
+               return reject(new Error('Direct fetch failed and no proxies available.'));
+             }
+             
+             const numToRace = Math.min(5, proxyPool.length);
+             const proxiesToTry = [];
+             const cached = getCachedWorkingProxy();
+             if (cached) proxiesToTry.push(cached);
+             for(let p=0; p<numToRace; p++) proxiesToTry.push(getNextProxy());
+
+             const racePromises = proxiesToTry.map((proxyUrl) => {
+                return new Promise<any>(async (resProxy, rejProxy) => {
+                   if (!proxyUrl) return rejProxy(new Error('Empty proxy'));
+                   let agent: any;
+                   if (proxyUrl.startsWith('socks')) agent = new SocksProxyAgent(proxyUrl);
+                   else agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+                   
+                   const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+                   
+                   try {
+                     const pRes = await nodeFetch(ROUTER_URL, {
+                       method: 'POST',
+                       headers: { ...reqHeaders, 'X-Forwarded-For': proxyFakeIP },
+                       body: bodyStr,
+                       agent: agent
+                     });
+                     if (pRes.ok) {
+                        setCachedWorkingProxy(proxyUrl);
+                        resProxy(pRes);
+                     } else {
+                        rejProxy(new Error(`Proxy ${proxyUrl} returned ${pRes.status}`));
+                     }
+                   } catch(e) {
+                     rejProxy(e);
+                   }
+                });
+             });
+
+             try {
+               const winnerPRes = await Promise.any(racePromises);
+               resolve({ res: winnerPRes, index: i, isNodeFetch: true });
+             } catch(e) {
+               reject(new Error('All proxies failed for key index ' + i));
+             }
           });
         });
 
@@ -480,9 +763,30 @@ export async function POST(req: Request) {
             }
           });
           console.log(`[Auto] Race won by key index ${winner.index}!`);
+          
+          if (winner.isNodeFetch) {
+             const handleStreamingResponse = async (res: any) => {
+               if (stream) {
+                 const bodyStream = new ReadableStream({
+                   start(controller) {
+                     res.body.on('data', (chunk: Buffer) => controller.enqueue(chunk));
+                     res.body.on('end', () => controller.close());
+                     res.body.on('error', (err: Error) => controller.error(err));
+                   },
+                   cancel() { res.body.destroy(); }
+                 });
+                 return new Response(bodyStream, {
+                   headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' }
+                 });
+               }
+               return NextResponse.json(await res.json());
+             };
+             return await handleStreamingResponse(proxyResponse);
+          }
         } catch (e: any) {
           const errMsg = e.errors ? e.errors.join(' | ') : (e.message || e);
           console.error(`[Auto] All keys failed for ${realModel}: ${errMsg}`);
+          require('fs').appendFileSync('auto-error.log', `[${new Date().toISOString()}] ${realModel} error: ${errMsg}\n`);
           proxyResponse = new Response(JSON.stringify({ error: { message: "All API keys failed to respond" } }), { status: 502 });
         }
       } else {
@@ -517,7 +821,12 @@ export async function POST(req: Request) {
         if (cachedScrapedKeys.length > 0) {
           const controllers = cachedScrapedKeys.map(() => new AbortController());
           const fetchPromises = cachedScrapedKeys.map(({ key, model }, i) => {
-            const reqHeaders = { ...headers, 'Authorization': `Bearer ${key}` };
+            const reqHeaders = { 
+              'Content-Type': 'application/json', 
+              'Authorization': `Bearer ${key}`,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'application/json'
+            };
             return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
               method: 'POST',
               headers: reqHeaders,

@@ -55,7 +55,7 @@ export default class OpenAILikeProvider extends BaseProvider {
         name: model.id,
         label: this._generateModelLabel(model.id),
         provider: this.name,
-        maxTokenAllowed: 8000,
+        maxTokenAllowed: 128000,
       }));
     } catch (error) {
       logger.warn(`${this.name}: Could not fetch models from main app API — is the main app running?`, error);

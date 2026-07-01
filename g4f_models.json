@@ -1,0 +1,848 @@
+{
+  "data": [
+    {
+      "id": "auto",
+      "label": "Auto (random public server)"
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:openai-fast",
+      "model": "openai-fast",
+      "label": "nectar by pollinations.ai:openai-fast",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 369
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:deepseek-v4-flash",
+      "model": "deepseek-v4-flash",
+      "label": "crowllm.com:deepseek-v4-flash",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 110
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:openai",
+      "model": "openai",
+      "label": "nectar by pollinations.ai:openai",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 104
+    },
+    {
+      "id": "srv_mlv668eaa6d92f50ff10:gemini-2.5-flash",
+      "model": "gemini-2.5-flash",
+      "label": "Google Antigravity:gemini-2.5-flash",
+      "server": "srv_mlv668eaa6d92f50ff10",
+      "requests": 96
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-3.1-flash-lite",
+      "model": "models/gemini-3.1-flash-lite",
+      "label": "gemini-v1beta:models/gemini-3.1-flash-lite",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 88
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:openai/gpt-oss-120b",
+      "model": "openai/gpt-oss-120b",
+      "label": "nvidia.com:openai/gpt-oss-120b",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 84
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:deepseek-v4-pro:cloud",
+      "model": "deepseek-v4-pro:cloud",
+      "label": "ollama.swarm:deepseek-v4-pro:cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 80
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:openai/gpt-oss-120b",
+      "model": "openai/gpt-oss-120b",
+      "label": "groq.com:openai/gpt-oss-120b",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 67
+    },
+    {
+      "id": "srv_mlv668eaa6d92f50ff10:gemini-3-flash",
+      "model": "gemini-3-flash",
+      "label": "Google Antigravity:gemini-3-flash",
+      "server": "srv_mlv668eaa6d92f50ff10",
+      "requests": 67
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Pro",
+      "model": "deepseek-ai/DeepSeek-V4-Pro",
+      "label": "deepinfra.com:deepseek-ai/DeepSeek-V4-Pro",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 58
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:z-ai/glm-5.1",
+      "model": "z-ai/glm-5.1",
+      "label": "nvidia.com:z-ai/glm-5.1",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 56
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V3.2",
+      "model": "deepseek-ai/DeepSeek-V3.2",
+      "label": "deepinfra.com:deepseek-ai/DeepSeek-V3.2",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 55
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-3.1-flash-lite-preview",
+      "model": "models/gemini-3.1-flash-lite-preview",
+      "label": "gemini-v1beta:models/gemini-3.1-flash-lite-preview",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 51
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-2.5-flash",
+      "model": "models/gemini-2.5-flash",
+      "label": "gemini-v1beta:models/gemini-2.5-flash",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 49
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:moonshotai/kimi-k2.6",
+      "model": "moonshotai/kimi-k2.6",
+      "label": "nvidia.com:moonshotai/kimi-k2.6",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 49
+    },
+    {
+      "id": "srv_monk1pkz433a519ff2be:nvidia/nemotron-3-super-120b-a12b:free",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "label": "openrouter.ai:nvidia/nemotron-3-super-120b-a12b:free",
+      "server": "srv_monk1pkz433a519ff2be",
+      "requests": 48
+    },
+    {
+      "id": "srv_mp1v9cyha31b95fa8c9a:deepseek-ai/deepseek-v4-pro",
+      "model": "deepseek-ai/deepseek-v4-pro",
+      "label": "KTAI - Free - Models  (https://discord.gg/n6B5KCN3ZV):deepseek-ai/deepseek-v4-pro",
+      "server": "srv_mp1v9cyha31b95fa8c9a",
+      "requests": 45
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-flash-latest",
+      "model": "models/gemini-flash-latest",
+      "label": "gemini-v1beta:models/gemini-flash-latest",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 44
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-3-flash-preview",
+      "model": "models/gemini-3-flash-preview",
+      "label": "gemini-v1beta:models/gemini-3-flash-preview",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 44
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:qwen-coder",
+      "model": "qwen-coder",
+      "label": "gen.pollinations.ai:qwen-coder",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 41
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:nvidia/nemotron-3-nano-30b-a3b",
+      "model": "nvidia/nemotron-3-nano-30b-a3b",
+      "label": "nvidia.com:nvidia/nemotron-3-nano-30b-a3b",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 40
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:kimi-k2.6",
+      "model": "kimi-k2.6",
+      "label": "gen.pollinations.ai:kimi-k2.6",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 35
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:qwen-coder",
+      "model": "qwen-coder",
+      "label": "nectar by pollinations.ai:qwen-coder",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 34
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:llama-3.1-8b-instant",
+      "model": "llama-3.1-8b-instant",
+      "label": "groq.com:llama-3.1-8b-instant",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 34
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:deepseek",
+      "model": "deepseek",
+      "label": "nectar by pollinations.ai:deepseek",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 30
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-flash-lite-latest",
+      "model": "models/gemini-flash-lite-latest",
+      "label": "gemini-v1beta:models/gemini-flash-lite-latest",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 28
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:gpt-5.5",
+      "model": "gpt-5.5",
+      "label": "gen.pollinations.ai:gpt-5.5",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 27
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:glm-5.1",
+      "model": "glm-5.1",
+      "label": "nectar by pollinations.ai:glm-5.1",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 26
+    },
+    {
+      "id": "srv_mn1y956u9e6cfd0c1b4b:qwen-coder",
+      "model": "qwen-coder",
+      "label": "Pollinations AI:qwen-coder",
+      "server": "srv_mn1y956u9e6cfd0c1b4b",
+      "requests": 26
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:deepseek-ai/deepseek-v4-flash",
+      "model": "deepseek-ai/deepseek-v4-flash",
+      "label": "nvidia.com:deepseek-ai/deepseek-v4-flash",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 22
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:deepseek-pro",
+      "model": "deepseek-pro",
+      "label": "gen.pollinations.ai:deepseek-pro",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 22
+    },
+    {
+      "id": "srv_moebwrnl60595ca61368:deepseek-v3.2",
+      "model": "deepseek-v3.2",
+      "label": "NovaAI-Gateway (New):deepseek-v3.2",
+      "server": "srv_moebwrnl60595ca61368",
+      "requests": 21
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:meta/llama-3.2-90b-vision-instruct",
+      "model": "meta/llama-3.2-90b-vision-instruct",
+      "label": "nvidia.com:meta/llama-3.2-90b-vision-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 18
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:glm",
+      "model": "glm",
+      "label": "gen.pollinations.ai:glm",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 16
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:meta-llama/llama-4-scout-17b-16e-instruct",
+      "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "label": "groq.com:meta-llama/llama-4-scout-17b-16e-instruct",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 15
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:mistralai/mistral-large-3-675b-instruct-2512",
+      "model": "mistralai/mistral-large-3-675b-instruct-2512",
+      "label": "nvidia.com:mistralai/mistral-large-3-675b-instruct-2512",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 15
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:deepseek-ai/DeepSeek-V4-Flash",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "label": "deepinfra.com:deepseek-ai/DeepSeek-V4-Flash",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 15
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:openai-large",
+      "model": "openai-large",
+      "label": "nectar by pollinations.ai:openai-large",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 14
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:XiaomiMiMo/MiMo-V2.5-Pro",
+      "model": "XiaomiMiMo/MiMo-V2.5-Pro",
+      "label": "deepinfra.com:XiaomiMiMo/MiMo-V2.5-Pro",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 14
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:meta/llama-3.2-11b-vision-instruct",
+      "model": "meta/llama-3.2-11b-vision-instruct",
+      "label": "nvidia.com:meta/llama-3.2-11b-vision-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 13
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-3.5-flash",
+      "model": "models/gemini-3.5-flash",
+      "label": "gemini-v1beta:models/gemini-3.5-flash",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 10
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:nvidia/nemotron-3-super-120b-a12b",
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "label": "nvidia.com:nvidia/nemotron-3-super-120b-a12b",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 10
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:blackgrg26/WORMGPT-6:latest",
+      "model": "blackgrg26/WORMGPT-6:latest",
+      "label": "ollama.swarm:blackgrg26/WORMGPT-6:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 10
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:deepseek-r1:latest",
+      "model": "deepseek-r1:latest",
+      "label": "ollama.swarm:deepseek-r1:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 10
+    },
+    {
+      "id": "srv_mnkjel2208cf770e5009:gemma4:31b",
+      "model": "gemma4:31b",
+      "label": "ollama.com:gemma4:31b",
+      "server": "srv_mnkjel2208cf770e5009",
+      "requests": 9
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:groq/compound",
+      "model": "groq/compound",
+      "label": "groq.com:groq/compound",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 7
+    },
+    {
+      "id": "srv_mkp3v4pj6b8669965b41:gpt-5-2",
+      "model": "gpt-5-2",
+      "label": "OpenaiChat:gpt-5-2",
+      "server": "srv_mkp3v4pj6b8669965b41",
+      "requests": 7
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:glm-5.1",
+      "model": "glm-5.1",
+      "label": "crowllm.com:glm-5.1",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 7
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:qwen/qwen3-next-80b-a3b-instruct",
+      "model": "qwen/qwen3-next-80b-a3b-instruct",
+      "label": "nvidia.com:qwen/qwen3-next-80b-a3b-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 6
+    },
+    {
+      "id": "srv_monk1pkz433a519ff2be:openrouter/free",
+      "model": "openrouter/free",
+      "label": "openrouter.ai:openrouter/free",
+      "server": "srv_monk1pkz433a519ff2be",
+      "requests": 6
+    },
+    {
+      "id": "srv_monk1pkz433a519ff2be:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "label": "openrouter.ai:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "server": "srv_monk1pkz433a519ff2be",
+      "requests": 6
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:qwen/qwen3-32b",
+      "model": "qwen/qwen3-32b",
+      "label": "groq.com:qwen/qwen3-32b",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 5
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:grok-4.20-0309-non-reasoning",
+      "model": "grok-4.20-0309-non-reasoning",
+      "label": "crowllm.com:grok-4.20-0309-non-reasoning",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 5
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:llama-3.3-70b-versatile",
+      "model": "llama-3.3-70b-versatile",
+      "label": "groq.com:llama-3.3-70b-versatile",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 4
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:zai-org/GLM-5.1",
+      "model": "zai-org/GLM-5.1",
+      "label": "deepinfra.com:zai-org/GLM-5.1",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 4
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:openai-large",
+      "model": "openai-large",
+      "label": "gen.pollinations.ai:openai-large",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 4
+    },
+    {
+      "id": "srv_mp77ka5la97d6825b53b:gemini-3.1-pro-preview",
+      "model": "gemini-3.1-pro-preview",
+      "label": "Rocket Hosting (Gemini):gemini-3.1-pro-preview",
+      "server": "srv_mp77ka5la97d6825b53b",
+      "requests": 4
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:grok-4.3",
+      "model": "grok-4.3",
+      "label": "crowllm.com:grok-4.3",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 4
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:glm-5.1-thinking",
+      "model": "glm-5.1-thinking",
+      "label": "crowllm.com:glm-5.1-thinking",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 4
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:glm-5",
+      "model": "glm-5",
+      "label": "crowllm.com:glm-5",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 4
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:kimi",
+      "model": "kimi",
+      "label": "nectar by pollinations.ai:kimi",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 3
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:perplexity-reasoning",
+      "model": "perplexity-reasoning",
+      "label": "nectar by pollinations.ai:perplexity-reasoning",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 3
+    },
+    {
+      "id": "srv_mp1v9cyha31b95fa8c9a:qwen/qwen3.5-397b-a17b",
+      "model": "qwen/qwen3.5-397b-a17b",
+      "label": "KTAI - Free - Models  (https://discord.gg/n6B5KCN3ZV):qwen/qwen3.5-397b-a17b",
+      "server": "srv_mp1v9cyha31b95fa8c9a",
+      "requests": 3
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:minimax-m3:cloud",
+      "model": "minimax-m3:cloud",
+      "label": "ollama.swarm:minimax-m3:cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 3
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:models/gemini-2.5-flash-lite",
+      "model": "models/gemini-2.5-flash-lite",
+      "label": "gemini-v1beta:models/gemini-2.5-flash-lite",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:glm",
+      "model": "glm",
+      "label": "nectar by pollinations.ai:glm",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:mistral",
+      "model": "mistral",
+      "label": "nectar by pollinations.ai:mistral",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:grok",
+      "model": "grok",
+      "label": "nectar by pollinations.ai:grok",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:google/gemma-2-2b-it",
+      "model": "google/gemma-2-2b-it",
+      "label": "nvidia.com:google/gemma-2-2b-it",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:mistralai/ministral-14b-instruct-2512",
+      "model": "mistralai/ministral-14b-instruct-2512",
+      "label": "nvidia.com:mistralai/ministral-14b-instruct-2512",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:stockmark/stockmark-2-100b-instruct",
+      "model": "stockmark/stockmark-2-100b-instruct",
+      "label": "nvidia.com:stockmark/stockmark-2-100b-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:meta/llama-4-maverick-17b-128e-instruct",
+      "model": "meta/llama-4-maverick-17b-128e-instruct",
+      "label": "nvidia.com:meta/llama-4-maverick-17b-128e-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 2
+    },
+    {
+      "id": "srv_mp1v9cyha31b95fa8c9a:moonshotai/kimi-k2.6",
+      "model": "moonshotai/kimi-k2.6",
+      "label": "KTAI - Free - Models  (https://discord.gg/n6B5KCN3ZV):moonshotai/kimi-k2.6",
+      "server": "srv_mp1v9cyha31b95fa8c9a",
+      "requests": 2
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:gemma4:31b-cloud",
+      "model": "gemma4:31b-cloud",
+      "label": "ollama.swarm:gemma4:31b-cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 2
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:smollm2:135m",
+      "model": "smollm2:135m",
+      "label": "ollama.swarm:smollm2:135m",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 2
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:minimax-m2.5:cloud",
+      "model": "minimax-m2.5:cloud",
+      "label": "ollama.swarm:minimax-m2.5:cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 2
+    },
+    {
+      "id": "srv_mkol5tgcd33cc358ddbc:gemini-2.5-flash-lite",
+      "model": "gemini-2.5-flash-lite",
+      "label": "gemini-v1beta:gemini-2.5-flash-lite",
+      "server": "srv_mkol5tgcd33cc358ddbc",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:kimi-k2.7-code",
+      "model": "kimi-k2.7-code",
+      "label": "nectar by pollinations.ai:kimi-k2.7-code",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:gemma",
+      "model": "gemma",
+      "label": "nectar by pollinations.ai:gemma",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkoloq41e34074b6133e:mistral-small",
+      "model": "mistral-small",
+      "label": "nectar by pollinations.ai:mistral-small",
+      "server": "srv_mkoloq41e34074b6133e",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkom688d57c76d8a3542:openai/gpt-oss-20b",
+      "model": "openai/gpt-oss-20b",
+      "label": "groq.com:openai/gpt-oss-20b",
+      "server": "srv_mkom688d57c76d8a3542",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:google/diffusiongemma-26b-a4b-it",
+      "model": "google/diffusiongemma-26b-a4b-it",
+      "label": "nvidia.com:google/diffusiongemma-26b-a4b-it",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:minimaxai/minimax-m3",
+      "model": "minimaxai/minimax-m3",
+      "label": "nvidia.com:minimaxai/minimax-m3",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkombumpae45db46dcb8:meta/llama-3.1-70b-instruct",
+      "model": "meta/llama-3.1-70b-instruct",
+      "label": "nvidia.com:meta/llama-3.1-70b-instruct",
+      "server": "srv_mkombumpae45db46dcb8",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkopnfu316bf4ff43369:gemini-3.1-pro-preview",
+      "model": "gemini-3.1-pro-preview",
+      "label": "GeminiCLI:gemini-3.1-pro-preview",
+      "server": "srv_mkopnfu316bf4ff43369",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkopnfu316bf4ff43369:gemini-2.5-flash-lite",
+      "model": "gemini-2.5-flash-lite",
+      "label": "GeminiCLI:gemini-2.5-flash-lite",
+      "server": "srv_mkopnfu316bf4ff43369",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkopnfu316bf4ff43369:gemini-3-flash-preview",
+      "model": "gemini-3-flash-preview",
+      "label": "GeminiCLI:gemini-3-flash-preview",
+      "server": "srv_mkopnfu316bf4ff43369",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkopv2kp2e0038cdf550:turbo",
+      "model": "turbo",
+      "label": "perplexity:turbo",
+      "server": "srv_mkopv2kp2e0038cdf550",
+      "requests": 1
+    },
+    {
+      "id": "srv_mkoqob5pfb6ff5ec61c2:gpt-audio",
+      "model": "gpt-audio",
+      "label": "audio:gpt-audio",
+      "server": "srv_mkoqob5pfb6ff5ec61c2",
+      "requests": 1
+    },
+    {
+      "id": "srv_mlj8gd8y789d112ec50d:gpt-oss-120b",
+      "model": "gpt-oss-120b",
+      "label": "cerebras.ai:gpt-oss-120b",
+      "server": "srv_mlj8gd8y789d112ec50d",
+      "requests": 1
+    },
+    {
+      "id": "srv_mlj8gd8y789d112ec50d:zai-glm-4.7",
+      "model": "zai-glm-4.7",
+      "label": "cerebras.ai:zai-glm-4.7",
+      "server": "srv_mlj8gd8y789d112ec50d",
+      "requests": 1
+    },
+    {
+      "id": "srv_mlv668eaa6d92f50ff10:gemini-2.5-pro",
+      "model": "gemini-2.5-pro",
+      "label": "Google Antigravity:gemini-2.5-pro",
+      "server": "srv_mlv668eaa6d92f50ff10",
+      "requests": 1
+    },
+    {
+      "id": "srv_mnkjel2208cf770e5009:gpt-oss:20b",
+      "model": "gpt-oss:20b",
+      "label": "ollama.com:gpt-oss:20b",
+      "server": "srv_mnkjel2208cf770e5009",
+      "requests": 1
+    },
+    {
+      "id": "srv_monk1pkz433a519ff2be:poolside/laguna-xs.2:free",
+      "model": "poolside/laguna-xs.2:free",
+      "label": "openrouter.ai:poolside/laguna-xs.2:free",
+      "server": "srv_monk1pkz433a519ff2be",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp1v9cyha31b95fa8c9a:deepseek-ai/deepseek-v4-flash",
+      "model": "deepseek-ai/deepseek-v4-flash",
+      "label": "KTAI - Free - Models  (https://discord.gg/n6B5KCN3ZV):deepseek-ai/deepseek-v4-flash",
+      "server": "srv_mp1v9cyha31b95fa8c9a",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp1v9cyha31b95fa8c9a:deepseek-ai/deepseek-v3.2",
+      "model": "deepseek-ai/deepseek-v3.2",
+      "label": "KTAI - Free - Models  (https://discord.gg/n6B5KCN3ZV):deepseek-ai/deepseek-v3.2",
+      "server": "srv_mp1v9cyha31b95fa8c9a",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp3lmkuad07322459f47:gpt-oss-120b",
+      "model": "gpt-oss-120b",
+      "label": "api.airforce:gpt-oss-120b",
+      "server": "srv_mp3lmkuad07322459f47",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp3lmkuad07322459f47:nemotron-3-super",
+      "model": "nemotron-3-super",
+      "label": "api.airforce:nemotron-3-super",
+      "server": "srv_mp3lmkuad07322459f47",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp3lmkuad07322459f47:grok-4-heavy",
+      "model": "grok-4-heavy",
+      "label": "api.airforce:grok-4-heavy",
+      "server": "srv_mp3lmkuad07322459f47",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp5miql908c8738d71be:claude-fast",
+      "model": "claude-fast",
+      "label": "gen.pollinations.ai:claude-fast",
+      "server": "srv_mp5miql908c8738d71be",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp77ka5la97d6825b53b:gemini-3.1-flash-lite:search",
+      "model": "gemini-3.1-flash-lite:search",
+      "label": "Rocket Hosting (Gemini):gemini-3.1-flash-lite:search",
+      "server": "srv_mp77ka5la97d6825b53b",
+      "requests": 1
+    },
+    {
+      "id": "srv_mp77ka5la97d6825b53b:gemini-3-flash-preview",
+      "model": "gemini-3-flash-preview",
+      "label": "Rocket Hosting (Gemini):gemini-3-flash-preview",
+      "server": "srv_mp77ka5la97d6825b53b",
+      "requests": 1
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:glm-4.6",
+      "model": "glm-4.6",
+      "label": "crowllm.com:glm-4.6",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 1
+    },
+    {
+      "id": "srv_mpsmwmt5fa6174293958:glm-5v-turbo",
+      "model": "glm-5v-turbo",
+      "label": "crowllm.com:glm-5v-turbo",
+      "server": "srv_mpsmwmt5fa6174293958",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:deepseek-r1:14b",
+      "model": "deepseek-r1:14b",
+      "label": "ollama.swarm:deepseek-r1:14b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:qwen3-coder-next:cloud",
+      "model": "qwen3-coder-next:cloud",
+      "label": "ollama.swarm:qwen3-coder-next:cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:llama3.2:3b",
+      "model": "llama3.2:3b",
+      "label": "ollama.swarm:llama3.2:3b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:huihui_ai/gpt-oss-abliterated:latest",
+      "model": "huihui_ai/gpt-oss-abliterated:latest",
+      "label": "ollama.swarm:huihui_ai/gpt-oss-abliterated:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:llama3:latest",
+      "model": "llama3:latest",
+      "label": "ollama.swarm:llama3:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:qwen3.6:35b",
+      "model": "qwen3.6:35b",
+      "label": "ollama.swarm:qwen3.6:35b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:gpt-oss:120b-cloud",
+      "model": "gpt-oss:120b-cloud",
+      "label": "ollama.swarm:gpt-oss:120b-cloud",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:huihui_ai/qwen3.6-abliterated:27b",
+      "model": "huihui_ai/qwen3.6-abliterated:27b",
+      "label": "ollama.swarm:huihui_ai/qwen3.6-abliterated:27b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:qwen3:8b",
+      "model": "qwen3:8b",
+      "label": "ollama.swarm:qwen3:8b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:llama3.2:latest",
+      "model": "llama3.2:latest",
+      "label": "ollama.swarm:llama3.2:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:llama3:8b",
+      "model": "llama3:8b",
+      "label": "ollama.swarm:llama3:8b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:qwen2.5-coder:7b",
+      "model": "qwen2.5-coder:7b",
+      "label": "ollama.swarm:qwen2.5-coder:7b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:huihui_ai/glm-4.7-flash-abliterated:latest",
+      "model": "huihui_ai/glm-4.7-flash-abliterated:latest",
+      "label": "ollama.swarm:huihui_ai/glm-4.7-flash-abliterated:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:huihui_ai/gemma-4-abliterated:12b",
+      "model": "huihui_ai/gemma-4-abliterated:12b",
+      "label": "ollama.swarm:huihui_ai/gemma-4-abliterated:12b",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:wrn-33b:latest",
+      "model": "wrn-33b:latest",
+      "label": "ollama.swarm:wrn-33b:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    },
+    {
+      "id": "srv_mq7ktfibad45c29f3839:WhiteRabbitNeo/Llama-3.1-WhiteRabbitNeo-2-8B:latest",
+      "model": "WhiteRabbitNeo/Llama-3.1-WhiteRabbitNeo-2-8B:latest",
+      "label": "ollama.swarm:WhiteRabbitNeo/Llama-3.1-WhiteRabbitNeo-2-8B:latest",
+      "server": "srv_mq7ktfibad45c29f3839",
+      "requests": 1
+    }
+  ]
+}

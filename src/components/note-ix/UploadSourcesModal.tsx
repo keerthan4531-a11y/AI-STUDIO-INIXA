@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search, Globe, Sparkles, Upload, Link as LinkIcon, Video, Cloud, Clipboard, ArrowLeft, Plus } from 'lucide-react';
 import { Notebook, NoteSource } from './NoteIXTypes';
-import { CF_WORKER_URL, aiChat } from '../../api/aiEngine';
+import { aiChat } from '../../api/aiEngine';
 
 interface UploadSourcesModalProps {
   isOpen: boolean;
@@ -65,15 +65,13 @@ Include a "Summary" section and a "Transcript" section with dialogue.`;
         resultText = await aiChat([{ role: 'user', content: prompt, id: 'yt', timestamp: 1 }]);
       } else {
         try {
-          if (CF_WORKER_URL) {
-            const response = await fetch(`${CF_WORKER_URL}/parse-document`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: url })
-            });
-            const result = await response.json();
-            if (result.text) resultText = result.text;
-          }
+          const response = await fetch(`/api/parse-document`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+          });
+          const result = await response.json();
+          if (result.text) resultText = result.text;
         } catch (e) {
            console.warn("Failed to fetch via worker, using mock", e);
         }

@@ -90,7 +90,7 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
 
   return (
     <motion.aside
-      className="hidden lg:flex flex-col h-screen sticky top-0 z-[100] shrink-0 border-r border-white/[0.08] overflow-hidden"
+      className="hidden lg:flex flex-col h-screen sticky top-0 z-[100] shrink-0 border-r border-white/[0.04] overflow-hidden"
       initial="closed"
       animate={isCollapsed ? "closed" : "open"}
       variants={sidebarVariants}
@@ -98,31 +98,35 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
       onMouseEnter={() => setIsCollapsed(false)}
       onMouseLeave={() => setIsCollapsed(true)}
     >
-      <div className="relative flex flex-col h-full bg-[#171717]">
+      <div className="relative flex flex-col h-full bg-[#08090f]/90 backdrop-blur-xl">
+        {/* Subtle edge glow */}
+        <div className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/20 via-transparent to-purple-500/20 pointer-events-none" />
+
         {/* Logo */}
-        <div className="flex items-center gap-3 h-[56px] px-4 border-b border-white/[0.08] shrink-0">
-          <div className="w-7 h-7 shrink-0 flex items-center justify-center">
-            <InixaLogo size={20} className="text-white" />
+        <div className="flex items-center gap-3 h-[56px] px-3.5 border-b border-white/[0.04] shrink-0">
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+            <InixaLogo size={24} className="text-white drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
           </div>
           <motion.div variants={labelVariants} className="flex flex-col min-w-0 overflow-hidden">
-            <span className="text-[14px] font-bold tracking-tight text-white leading-none">Inixa</span>
+            <span className="text-[14px] font-black tracking-tight uppercase text-white leading-none">Inixa</span>
+            <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-indigo-400/70">AI Studio</span>
           </motion.div>
         </div>
 
         {/* New Chat button */}
-        <div className="px-3 pt-4 pb-2 shrink-0">
+        <div className="px-2 pt-3 pb-1 shrink-0">
           <button
             onClick={() => { onNewChat(); vibrate(30); }}
             className={cn(
-              "flex items-center gap-2.5 w-full rounded-lg transition-all duration-200 group border",
+              "flex items-center gap-2.5 w-full rounded-xl transition-all duration-200 group",
               isCollapsed 
-                ? "justify-center p-2.5 hover:bg-white/5 border-transparent" 
-                : "px-3 py-2 bg-transparent hover:bg-white/[0.05] border-white/20"
+                ? "justify-center p-2.5 hover:bg-indigo-500/10" 
+                : "px-3 py-2.5 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20"
             )}
           >
-            <Plus className="w-4 h-4 text-white shrink-0 group-hover:scale-110 transition-transform" />
-            <motion.span variants={labelVariants} className="text-[13px] font-medium text-white whitespace-nowrap">
-              New chat
+            <Plus className="w-4 h-4 text-indigo-400 shrink-0 group-hover:scale-110 transition-transform" />
+            <motion.span variants={labelVariants} className="text-[13px] font-bold text-indigo-300 whitespace-nowrap">
+              New Chat
             </motion.span>
           </button>
         </div>
@@ -214,10 +218,10 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
                       <button
                         onClick={() => { onSelectSession?.(session.id); vibrate(15); }}
                         className={cn(
-                          "w-full px-3 py-2.5 text-[12px] rounded-lg text-left truncate transition-all font-medium pr-8",
+                          "w-full px-2.5 py-2 text-[12px] rounded-lg text-left truncate transition-all font-medium pr-7",
                           activeSessionId === session.id
-                            ? "bg-white/10 text-white shadow-sm"
-                            : "text-white/40 hover:text-white hover:bg-white/[0.04]"
+                            ? "bg-indigo-500/10 text-indigo-300"
+                            : "text-white/30 hover:text-white/60 hover:bg-white/[0.03]"
                         )}
                       >
                         {session.title || "New conversation"}
@@ -237,24 +241,25 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
         </motion.div>
 
         {/* Bottom: User + Settings */}
-        <div className="mt-auto border-t border-white/[0.08] px-3 py-3 shrink-0">
+        <div className="mt-auto border-t border-white/[0.04] px-2 py-2.5 shrink-0">
           <button
             onClick={() => { onTabChange('profile'); vibrate(20); }}
             className={cn(
-              "flex items-center gap-2.5 w-full rounded-lg transition-all duration-200 group",
-              isCollapsed ? "justify-center p-2" : "px-2 py-2 hover:bg-white/[0.05]"
+              "flex items-center gap-2.5 w-full rounded-xl transition-all duration-200 group",
+              isCollapsed ? "justify-center p-2" : "px-2.5 py-2 hover:bg-white/[0.03]"
             )}
           >
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-[11px] font-bold text-white shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-[11px] font-bold text-white shadow-md border border-white/10 shrink-0 group-hover:border-indigo-400/50 transition-all">
               {user.name.charAt(0).toUpperCase()}
             </div>
-            <motion.div variants={labelVariants} className="flex flex-col min-w-0 overflow-hidden text-left">
-              <span className="text-[13px] font-medium text-white/90 group-hover:text-white truncate transition-colors">{user.name}</span>
+            <motion.div variants={labelVariants} className="flex flex-col min-w-0 overflow-hidden">
+              <span className="text-[12px] font-bold text-white/80 group-hover:text-white truncate transition-colors">{user.name}</span>
+              <span className="text-[8px] text-white/15 font-bold uppercase tracking-[0.15em]">Premium</span>
             </motion.div>
             {!isCollapsed && (
               <motion.div variants={labelVariants} className="ml-auto">
                 <Settings2 
-                  className="w-4 h-4 text-white/40 hover:text-white transition-colors cursor-pointer shrink-0" 
+                  className="w-4 h-4 text-white/15 hover:text-white/50 transition-colors cursor-pointer shrink-0" 
                   onClick={(e) => { e.stopPropagation(); onOpenModelSelector(); }}
                 />
               </motion.div>

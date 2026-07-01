@@ -24,6 +24,11 @@ export function NoteIXChat({ notebook, setNotebook, currentModel }: { notebook: 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    const lowercaseInput = input.toLowerCase();
+    const isPptRequest = lowercaseInput.includes('ppt') || 
+                         lowercaseInput.includes('presentation') || 
+                         lowercaseInput.includes('slide');
+
     const userMsg: NoteIXMessage = {
       id: Math.random().toString(),
       role: 'user',
@@ -45,48 +50,97 @@ export function NoteIXChat({ notebook, setNotebook, currentModel }: { notebook: 
     setIsLoading(true);
 
     try {
-      const systemPrompt = `You are NOTE-IX, an elite AI research assistant. You answer the user's questions STRICTLY based on the provided SOURCES below.
+      if (isPptRequest) {
+        // Trigger Presenton backend generation API route
+        const combinedPrompt = `Based on these sources:\n${notebook.sources.map((s, i) => `--- [Source ${i+1}: ${s.title}] ---\n${s.content}`).join('\n\n')}\n\nCreate a presentation about: ${input}`;
+
+        setNotebook(prev => ({
+          ...prev,
+          chatHistory: prev.chatHistory.map(m => 
+            m.id === botId ? { ...m, content: 'Generating presentation via Presenton backend... Please wait.' } : m
+          )
+        }));
+
+        const response = await fetch('/api/ppt/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: combinedPrompt,
+            theme: 'royal_blue',
+            n_slides: 8
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setNotebook(prev => ({
+            ...prev,
+            chatHistory: prev.chatHistory.map(m => 
+              m.id === botId 
+                ? { 
+                    ...m, 
+                    content: `🎉 **Presentation created successfully via Presenton!**\n\nI have analyzed your sources and built a custom PowerPoint slide deck.\n\n👉 **[Download PowerPoint Presentation (PPTX)](${data.downloadUrl})**`,
+                  } 
+                : m
+            )
+          }));
+        } else {
+          setNotebook(prev => ({
+            ...prev,
+            chatHistory: prev.chatHistory.map(m => 
+              m.id === botId 
+                ? { 
+                    ...m, 
+                    content: `⚠️ **Failed to generate presentation via Presenton:**\n\n${data.error || 'Unknown error'}\n\n*Make sure Docker Desktop is started and the Presenton container is running using \`docker compose up -d\`.*`,
+                  } 
+                : m
+            )
+          }));
+        }
+      } else {
+        const systemPrompt = `You are NOTE-IX, an elite AI research assistant. You answer the user's questions STRICTLY based on the provided SOURCES below.
       Do not hallucinate. If the answer is not in the sources, say "I cannot find the answer in the provided sources."
       ALWAYS cite your sources inline using brackets, like [Source 1] or [Source 2], whenever you state a fact from that source.
       
       SOURCES:
       ${notebook.sources.map((s, i) => `--- [Source ${i+1}: ${s.title}] ---\n${s.content}\n-------------------`).join('\n\n')}`;
 
-      let currentResponse = '';
+        let currentResponse = '';
 
-      await aiChat(
-        [
-          { role: 'system', content: systemPrompt },
-          ...notebook.chatHistory.map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: input }
-        ],
-        (fullText: string) => {
-          currentResponse = fullText;
-          setNotebook(prev => ({
-            ...prev,
-            chatHistory: prev.chatHistory.map(m => 
-              m.id === botId ? { ...m, content: currentResponse } : m
-            )
-          }));
-        },
-        currentModel
-      );
+        await aiChat(
+          [
+            { role: 'system', content: systemPrompt },
+            ...notebook.chatHistory.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: input }
+          ],
+          (fullText: string) => {
+            currentResponse = fullText;
+            setNotebook(prev => ({
+              ...prev,
+              chatHistory: prev.chatHistory.map(m => 
+                m.id === botId ? { ...m, content: currentResponse } : m
+              )
+            }));
+          },
+          currentModel
+        );
 
-      // Post-process to extract citations if needed
-      // Mock for now: if currentResponse contains [Source X], we add it to citations
-      const citations: { sourceId: string; snippet: string }[] = [];
-      notebook.sources.forEach((s, i) => {
-        if (currentResponse.includes(`[Source ${i+1}]`)) {
-          citations.push({ sourceId: s.id, snippet: s.title });
-        }
-      });
+        // Post-process to extract citations if needed
+        const citations: { sourceId: string; snippet: string }[] = [];
+        notebook.sources.forEach((s, i) => {
+          if (currentResponse.includes(`[Source ${i+1}]`)) {
+            citations.push({ sourceId: s.id, snippet: s.title });
+          }
+        });
 
-      setNotebook(prev => ({
-        ...prev,
-        chatHistory: prev.chatHistory.map(m => 
-          m.id === botId ? { ...m, citations } : m
-        )
-      }));
+        setNotebook(prev => ({
+          ...prev,
+          chatHistory: prev.chatHistory.map(m => 
+            m.id === botId ? { ...m, citations } : m
+          )
+        }));
+      }
 
     } catch (e) {
       console.error(e);

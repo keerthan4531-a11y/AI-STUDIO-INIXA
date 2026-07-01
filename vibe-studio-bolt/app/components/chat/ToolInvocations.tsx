@@ -230,34 +230,40 @@ const ToolResultsList = memo(({ toolInvocations, toolCallAnnotations, theme }: T
               <div className="flex items-center gap-1.5 text-xs mb-1">
                 {isErrorResult ? (
                   <div className="text-lg text-bolt-elements-icon-error">
-                    <div className="i-ph:x"></div>
+                    <div className="i-ph:x" />
                   </div>
                 ) : (
                   <div className="text-lg text-bolt-elements-icon-success">
-                    <div className="i-ph:check"></div>
+                    <div className="i-ph:check" />
                   </div>
                 )}
                 <div className="text-bolt-elements-textSecondary text-xs">Server:</div>
                 <div className="text-bolt-elements-textPrimary font-semibold">{annotation?.serverName}</div>
+                <div className="text-bolt-elements-textSecondary text-xs ml-2">Tool:</div>
+                <div className="text-bolt-elements-textPrimary font-semibold">{toolName}</div>
               </div>
 
-              <div className="ml-6 mb-2">
-                <div className="text-bolt-elements-textSecondary text-xs mb-1">
-                  Tool: <span className="text-bolt-elements-textPrimary font-semibold">{toolName}</span>
+              <details className="ml-6 mb-2 text-xs">
+                <summary className="text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary cursor-pointer outline-none select-none py-1">
+                  View details
+                </summary>
+                <div className="mt-2 pl-3 border-l border-bolt-elements-borderColor space-y-2">
+                  {annotation?.toolDescription && (
+                    <div className="text-bolt-elements-textSecondary text-xs mb-1">
+                      Description:{' '}
+                      <span className="text-bolt-elements-textPrimary font-semibold">{annotation?.toolDescription}</span>
+                    </div>
+                  )}
+                  <div className="text-bolt-elements-textSecondary text-xs mb-1">Parameters:</div>
+                  <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A] p-3 rounded-md">
+                    <JsonCodeBlock className="mb-0" code={JSON.stringify(tool.toolInvocation.args)} theme={theme} />
+                  </div>
+                  <div className="text-bolt-elements-textSecondary text-xs mt-3 mb-1">Result:</div>
+                  <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A] p-3 rounded-md">
+                    <JsonCodeBlock className="mb-0" code={JSON.stringify(tool.toolInvocation.result)} theme={theme} />
+                  </div>
                 </div>
-                <div className="text-bolt-elements-textSecondary text-xs mb-1">
-                  Description:{' '}
-                  <span className="text-bolt-elements-textPrimary font-semibold">{annotation?.toolDescription}</span>
-                </div>
-                <div className="text-bolt-elements-textSecondary text-xs mb-1">Parameters:</div>
-                <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A] p-3 rounded-md">
-                  <JsonCodeBlock className="mb-0" code={JSON.stringify(tool.toolInvocation.args)} theme={theme} />
-                </div>
-                <div className="text-bolt-elements-textSecondary text-xs mt-3 mb-1">Result:</div>
-                <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A] p-3 rounded-md">
-                  <JsonCodeBlock className="mb-0" code={JSON.stringify(tool.toolInvocation.result)} theme={theme} />
-                </div>
-              </div>
+              </details>
             </motion.li>
           );
         })}

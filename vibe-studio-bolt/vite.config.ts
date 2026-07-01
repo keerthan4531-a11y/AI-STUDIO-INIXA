@@ -13,7 +13,7 @@ dotenv.config();
 
 export default defineConfig((config) => {
   return {
-    base: config.command === 'build' ? '/vibe-studio/' : '/',
+    base: '/vibe-studio/',
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
