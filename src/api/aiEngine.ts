@@ -1402,7 +1402,9 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#10b981',
     description: 'Real-time Web Search via G4F'
   },
-\n  // ════════ NEW BATCH OF MODELS ════════\n  {
+
+  // ════════ NEW BATCH OF MODELS ════════
+  {
     id: 'g4f-xiaomimimo-mimo-v2-5',
     label: 'xiaomimimo/mimo-V2.5',
     engine: 'g4f',
@@ -1413,7 +1415,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'xiaomimimo/mimo-V2.5 via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-qwen3-6-35b-a3b-uncensored-hauhaucs-aggressive-q4-k-m-gguf',
     label: 'Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
     engine: 'g4f',
@@ -1424,7 +1427,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Code',
     iconColor: '#06b6d4',
     description: 'Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-deepseek-ai-deepseek-v4-pro',
     label: 'deepseek-ai/deepseek-v4-pro',
     engine: 'g4f',
@@ -1435,7 +1439,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Brain',
     iconColor: '#06b6d4',
     description: 'deepseek-ai/deepseek-v4-pro via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-nova-fast',
     label: 'nova-fast',
     engine: 'g4f',
@@ -1446,7 +1451,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'nova-fast via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-nemotron-3-ultra',
     label: 'nemotron-3-ultra',
     engine: 'g4f',
@@ -1457,7 +1463,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'nemotron-3-ultra via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-qwen3-5-35b-a3b-uncensored-hauhaucs-aggressive-q4-k-m-gguf',
     label: 'Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
     engine: 'g4f',
@@ -1468,7 +1475,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Code',
     iconColor: '#06b6d4',
     description: 'Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-models-gemini-2-5-flash-lite',
     label: 'models/gemini-2.5-flash-lite',
     engine: 'g4f',
@@ -1479,7 +1487,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Sparkles',
     iconColor: '#06b6d4',
     description: 'models/gemini-2.5-flash-lite via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-nvidia-nemotron-3-ultra-550b-a55b',
     label: 'nvidia/nemotron-3-ultra-550b-a55b',
     engine: 'g4f',
@@ -1490,7 +1499,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'nvidia/nemotron-3-ultra-550b-a55b via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-gemini-3-1-pro-low',
     label: 'gemini-3.1-pro-low',
     engine: 'g4f',
@@ -1501,7 +1511,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Sparkles',
     iconColor: '#06b6d4',
     description: 'gemini-3.1-pro-low via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-minimax-m3-cloud',
     label: 'minimax-m3:cloud',
     engine: 'g4f',
@@ -1512,7 +1523,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'minimax-m3:cloud via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-groq-compound-mini',
     label: 'groq/compound-mini',
     engine: 'g4f',
@@ -1523,7 +1535,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'groq/compound-mini via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-models-gemini-3-1-flash-lite-preview',
     label: 'models/gemini-3.1-flash-lite-preview',
     engine: 'g4f',
@@ -1534,7 +1547,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Sparkles',
     iconColor: '#06b6d4',
     description: 'models/gemini-3.1-flash-lite-preview via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-groq-compound',
     label: 'groq/compound',
     engine: 'g4f',
@@ -1545,7 +1559,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'groq/compound via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-gemma3-4b',
     label: 'gemma3:4b',
     engine: 'g4f',
@@ -1556,7 +1571,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'gemma3:4b via G4F Proxy'
-  },\n  {
+  },
+  {
     id: 'g4f-openai-gpt-oss-120b-free',
     label: 'openai/gpt-oss-120b:free',
     engine: 'g4f',
