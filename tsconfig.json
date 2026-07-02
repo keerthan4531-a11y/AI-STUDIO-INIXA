@@ -30,5 +30,15 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scratch", "vibe-studio-bolt"]
+  "exclude": [
+    "node_modules", 
+    "scratch", 
+    "vibe-studio-bolt", 
+    "freellmpool", 
+    "gpt4free", 
+    "workers", 
+    "android", 
+    "inixa-veo-backend", 
+    "presenton_data"
+  ]
 }
