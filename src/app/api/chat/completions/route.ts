@@ -148,30 +148,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    // ── Security Headers & Signature Validation ──
-    const timestamp = req.headers.get('X-Timestamp');
-    const signature = req.headers.get('X-App-Signature');
     const deviceId = req.headers.get('X-Device-Id') || 'unknown-device';
 
-    if (!timestamp || Date.now() - parseInt(timestamp) > 300000) {
-      return NextResponse.json({ error: 'Request expired' }, { status: 403 });
-    }
-    if (!signature) {
-      return NextResponse.json({ error: 'Missing app signature' }, { status: 403 });
-    }
+    // 2. CORS / Origin Check
+    const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const allowedOrigins = [
+      "localhost",
+      "127.0.0.1",
+      "ai-studio-inixa.vercel.app",
+      "inixa.vercel.app",
+    ];
 
-    // Strict signature check (optional but recommended since we added it)
-    const payload = rawBodyText + timestamp;
-    const encoder = new TextEncoder();
-    const data = encoder.encode(payload);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    const expectedSignature = btoa(`${hashHex}:${timestamp}:inixa-app-v2`);
-    const fallbackSignature = btoa(`fallback:${timestamp}:inixa-app-v2`);
+    const isOriginAllowed = allowedOrigins.some((allowed) => origin.includes(allowed));
+    let authHeader = req.headers.get("authorization");
+    const SERVER_SECRET = process.env.INIXA_PROXY_SECRET;
 
-    if (signature !== expectedSignature && signature !== fallbackSignature) {
-      return NextResponse.json({ error: 'Invalid app signature' }, { status: 403 });
+    const hasValidServerSecret = SERVER_SECRET && authHeader && authHeader.includes(SERVER_SECRET);
+
+    if (!isOriginAllowed && !hasValidServerSecret) {
+      console.warn(`[Security] Blocked unauthorized request from Origin: ${origin}`);
+      return NextResponse.json({ error: "Forbidden: Invalid Origin" }, { status: 403 });
     }
 
     const ip = getClientIP(req);
