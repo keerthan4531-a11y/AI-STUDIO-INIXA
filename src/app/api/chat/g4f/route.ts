@@ -495,7 +495,7 @@ export async function POST(req: Request) {
                 method: "POST",
                 headers: proxyHeaders,
                 body: JSON.stringify(requestBody),
-                agent: agent,
+                agent: agent as any,
                 signal: controller.signal as any,
               });
 

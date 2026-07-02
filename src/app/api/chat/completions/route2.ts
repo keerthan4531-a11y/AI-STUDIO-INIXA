@@ -183,7 +183,7 @@ export async function POST(req: Request) {
               'X-Forwarded-For': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`
             },
             body: JSON.stringify({ ...body, model: requestModel }),
-            agent: agent,
+            agent: agent as any,
             signal: controller.signal as any
           });
           
