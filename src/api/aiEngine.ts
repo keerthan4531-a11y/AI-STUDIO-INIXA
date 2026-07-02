@@ -1583,7 +1583,8 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#06b6d4',
     description: 'openai/gpt-oss-120b:free via G4F Proxy'
-  },\n];
+  },
+];
 
 
 // Clear saved model on page load/refresh so it always defaults to OpenAI Fast
