@@ -679,7 +679,40 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#3b82f6',
     description: 'Qwen Coder via Nectar — 35 req, 971ms'
   },
+
   {
+    id: 'g4f-qwen3.7-max',
+    label: 'Qwen 3.7 Max',
+    engine: 'g4f',
+    modelStr: 'g4f/qwen3.7-max',
+    badge: 'MAX',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Qwen 3.7 Max via G4F — 10 req, 6674ms'
+  },
+  {
+    id: 'qw-qwen3.7-max',
+    label: 'Qwen 3.7 Max (Worker)',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-max',
+    badge: 'MAX',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Max — dedicated worker'
+  },
+  {
+    id: 'qw-qwen3.7-plus',
+    label: 'Qwen 3.7 Plus (Worker)',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-plus',
+    badge: 'PLUS',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
+  },  {
     id: 'g4f-qwen3-32b',
     label: 'Qwen 3 32B (Groq)',
     engine: 'g4f',
