@@ -133,10 +133,20 @@ export function isDeepThinkModel(modelId: string): boolean {
     'auto-kimi-k2.5',
     'auto-smart-chat'
   ];
+  
+  const id = modelId.toLowerCase();
+  
   return deepThinkIds.includes(modelId) || 
-    modelId.toLowerCase().includes('deepthink') || 
-    modelId.toLowerCase().includes('o1') ||
-    modelId.toLowerCase().includes('reasoning') ||
-    modelId.toLowerCase().includes('deepseek');
+    id.includes('deepthink') || 
+    id.includes('o1') ||
+    id.includes('reasoning') ||
+    id.includes('deepseek') ||
+    id.includes('qwen') ||       // Qwen models always think by default
+    id.includes('kimi') ||        // Kimi models think by default
+    id.includes('glm') ||         // GLM models think by default
+    id.includes('gemma') ||       // Gemma models think by default
+    id.includes('thinking') ||    // Any model with "thinking" in name
+    id.includes('devstral') ||    // Devstral thinks by default
+    id.includes('nemotron');      // Nemotron models think by default
 }
 

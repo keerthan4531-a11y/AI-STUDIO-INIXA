@@ -1,6 +1,20 @@
 {
   "data": [
     {
+      "id": "srv_mp2huzrg06e426ad12f3:kimi-k2.7-code",
+      "model": "kimi-k2.7-code",
+      "label": "ollama.pro:kimi-k2.7-code",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 45
+    },
+    {
+      "id": "srv_mp2huzrg06e426ad12f3:deepseek-v4-flash-thinking",
+      "model": "deepseek-v4-flash-thinking",
+      "label": "crowllm.com:deepseek-v4-flash-thinking",
+      "server": "srv_mp2huzrg06e426ad12f3",
+      "requests": 40
+    },
+    {
       "id": "auto",
       "label": "Auto (random public server)"
     },
@@ -152,13 +166,6 @@
       "requests": 40
     },
     {
-      "id": "srv_mp5miql908c8738d71be:kimi-k2.6",
-      "model": "kimi-k2.6",
-      "label": "gen.pollinations.ai:kimi-k2.6",
-      "server": "srv_mp5miql908c8738d71be",
-      "requests": 35
-    },
-    {
       "id": "srv_mkoloq41e34074b6133e:qwen-coder",
       "model": "qwen-coder",
       "label": "nectar by pollinations.ai:qwen-coder",
@@ -268,13 +275,6 @@
       "model": "openai-large",
       "label": "nectar by pollinations.ai:openai-large",
       "server": "srv_mkoloq41e34074b6133e",
-      "requests": 14
-    },
-    {
-      "id": "srv_mp2huzrg06e426ad12f3:XiaomiMiMo/MiMo-V2.5-Pro",
-      "model": "XiaomiMiMo/MiMo-V2.5-Pro",
-      "label": "deepinfra.com:XiaomiMiMo/MiMo-V2.5-Pro",
-      "server": "srv_mp2huzrg06e426ad12f3",
       "requests": 14
     },
     {
@@ -423,13 +423,6 @@
       "label": "crowllm.com:glm-5",
       "server": "srv_mpsmwmt5fa6174293958",
       "requests": 4
-    },
-    {
-      "id": "srv_mkoloq41e34074b6133e:kimi",
-      "model": "kimi",
-      "label": "nectar by pollinations.ai:kimi",
-      "server": "srv_mkoloq41e34074b6133e",
-      "requests": 3
     },
     {
       "id": "srv_mkoloq41e34074b6133e:perplexity-reasoning",

@@ -422,7 +422,7 @@ export async function POST(req: Request) {
       console.log(`[Primary] Trying direct fetch without proxies first...`);
       try {
         const directController = new AbortController();
-        const directTimeout = setTimeout(() => directController.abort(), 12000); // 12s timeout
+        const directTimeout = setTimeout(() => directController.abort(), 30000); // 30s timeout for slow models
 
         const directRes = await nodeFetch(targetEndpoint, {
           method: "POST",
@@ -478,8 +478,8 @@ export async function POST(req: Request) {
             }
 
             const controller = new AbortController();
-            // Fast failure timeout: 6 seconds
-            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            // Fast failure timeout: 15 seconds (some models are slow)
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             try {
               const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
