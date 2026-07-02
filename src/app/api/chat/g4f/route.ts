@@ -374,7 +374,7 @@ export async function POST(req: Request) {
       }
 
       const fakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-      const requestBody: any = { ...body, model: g4fModel };
+      const requestBody: any = { ...body, model: g4fModel, max_tokens: 8192 };
       if (body.provider) requestBody.provider = body.provider;
 
       const baseHeaders: any = {

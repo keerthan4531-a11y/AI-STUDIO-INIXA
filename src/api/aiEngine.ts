@@ -1741,7 +1741,8 @@ export const aiChat = async (
             body: JSON.stringify({
               messages: conversationHistory,
               model: directModelStr,
-              stream: !!onChunk
+              stream: !!onChunk,
+              max_tokens: 8192
             })
           });
 
