@@ -5,6 +5,9 @@ import { SocksProxyAgent } from "socks-proxy-agent";
 // @ts-ignore
 import nodeFetch from "node-fetch";
 
+// Increase max duration to 60s (Vercel Hobby max) for slow thinking models
+export const maxDuration = 60;
+
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route
 // ═══════════════════════════════════════════════════════════════════
