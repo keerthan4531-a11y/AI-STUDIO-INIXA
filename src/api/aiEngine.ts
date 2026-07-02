@@ -33,29 +33,6 @@ export const AI_MODELS: AIModel[] = [
   // ⚡ AUTO / UNLIMITED MODELS
   // ════════════════════════════════════════════════════════════════
   {
-    id: 'g4f-nova-fast',
-    label: 'nova-fast',
-    engine: 'g4f',
-    modelStr: 'g4f/nova-fast',
-    provider: 'pollinations',
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'nova-fast via G4F Proxy'
-  },
-  {
-    id: 'parallel-chat-auto',
-    label: 'ParallelChat Auto',
-    engine: 'parallel-chat',
-    modelStr: 'parallel-chat/auto',
-    badge: 'AGGREGATOR',
-    badgeColor: 'violet',
-    icon: 'Boxes',
-    iconColor: '#8b5cf6',
-    description: 'Auto-routed Chinese models aggregator'
-  },
-  {
     id: 'unlimited-pollinations',
     label: 'Pollinations Auto (Unlimited)',
     engine: 'unlimited',
@@ -80,50 +57,6 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Brain',
     iconColor: '#f97316',
     description: 'GPT-5.5 via auto-scraped keys'
-  },
-  {
-    id: 'coze-gpt-4o',
-    label: 'Coze GPT-4o',
-    engine: 'coze-proxy',
-    modelStr: 'coze/gpt-4o',
-    badge: 'COZE',
-    badgeColor: 'gold',
-    icon: 'Star',
-    iconColor: '#f97316',
-    description: 'GPT-4o via Coze reverse proxy'
-  },
-  {
-    id: 'ddg-gpt-4o-mini',
-    label: 'GPT-4o mini (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/gpt-4o-mini',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'OpenAI GPT-4o mini via DuckDuckGo'
-  },
-  {
-    id: 'ddg-gpt-5-mini',
-    label: 'GPT-5 mini (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/gpt-5-mini',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'OpenAI GPT-5 mini via DuckDuckGo'
-  },
-  {
-    id: 'ddg-gpt-oss',
-    label: 'GPT-OSS 120B (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/gpt-oss-120b',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'GPT-OSS 120B via DuckDuckGo'
   },
   {
     id: 'g4f-gpt-4o-mini',
@@ -330,28 +263,6 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Star',
     iconColor: '#f97316',
     description: 'Claude Opus 4.7 via auto-scraped keys'
-  },
-  {
-    id: 'coze-claude-3-5',
-    label: 'Coze Claude 3.5',
-    engine: 'coze-proxy',
-    modelStr: 'coze/claude-3.5-sonnet',
-    badge: 'COZE',
-    badgeColor: 'gold',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Claude 3.5 Sonnet via Coze reverse proxy'
-  },
-  {
-    id: 'ddg-claude-haiku-45',
-    label: 'Claude Haiku 4.5 (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/claude-haiku-4-5',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'Anthropic Claude Haiku 4.5 via DuckDuckGo'
   },
   {
     id: 'g4f-claude-fast',
@@ -826,17 +737,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'Qwen 3.6 27B via Groq — ultra fast 314ms'
   },
   {
-    id: 'g4f-qwen3.7-max',
-    label: 'Qwen 3.7 Max',
-    engine: 'g4f',
-    modelStr: 'g4f/qwen3.7-max',
-    badge: 'MAX',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Qwen 3.7 Max via G4F — 10 req, 6674ms'
-  },
-  {
     id: 'qw-qwen3.6-plus',
     label: 'Qwen 3.6 Plus (Worker)',
     engine: 'g4f',
@@ -845,65 +745,10 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#f59e0b',
     description: 'Alibaba Qwen 3.6 Plus — dedicated worker'
   },
-  {
-    id: 'qw-qwen3.7-max',
-    label: 'Qwen 3.7 Max (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-max',
-    badge: 'MAX',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Max — dedicated worker'
-  },
-  {
-    id: 'qw-qwen3.7-plus',
-    label: 'Qwen 3.7 Plus (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-plus',
-    badge: 'PLUS',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
-  },
-  {
-    id: 'qwen-free-max',
-    label: 'Qwen 3.7 Max (Chinese)',
-    engine: 'qwen-free',
-    modelStr: 'qwen-free/qwen-max',
-    badge: 'CHINESE',
-    badgeColor: 'cyan',
-    icon: 'Brain',
-    iconColor: '#06b6d4',
-    description: 'Qwen 3.7 Max via qwen-free-api'
-  },
-  {
-    id: 'qwen-free-plus',
-    label: 'Qwen 3.7 Plus (Chinese)',
-    engine: 'qwen-free',
-    modelStr: 'qwen-free/qwen-plus',
-    badge: 'CHINESE',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Qwen 3.7 Plus via qwen-free-api'
-  },
 
   // ════════════════════════════════════════════════════════════════
   // 🦙 LLAMA MODELS
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'ddg-llama-4-scout',
-    label: 'Llama 4 Scout (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/Llama-4-Scout-17B-16E-Instruct',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'Meta Llama 4 Scout via DuckDuckGo'
-  },
   {
     id: 'g4f-llama-3.1-70b',
     label: 'Llama 3.1 70B',
@@ -985,17 +830,6 @@ export const AI_MODELS: AIModel[] = [
   // ════════════════════════════════════════════════════════════════
   // 🌪️ MISTRAL & MIXTRAL
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'ddg-mistral-small-4',
-    label: 'Mistral Small 4 (DDG)',
-    engine: 'ddg',
-    modelStr: 'ddg/Mixtral-8x7B-Instruct-v0.1',
-    badge: 'DDG',
-    badgeColor: 'green',
-    icon: 'Globe',
-    iconColor: '#10b981',
-    description: 'Mistral Small 4 via DuckDuckGo'
-  },
   {
     id: 'g4f-mistral',
     label: 'Mistral',
