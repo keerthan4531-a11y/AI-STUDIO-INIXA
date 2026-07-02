@@ -1679,9 +1679,9 @@ function checkProviderLimit(provider: string): boolean {
     if (!stored) return false;
 
     const timestamp = parseInt(stored, 10);
-    const ONE_HOUR = 60 * 60 * 1000;
+    const TWO_MINUTES = 2 * 60 * 1000;
 
-    if (Date.now() - timestamp < ONE_HOUR) {
+    if (Date.now() - timestamp < TWO_MINUTES) {
       return true; // Limit is active
     } else {
       localStorage.removeItem(`inixa_rate_limit_${provider}`); // Expired
@@ -1755,7 +1755,7 @@ export const aiChat = async (
       }
 
       if (checkProviderLimit(provider)) {
-        console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 1 hour.`);
+        console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 2 minutes.`);
       } else {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
         try {
