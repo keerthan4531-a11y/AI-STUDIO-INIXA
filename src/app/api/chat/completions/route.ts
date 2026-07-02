@@ -41,7 +41,7 @@ async function scrapeKeys(): Promise<ScrapedKeyEntry[]> {
   }
 }
 
-async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
+async function getAllScrapedKeys(targetModel?: string): Promise<ScrapedKeyEntry[]> {
   const now = Date.now();
   if (now - lastScrapeTime > SCRAPE_INTERVAL || cachedScrapedKeys.length === 0) {
     const fresh = await scrapeKeys();
@@ -57,11 +57,13 @@ async function getAllScrapedKeys(targetModel?: string): Promise<string[]> {
   if (targetModel) {
     const modelKeys = cachedScrapedKeys.filter(e => e.model.endsWith(targetModel));
     if (modelKeys.length > 0) {
-      return modelKeys.map(e => e.key);
+      return modelKeys;
     }
+    // fallback to generic keys if specific model not found
+    return cachedScrapedKeys;
   }
-  // Fallback: return any random key
-  return [cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key];
+  
+  return cachedScrapedKeys;
 }
 
 async function getScrapedKey(targetModel?: string): Promise<string> {
@@ -679,16 +681,16 @@ export async function POST(req: Request) {
         await refreshProxyPool();
         const controllers = scrapedKeys.map(() => new AbortController());
 
-        const fetchPromises = scrapedKeys.map((key, i) => {
+        const fetchPromises = scrapedKeys.map((entry, i) => {
           return new Promise<any>(async (resolve, reject) => {
              const reqHeaders = { 
               'Content-Type': 'application/json', 
-              'Authorization': `Bearer ${key}`,
+              'Authorization': `Bearer ${entry.key}`,
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
               'Accept': 'application/json'
              };
              const bodyStr = JSON.stringify({
-                model: selectedModel,
+                model: entry.model,
                 messages: formattedMessages,
                 stream: stream === true,
                 max_tokens: 8000,
