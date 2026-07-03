@@ -193,7 +193,9 @@ export const ModelSelector = ({
   }, []);
 
   const filteredModels = useMemo(() => {
-    const baseModels = [...modelList].filter((e) => e.provider === provider?.name && e.name);
+    // ALWAYS force Inixa provider because this is the only provider that works with the backend
+    const activeProviderName = 'Inixa';
+    const baseModels = [...modelList].filter((e) => (e.provider === 'Inixa' || !e.provider) && e.name);
 
     return baseModels
       .filter((model) => {
@@ -223,6 +225,16 @@ export const ModelSelector = ({
       })
       .filter((model) => model.searchMatches)
       .sort((a, b) => {
+        // Grouping: Sort by family first, then by search score, then by label
+        const familyA = a.family || 'Other';
+        const familyB = b.family || 'Other';
+        if (familyA !== familyB) {
+          // Keep Inixa Custom and Unlimited at top/bottom or sort alphabetically
+          if (familyA === 'Unlimited') return -1;
+          if (familyB === 'Unlimited') return 1;
+          return familyA.localeCompare(familyB);
+        }
+        
         // Sort by search score (highest first), then by label
         if (debouncedModelSearchQuery) {
           return b.searchScore - a.searchScore;
@@ -231,6 +243,32 @@ export const ModelSelector = ({
         return a.label.localeCompare(b.label);
       });
   }, [modelList, provider?.name, showFreeModelsOnly, debouncedModelSearchQuery]);
+
+  // Group models by family for rendering
+  const groupedFilteredModels = useMemo(() => {
+    const groups: { family: string; models: typeof filteredModels }[] = [];
+    let currentFamily = '';
+    let currentGroupModels: typeof filteredModels = [];
+
+    filteredModels.forEach((model) => {
+      const modelFamily = model.family || 'Other';
+      if (modelFamily !== currentFamily) {
+        if (currentGroupModels.length > 0) {
+          groups.push({ family: currentFamily, models: currentGroupModels });
+        }
+        currentFamily = modelFamily;
+        currentGroupModels = [model];
+      } else {
+        currentGroupModels.push(model);
+      }
+    });
+
+    if (currentGroupModels.length > 0) {
+      groups.push({ family: currentFamily, models: currentGroupModels });
+    }
+
+    return groups;
+  }, [filteredModels]);
 
   const filteredProviders = useMemo(() => {
     // ONLY show Inixa provider for INIXA Custom Models
@@ -421,14 +459,18 @@ export const ModelSelector = ({
       return;
     }
 
-    if (provider && !providerList.some((p) => p.name === provider.name)) {
-      const firstEnabledProvider = providerList[0];
-      setProvider?.(firstEnabledProvider);
+    const allowedProviders = providerList.filter(p => p.name === 'Inixa');
 
-      const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
+    if (!provider || !allowedProviders.some((p) => p.name === provider.name)) {
+      const firstEnabledProvider = allowedProviders[0];
+      if (firstEnabledProvider) {
+        setProvider?.(firstEnabledProvider);
 
-      if (firstModel) {
-        setModel?.(firstModel.name);
+        const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
+
+        if (firstModel) {
+          setModel?.(firstModel.name);
+        }
       }
     }
   }, [providerList, provider, setProvider, modelList, setModel]);
@@ -784,9 +826,7 @@ export const ModelSelector = ({
                       ? `No models match "${debouncedModelSearchQuery}"${showFreeModelsOnly ? ' (free only)' : ''}`
                       : showFreeModelsOnly
                         ? 'No free models available'
-                        : provider?.name && LOCAL_PROVIDERS.includes(provider.name)
-                          ? `No models found — is ${provider.name} running?`
-                          : 'No models available'}
+                        : `No models available. Debug: modelList=${modelList.length}, provider=${provider?.name}, baseModels=${[...modelList].filter((e) => e.provider === (provider?.name || 'Inixa')).length}`}
                   </div>
                   {!debouncedModelSearchQuery && provider?.name && LOCAL_PROVIDERS.includes(provider.name) && (
                     <div className="text-xs text-bolt-elements-textTertiary mt-1">
@@ -807,60 +847,71 @@ export const ModelSelector = ({
                   )}
                 </div>
               ) : (
-                filteredModels.map((modelOption, index) => (
-                  <div
-                    ref={(el) => (modelOptionsRef.current[index] = el)}
-                    key={`${modelOption.name}-${index}`}
-                    role="option"
-                    aria-selected={model === modelOption.name}
-                    className={classNames(
-                      'px-3 py-2 text-sm cursor-pointer',
-                      'hover:bg-bolt-elements-background-depth-3',
-                      'text-bolt-elements-textPrimary',
-                      'outline-none',
-                      model === modelOption.name || focusedModelIndex === index
-                        ? 'bg-bolt-elements-background-depth-2'
-                        : undefined,
-                      focusedModelIndex === index ? 'ring-1 ring-inset ring-bolt-elements-focus' : undefined,
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setModel?.(modelOption.name);
-                      setIsModelDropdownOpen(false);
-                      setModelSearchQuery('');
-                      setDebouncedModelSearchQuery('');
-                    }}
-                    tabIndex={focusedModelIndex === index ? 0 : -1}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate">
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: (modelOption as any).highlightedLabel || modelOption.label,
-                            }}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-bolt-elements-textTertiary">
-                            {formatContextSize(modelOption.maxTokenAllowed)} tokens
-                          </span>
-                          {debouncedModelSearchQuery && (modelOption as any).searchScore > 70 && (
-                            <span className="text-xs text-green-500 font-medium">
-                              {(modelOption as any).searchScore.toFixed(0)}% match
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        {isModelLikelyFree(modelOption, provider?.name) && (
-                          <span className="i-ph:gift text-xs text-purple-400" title="Free model" />
-                        )}
-                        {model === modelOption.name && (
-                          <span className="i-ph:check text-xs text-green-500" title="Selected" />
-                        )}
-                      </div>
+                groupedFilteredModels.map((group) => (
+                  <div key={group.family} className="mb-2 last:mb-0">
+                    <div className="px-3 py-1 text-xs font-bold text-bolt-elements-textTertiary uppercase tracking-wider bg-bolt-elements-background-depth-2/50 sticky top-0 z-10 backdrop-blur-sm">
+                      {group.family}
                     </div>
+                    {group.models.map((modelOption) => {
+                      const flatIndex = filteredModels.indexOf(modelOption);
+                      return (
+                        <div
+                          ref={(el) => (modelOptionsRef.current[flatIndex] = el)}
+                          key={`${modelOption.name}-${flatIndex}`}
+                          role="option"
+                          aria-selected={model === modelOption.name}
+                          className={classNames(
+                            'px-3 py-2 text-sm cursor-pointer',
+                            'hover:bg-bolt-elements-background-depth-3',
+                            'text-bolt-elements-textPrimary',
+                            'outline-none',
+                            model === modelOption.name || focusedModelIndex === flatIndex
+                              ? 'bg-bolt-elements-background-depth-2'
+                              : undefined,
+                            focusedModelIndex === flatIndex ? 'ring-1 ring-inset ring-bolt-elements-focus' : undefined,
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (setModel) {
+                              setModel(modelOption.name);
+                            }
+                            setIsModelDropdownOpen(false);
+                            clearModelSearch();
+                          }}
+                          tabIndex={focusedModelIndex === flatIndex ? 0 : -1}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate">
+                                <span
+                                  dangerouslySetInnerHTML={{
+                                    __html: (modelOption as any).highlightedLabel || modelOption.label,
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-bolt-elements-textTertiary">
+                                  {formatContextSize(modelOption.maxTokenAllowed)} tokens
+                                </span>
+                                {debouncedModelSearchQuery && (modelOption as any).searchScore > 70 && (
+                                  <span className="text-xs text-green-500 font-medium">
+                                    {(modelOption as any).searchScore.toFixed(0)}% match
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              {isModelLikelyFree(modelOption, provider?.name) && (
+                                <span className="i-ph:gift text-xs text-purple-400" title="Free model" />
+                              )}
+                              {model === modelOption.name && (
+                                <span className="i-ph:check text-xs text-green-500" title="Selected" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))
               )}

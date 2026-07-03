@@ -5,7 +5,7 @@ import type { LanguageModelV1 } from 'ai';
 import { logger } from '~/utils/logger';
 
 interface OpenAIModelsResponse {
-  data: Array<{ id: string }>;
+  data: Array<{ id: string; family?: string }>;
 }
 
 export default class OpenAILikeProvider extends BaseProvider {
@@ -55,6 +55,7 @@ export default class OpenAILikeProvider extends BaseProvider {
         name: model.id,
         label: this._generateModelLabel(model.id),
         provider: this.name,
+        family: model.family || 'Other',
         maxTokenAllowed: 128000,
       }));
     } catch (error) {

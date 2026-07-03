@@ -183,6 +183,7 @@ export function getOpenAILikeModel(baseURL: string, apiKey: OptionalApiKey, mode
       'X-Timestamp': timestamp,
       'X-App-Signature': signature,
       'X-Device-Id': 'vibe-studio-bolt',
+      Origin: 'http://127.0.0.1:5173',
     },
   });
 
