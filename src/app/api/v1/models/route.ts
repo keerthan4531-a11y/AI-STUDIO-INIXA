@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AI_MODELS } from '@/api/aiEngine';
 
-export const runtime = 'edge';
 
 // CORS Headers for public API access
 const corsHeaders = {
