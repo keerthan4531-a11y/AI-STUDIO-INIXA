@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     // Add tracking headers or clean up body if needed
     const proxyReqBody = { ...body };
 
-    const proxyRes = await fetch(targetUrl, {
+    let proxyRes = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,7 +80,21 @@ export async function POST(request: Request) {
       body: JSON.stringify(proxyReqBody),
     });
 
-    // 6. Handle Streaming response
+    // 6. Fallback Logic: If primary model fails, fallback to Qwen Max
+    if (!proxyRes.ok) {
+      console.log(`[V1 API] Primary model "${body.model}" failed (Status: ${proxyRes.status}). Falling back to Qwen 3.7 Max...`);
+      const fallbackBody = { ...proxyReqBody, model: 'qwen-free/qwen-max' };
+      
+      proxyRes = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(fallbackBody),
+      });
+    }
+
+    // 7. Handle Streaming response
     if (body.stream && proxyRes.ok && proxyRes.body) {
       return new Response(proxyRes.body, {
         status: proxyRes.status,
