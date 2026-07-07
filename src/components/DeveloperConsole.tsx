@@ -510,10 +510,10 @@ print(response.json()["choices"][0]["message"]["content"])`)}
                     </button>
                     <button 
                       onClick={handleAddKey}
-                      disabled={!newKeyName.trim()}
+                      disabled={!newKeyName.trim() || isGenerating}
                       className="flex-1 h-14 rounded-2xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-all shadow-lg shadow-indigo-500/20"
                     >
-                      Generate Key
+                      {isGenerating ? 'Generating...' : 'Generate Key'}
                     </button>
                   </div>
                 </div>
@@ -522,6 +522,59 @@ print(response.json()["choices"][0]["message"]["content"])`)}
           </div>
         )}
       </AnimatePresence>
+
+      {/* Newly Generated Key Modal */}
+      <AnimatePresence>
+        {newlyGeneratedKey && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[#0f111a] border border-white/10 p-8 rounded-[32px] w-full max-w-lg shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none" />
+              
+              <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center border border-green-500/20 mb-6">
+                <ShieldCheck className="w-8 h-8 text-green-400" />
+              </div>
+              
+              <h2 className="text-2xl font-black text-white mb-2">Save Your API Key</h2>
+              <p className="text-white/40 text-sm mb-6">
+                Please copy this API key now. <strong className="text-white">You won't be able to see it again!</strong>
+              </p>
+              
+              <div className="bg-black/50 p-4 rounded-xl border border-white/5 flex items-center justify-between gap-4 mb-8">
+                <code className="text-green-400 font-mono text-sm truncate">
+                  {newlyGeneratedKey}
+                </code>
+                <button 
+                  onClick={() => copyToClipboard(newlyGeneratedKey)}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all flex-shrink-0"
+                  title="Copy Full Key"
+                >
+                  {copiedKey === newlyGeneratedKey ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setNewlyGeneratedKey(null)}
+                  className="px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold transition-all"
+                >
+                  I've saved it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
