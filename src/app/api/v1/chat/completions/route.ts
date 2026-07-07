@@ -64,9 +64,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Proxy to our Cloudflare Worker / AI Gateway
-    const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
-    const targetUrl = `${CF_WORKER_URL}/v1/chat/completions`;
+    // 5. Proxy to our INTERNAL rich Next.js API endpoint instead of the raw CF worker
+    // This ensures all AI_MODELS, formatting, G4F, and fallback logic is fully supported.
+    const url = new URL(request.url);
+    const targetUrl = `${url.origin}/api/chat/completions`;
 
     // Add tracking headers or clean up body if needed
     const proxyReqBody = { ...body };
