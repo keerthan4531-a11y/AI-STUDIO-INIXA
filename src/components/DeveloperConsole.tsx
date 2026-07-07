@@ -310,7 +310,7 @@ export function DeveloperConsole() {
                       
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => handleDeleteKey(k.key)}
+                          onClick={() => k.key && handleDeleteKey(k.key)}
                           className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all"
                           title="Delete Key"
                         >
