@@ -42,26 +42,6 @@ const usageData = [
 ];
 
 export function DeveloperConsole() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [chartDimensions, setChartDimensions] = useState<{ width: number; height: number } | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const observer = new ResizeObserver((entries) => {
-      if (!entries || entries.length === 0) return;
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) {
-        setChartDimensions({ width, height });
-      }
-    });
-
-    observer.observe(containerRef.current);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   const [keys, setKeys] = useState<InixaApiKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -169,8 +149,8 @@ export function DeveloperConsole() {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Requests', value: '12,842', change: '+12%', color: 'text-indigo-400' },
-                  { label: 'Avg Latency', value: '420ms', change: '-50ms', color: 'text-green-400' },
+                  { label: 'Total Requests', value: keys.reduce((sum, k) => sum + (k.totalRequests || 0), 0).toLocaleString(), change: 'Live', color: 'text-indigo-400' },
+                  { label: 'Avg Latency', value: '420ms', change: 'Stable', color: 'text-green-400' },
                   { label: 'Success Rate', value: '99.9%', change: 'Stable', color: 'text-blue-400' },
                   { label: 'Active Keys', value: keys.length.toString(), change: 'Live', color: 'text-purple-400' },
                 ].map((stat, i) => (
@@ -198,56 +178,50 @@ export function DeveloperConsole() {
                   </div>
                 </div>
                 
-                <div ref={containerRef} className="h-[300px] w-full relative">
-                  {chartDimensions ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={usageData}>
-                        <defs>
-                          <linearGradient id="colorReq" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                        <XAxis 
-                          dataKey="time" 
-                          stroke="rgba(255,255,255,0.2)" 
-                          fontSize={10} 
-                          tickLine={false} 
-                          axisLine={false}
-                        />
-                        <YAxis 
-                          stroke="rgba(255,255,255,0.2)" 
-                          fontSize={10} 
-                          tickLine={false} 
-                          axisLine={false}
-                          tickFormatter={(value) => `${value}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(10, 10, 15, 0.9)', 
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '12px',
-                            fontSize: '11px'
-                          }} 
-                          itemStyle={{ color: '#818cf8' }}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="requests" 
-                          stroke="#6366f1" 
-                          strokeWidth={3}
-                          fillOpacity={1} 
-                          fill="url(#colorReq)" 
-                          animationDuration={2000}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-white/20 text-xs font-medium">
-                      Loading chart...
-                    </div>
-                  )}
+                <div className="h-[300px] w-full relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={usageData}>
+                      <defs>
+                        <linearGradient id="colorReq" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                      <XAxis 
+                        dataKey="time" 
+                        stroke="rgba(255,255,255,0.2)" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        stroke="rgba(255,255,255,0.2)" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false}
+                        tickFormatter={(value) => `${value}`}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(10, 10, 15, 0.9)', 
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '12px',
+                          fontSize: '11px'
+                        }} 
+                        itemStyle={{ color: '#818cf8' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="requests" 
+                        stroke="#6366f1" 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#colorReq)" 
+                        animationDuration={2000}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </motion.div>
