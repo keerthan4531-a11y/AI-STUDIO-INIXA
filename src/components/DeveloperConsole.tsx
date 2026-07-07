@@ -65,26 +65,48 @@ export function DeveloperConsole() {
   const [keys, setKeys] = useState<InixaApiKey[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'keys' | 'docs' | 'analytics'>('keys');
 
-  useEffect(() => {
-    setKeys(getApiKeys());
-  }, []);
-
-  const handleAddKey = () => {
-    if (!newKeyName.trim()) return;
-    vibrate(50);
-    generateApiKey(newKeyName);
-    setKeys(getApiKeys());
-    setNewKeyName('');
-    setShowAddModal(false);
+  const refreshKeys = async () => {
+    const freshKeys = await getApiKeys();
+    setKeys(freshKeys);
   };
 
-  const handleDeleteKey = (key: string) => {
+  useEffect(() => {
+    refreshKeys();
+  }, []);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleAddKey = async () => {
+    if (!newKeyName.trim() || isGenerating) return;
+    setIsGenerating(true);
+    vibrate(50);
+    try {
+      const result = await generateApiKey(newKeyName);
+      setNewlyGeneratedKey(result.rawKey);
+      await refreshKeys();
+      setNewKeyName('');
+      setShowAddModal(false);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate key');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDeleteKey = async (keyHash: string) => {
+    if (!confirm('Are you sure you want to delete this API key? This will break any apps using it.')) return;
     vibrate(100);
-    deleteApiKey(key);
-    setKeys(getApiKeys());
+    try {
+      await deleteApiKey(keyHash);
+      await refreshKeys();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -277,7 +299,7 @@ export function DeveloperConsole() {
                           <h3 className="text-sm font-bold text-white mb-1">{k.name}</h3>
                           <div className="flex items-center gap-3">
                             <code className="text-[11px] text-white/40 font-mono bg-black/40 px-2 py-0.5 rounded">
-                              {copiedKey === k.key ? k.key : `${k.key.substring(0, 8)}...${k.key.substring(k.key.length - 4)}`}
+                              {k.keyPrefix}****************
                             </code>
                             <span className="text-[10px] text-white/20 uppercase tracking-widest font-black">
                               Created {new Date(k.createdAt).toLocaleDateString()}
@@ -287,13 +309,6 @@ export function DeveloperConsole() {
                       </div>
                       
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => copyToClipboard(k.key)}
-                          className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-all"
-                          title="Copy Key"
-                        >
-                          {copiedKey === k.key ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                        </button>
                         <button 
                           onClick={() => handleDeleteKey(k.key)}
                           className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all"
@@ -338,9 +353,9 @@ export function DeveloperConsole() {
                 <div className="p-5 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Production URL</p>
-                    <code className="text-sm text-white font-mono">https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions</code>
+                    <code className="text-sm text-white font-mono">https://ai-studio-inixa.vercel.app/api/v1/chat/completions</code>
                   </div>
-                  <button onClick={() => copyToClipboard('https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions')} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-bold transition-all border border-indigo-500/20">
+                  <button onClick={() => copyToClipboard('https://ai-studio-inixa.vercel.app/api/v1/chat/completions')} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-bold transition-all border border-indigo-500/20">
                     <Copy className="w-4 h-4" /> Copy Endpoint
                   </button>
                 </div>
@@ -361,7 +376,7 @@ export function DeveloperConsole() {
                     <div className="p-5 rounded-2xl bg-[#0d1117] border border-white/10 overflow-hidden relative group">
                       <pre className="text-[11px] leading-relaxed font-mono text-white/80 overflow-x-auto">
 {`// API Call using Inixa Key
-const res = await fetch('https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions', {
+const res = await fetch('https://ai-studio-inixa.vercel.app/api/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -377,7 +392,7 @@ const data = await res.json();
 console.log(data.choices[0].message.content);`}
                       </pre>
                       <button 
-                        onClick={() => copyToClipboard(`const res = await fetch('https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions', {
+                        onClick={() => copyToClipboard(`const res = await fetch('https://ai-studio-inixa.vercel.app/api/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -407,7 +422,7 @@ console.log(data.choices[0].message.content);`)}
                       <pre className="text-[11px] leading-relaxed font-mono text-white/80 overflow-x-auto">
 {`import requests
 
-url = "https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions"
+url = "https://ai-studio-inixa.vercel.app/api/v1/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_INIXA_KEY",
     "Content-Type": "application/json"
@@ -423,7 +438,7 @@ print(response.json()["choices"][0]["message"]["content"])`}
                       <button 
                         onClick={() => copyToClipboard(`import requests
 
-url = "https://sparkling-mountain-1aee.keerthana-ai.workers.dev/v1/chat/completions"
+url = "https://ai-studio-inixa.vercel.app/api/v1/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_INIXA_KEY",
     "Content-Type": "application/json"
