@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Optional: Pass through user agent or other info
+        'Origin': 'https://ai-studio-inixa.vercel.app', // Bypass internal CORS check
       },
       body: JSON.stringify(proxyReqBody),
     });
@@ -101,6 +101,7 @@ export async function POST(request: Request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Origin': 'https://ai-studio-inixa.vercel.app',
         },
         body: JSON.stringify(fallbackBody),
       });
