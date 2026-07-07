@@ -284,6 +284,13 @@ export function DeveloperConsole() {
                       
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
+                          onClick={() => copyToClipboard(`${k.keyPrefix}****************`)}
+                          className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-all"
+                          title="Copy Key Prefix"
+                        >
+                          {copiedKey === `${k.keyPrefix}****************` ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                        <button 
                           onClick={() => k.key && handleDeleteKey(k.key)}
                           className="w-9 h-9 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center text-red-400 transition-all"
                           title="Delete Key"
