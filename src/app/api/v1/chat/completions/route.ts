@@ -14,6 +14,17 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
+export async function GET() {
+  return NextResponse.json(
+    { 
+      message: 'Inixa API Service is running.', 
+      documentation: 'https://ai-studio-inixa.vercel.app/developer',
+      error: 'Please use POST method to send chat completions.'
+    }, 
+    { status: 200, headers: corsHeaders }
+  );
+}
+
 export async function POST(request: Request) {
   try {
     // 1. Check Authorization
