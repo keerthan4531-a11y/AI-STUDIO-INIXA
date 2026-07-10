@@ -236,7 +236,7 @@ export async function POST(req: Request) {
       : [{ role: 'system', content: CHART_SYSTEM_PROMPT }, ...chatMessages];
 
     // ── Forward to Cloudflare Worker (UNIVERSAL PROXY) ──
-    const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
+    const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://ultimate-ai-worker.haruyhari930.workers.dev';
     let ROUTER_URL = `${CF_WORKER_URL}/v1/chat/completions`;
     let ROUTER_API_KEY = '';
 
@@ -637,8 +637,36 @@ export async function POST(req: Request) {
 
     let proxyResponse: Response;
 
+    // Direct Meta AI native routing (via Cloudflare Worker)
+    if (selectedModel.startsWith('meta-ai/')) {
+      const metaModel = selectedModel.replace('meta-ai/', '');
+      console.log(`[Meta Route] Routing via Cloudflare Worker for model: ${metaModel}`);
+      proxyResponse = await fetch(`${CF_WORKER_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: metaModel,
+          messages: formattedMessages,
+          stream: stream === true,
+        }),
+      });
+    }
+    // Direct Baidu Ernie AI routing (via Cloudflare Worker)
+    else if (selectedModel.startsWith('ernie/')) {
+      const ernieModel = selectedModel.replace('ernie/', '');
+      console.log(`[Ernie Route] Routing via Cloudflare Worker for model: ${ernieModel}`);
+      proxyResponse = await fetch(`${CF_WORKER_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: ernieModel,
+          messages: formattedMessages,
+          stream: stream === true,
+        }),
+      });
+    }
     // Direct Google Gemini API routing
-    if (selectedModel.startsWith('gemini/')) {
+    else if (selectedModel.startsWith('gemini/')) {
       const geminiModel = selectedModel.replace('gemini/', '');
       const geminiApiKey = process.env.GEMINI_API_KEY;
       

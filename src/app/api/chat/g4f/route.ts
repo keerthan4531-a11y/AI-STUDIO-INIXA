@@ -123,7 +123,7 @@ async function refreshProxyPool() {
       const geoRes = await nodeFetch(
         "https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc&protocols=socks5%2Csocks4%2Chttp%2Chttps",
       );
-      const geoData = await geoRes.json();
+      const geoData = (await geoRes.json()) as Record<string, any>;
       if (geoData && geoData.data) {
         geoData.data
           .filter((p: any) => p.speed < 3000)

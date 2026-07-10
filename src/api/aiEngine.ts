@@ -45,6 +45,32 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // 🟢 META AI
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'meta-ai-muse',
+    label: 'Meta AI (Muse Spark)',
+    engine: 'custom',
+    modelStr: 'meta-ai/muse-spark',
+    badge: 'META',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Native reverse-engineered Meta AI client'
+  },
+  {
+    id: 'baidu-ernie-5.1',
+    label: 'Baidu Ernie 5.1',
+    engine: 'custom',
+    modelStr: 'ernie/ERINE-5.1',
+    badge: 'BAIDU',
+    badgeColor: 'red',
+    icon: 'Brain',
+    iconColor: '#ef4444',
+    description: 'Baidu ERNIE-5.1 unauthenticated SSE proxy'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🟢 GPT MODELS
   // ════════════════════════════════════════════════════════════════
   {
