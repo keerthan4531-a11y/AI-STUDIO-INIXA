@@ -84,50 +84,7 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#eab308',
     description: 'Grok 3 via xAI'
   },
-  {
-    id: 'glm-5',
-    label: 'GLM-5',
-    engine: 'custom',
-    modelStr: 'zai/glm-5',
-    badge: 'NEW',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#2563eb',
-    description: 'GLM-5 via Nadanada'
-  },
-  {
-    id: 'minimax-m3',
-    label: 'MiniMax M3',
-    engine: 'custom',
-    modelStr: 'minimax/minimax-m3',
-    badge: 'NEW',
-    badgeColor: 'pink',
-    icon: 'Sparkles',
-    iconColor: '#db2777',
-    description: 'MiniMax M3 via Nadanada'
-  },
-  {
-    id: 'gemini-3.1-flash',
-    label: 'Gemini 3.1 Flash Lite',
-    engine: 'custom',
-    modelStr: 'google/gemini-3.1-flash-lite-preview',
-    badge: 'NEW',
-    badgeColor: 'yellow',
-    icon: 'Brain',
-    iconColor: '#facc15',
-    description: 'Gemini 3.1 Flash Lite Preview'
-  },
-  {
-    id: 'deepseek-v3.2',
-    label: 'DeepSeek V3.2',
-    engine: 'custom',
-    modelStr: 'deepseek/deepseek-v3.2',
-    badge: 'NEW',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V3.2 via Nadanada'
-  },
+
 
   // ════════════════════════════════════════════════════════════════
   // 🟢 PERPLEXITY
