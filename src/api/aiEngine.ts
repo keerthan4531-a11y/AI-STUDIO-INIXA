@@ -75,7 +75,7 @@ export const AI_MODELS: AIModel[] = [
   },
   {
     id: 'grok-3',
-    label: 'Grok 3',
+    label: 'Grok 4 ',
     engine: 'custom',
     modelStr: 'xai/grok-3',
     badge: 'NEW',
@@ -422,7 +422,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'gemini-3.1-pro-low',
     engine: 'g4f',
     modelStr: 'g4f/gemini-3.1-pro-low',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Sparkles',
@@ -533,7 +533,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'gemma3:4b',
     engine: 'g4f',
     modelStr: 'g4f/gemma3:4b',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Zap',
@@ -795,7 +795,7 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#8b5cf6',
     description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
-  },  {
+  }, {
     id: 'g4f-qwen3-32b',
     label: 'Qwen 3 32B (Groq)',
     engine: 'g4f',
@@ -811,7 +811,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
     engine: 'g4f',
     modelStr: 'g4f/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Code',
@@ -823,7 +823,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
     engine: 'g4f',
     modelStr: 'g4f/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Code',
@@ -1308,7 +1308,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'minimax-m3:cloud',
     engine: 'g4f',
     modelStr: 'g4f/minimax-m3:cloud',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Zap',
@@ -1331,7 +1331,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'xiaomimimo/mimo-V2.5',
     engine: 'g4f',
     modelStr: 'g4f/xiaomimimo/mimo-V2.5',
-    
+
     badge: 'NEW',
     badgeColor: 'cyan',
     icon: 'Zap',
@@ -1717,7 +1717,7 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
           if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
           const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
           const reasoning = parsed.choices?.[0]?.delta?.reasoning_content || parsed.choices?.[0]?.delta?.reasoning || '';
-          
+
           if (reasoning) {
             if (!fullReply.includes('<think>')) {
               fullReply += '<think>\n';
@@ -1725,7 +1725,7 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
             fullReply += reasoning;
             changed = true;
           }
-          
+
           if (content) {
             if (fullReply.includes('<think>') && !fullReply.includes('</think>')) {
               fullReply += '\n</think>\n';
@@ -1806,7 +1806,7 @@ export const aiChat = async (
     const modelStr = model.modelStr;
     console.log(`[aiChat] Model: ${model.label}, Engine: ${model.engine}, ModelStr: ${modelStr}, Provider: ${model.provider || 'default'}`);
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+    const API_BASE = ''; // Always use relative URLs to prevent CORS issues on Vercel
 
     // Route based on engine type
     let endpointPath: string;
@@ -1937,12 +1937,12 @@ export const aiChat = async (
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content || data.reply || '';
     const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
-    
+
     let reply = content;
     if (reasoning) {
       reply = `<think>\n${reasoning}\n</think>\n${content}`;
     }
-    
+
     return reply || 'No response received from the AI model.';
   } catch (e) {
     console.error('Chat API Error', e);

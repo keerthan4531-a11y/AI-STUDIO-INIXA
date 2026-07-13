@@ -119,6 +119,7 @@ export default {
       // Parse Perplexity SSE and transform to OpenAI format
       let buffer = '';
       let fullResponse = '';
+      let sourcesList = [];
       
       const transformStream = new TransformStream({
         transform(chunk, controller) {
@@ -137,6 +138,10 @@ export default {
                 for (const block of jsonData.blocks || []) {
                   for (const patch of block.diff_block?.patches || []) {
                     if (patch.path === "/progress" || patch.path.startsWith("/goals")) continue;
+                    
+                    if (patch.value?.payload?.sources_payload?.sources) {
+                      sourcesList = patch.value.payload.sources_payload.sources;
+                    }
                     
                     if (patch.path.endsWith("/text") || patch.path.endsWith("/content")) {
                       let value = patch.value || "";
@@ -175,6 +180,14 @@ export default {
         },
         flush(controller) {
           const encoder = new TextEncoder();
+          let extraContent = "";
+          if (sourcesList && sourcesList.length > 0) {
+             extraContent += "\n\n---\n**Sources:**\n" + sourcesList.map((s, i) => `${i+1}. [${s.name}](${s.url})`).join("\n");
+          }
+          if (extraContent) {
+             const chunk = { id: `chatcmpl-${Date.now()}`, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: "copilot", choices: [{ index: 0, delta: { content: extraContent }, finish_reason: null }] };
+             controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          }
           const finalChunk = { id: `chatcmpl-${Date.now()}`, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: "copilot", choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));

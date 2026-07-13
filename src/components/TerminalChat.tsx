@@ -53,7 +53,7 @@ export default function TerminalChat() {
 
     try {
       // Temporary mocked response for UI building phase
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+      const API_BASE = ''; // Always use relative URLs to prevent CORS issues on Vercel
       const response = await fetch(`${API_BASE}/api/chat/completions`, {
         method: 'POST',
         headers: {

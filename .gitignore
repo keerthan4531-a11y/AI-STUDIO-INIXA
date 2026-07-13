@@ -51,3 +51,4 @@ next-env.d.ts
 inixa-app.apk
 cloudflare-worker.js
 .firebase/
+.vercel
