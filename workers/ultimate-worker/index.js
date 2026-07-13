@@ -7,6 +7,7 @@ import updfWorker from './updf.js';
 import perplexityCopilotWorker from './perplexity-copilot.js';
 import surfsenseWorker from './surfsense.js';
 import grokWorker from './grok.js';
+import nadanadaWorker from './nadanada.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -86,6 +87,11 @@ export default {
         // Route to Grok
         if (model.includes("grok")) {
           return await grokWorker.fetch(subRequest, env, ctx);
+        }
+
+        // Route to Nadanada
+        if (model.includes("nadanada") || model.includes("glm-5") || model.includes("minimax") || model.includes("gemini-3.1") || model.includes("deepseek-v3.2")) {
+          return await nadanadaWorker.fetch(subRequest, env, ctx);
         }
 
         // Route to Perplexity
