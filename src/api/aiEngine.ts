@@ -73,6 +73,17 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#14b8a6',
     description: 'Surfsense Anonymous Chat API'
   },
+  {
+    id: 'grok-3',
+    label: 'Grok 3',
+    engine: 'custom',
+    modelStr: 'xai/grok-3',
+    badge: 'NEW',
+    badgeColor: 'yellow',
+    icon: 'Zap',
+    iconColor: '#eab308',
+    description: 'Grok 3 via xAI'
+  },
 
   // ════════════════════════════════════════════════════════════════
   // 🟢 PERPLEXITY

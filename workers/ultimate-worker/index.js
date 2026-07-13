@@ -6,6 +6,7 @@ import metaAIWorker from './meta-ai.js';
 import updfWorker from './updf.js';
 import perplexityCopilotWorker from './perplexity-copilot.js';
 import surfsenseWorker from './surfsense.js';
+import grokWorker from './grok.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -82,8 +83,13 @@ export default {
           return await surfsenseWorker.fetch(subRequest, env, ctx);
         }
 
+        // Route to Grok
+        if (model.includes("grok")) {
+          return await grokWorker.fetch(subRequest, env, ctx);
+        }
+
         // Route to Perplexity
-        if (model.includes("turbo") || model.includes("sonar") || model.includes("gpt5") || model.includes("claude") || model.includes("grok") || model.includes("pplx")) {
+        if (model.includes("turbo") || model.includes("sonar") || model.includes("gpt5") || model.includes("claude") || model.includes("pplx")) {
           return await perplexityWorker.fetch(subRequest, env, ctx);
         }
 
