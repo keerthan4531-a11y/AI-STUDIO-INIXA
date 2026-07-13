@@ -601,10 +601,12 @@ export async function POST(req: Request) {
            body: JSON.stringify({ ...body, model: selectedModel })
          });
 
-         if (stream === true) {
+         if (stream === true && g4fRes.ok) {
+           const upstreamContentType = g4fRes.headers.get('content-type') || 'text/event-stream';
            return new Response(g4fRes.body, {
+             status: g4fRes.status,
              headers: {
-               'Content-Type': 'text/event-stream',
+               'Content-Type': upstreamContentType,
                'Cache-Control': 'no-cache',
                'Connection': 'keep-alive',
                'X-RateLimit-Limit': String(maxRequests),

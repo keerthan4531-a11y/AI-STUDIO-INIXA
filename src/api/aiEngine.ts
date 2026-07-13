@@ -45,6 +45,51 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // 🟢 UPDF
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'updf-gpt-5-6',
+    label: 'GPT-5.6 (UPDF Flagship)',
+    engine: 'custom',
+    modelStr: 'updf/gpt-5.6',
+    badge: 'NEW',
+    badgeColor: 'purple',
+    icon: 'Sparkles',
+    iconColor: '#a855f7',
+    description: 'UPDF AI Knowledge Talk Stream API'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🟢 SURFSENSE
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'surfsense-gpt5.4-mini',
+    label: 'GPT-5.4 Mini',
+    engine: 'custom',
+    modelStr: 'surfsense/gpt-5.4-mini-no-login',
+    badge: 'MINI',
+    badgeColor: 'teal',
+    icon: 'Sparkles',
+    iconColor: '#14b8a6',
+    description: 'Surfsense Anonymous Chat API'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🟢 PERPLEXITY
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'perplexity-copilot',
+    label: 'Perplexity Copilot',
+    engine: 'custom',
+    modelStr: 'perplexity-direct/copilot',
+    badge: 'COPILOT',
+    badgeColor: 'cyan',
+    icon: 'Sparkles',
+    iconColor: '#06b6d4',
+    description: 'Perplexity Copilot via direct Cloudflare worker'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🟢 META AI
   // ════════════════════════════════════════════════════════════════
   {
@@ -1475,7 +1520,7 @@ export const getSelectedModel = (): AIModel => {
       }
     } catch (e) { }
   }
-  return AI_MODELS.find(m => m.id === 'g4f-openai-fast') || AI_MODELS[0];
+  return AI_MODELS.find(m => m.id === 'surfsense-gpt5.4-mini') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {
@@ -1774,6 +1819,9 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
+      } else if (modelStr.startsWith('updf')) {
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        provider = 'updf';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
@@ -1858,7 +1906,20 @@ export const aiChat = async (
     }
 
     if (onChunk && res.body) {
-      return await handleSSEStream(res, onChunk);
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content || data.reply || '';
+        const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
+        let reply = content;
+        if (reasoning) {
+          reply = `<think>\n${reasoning}\n</think>\n${content}`;
+        }
+        if (reply) onChunk(reply);
+        return reply || 'No response received from the AI model.';
+      } else {
+        return await handleSSEStream(res, onChunk);
+      }
     }
 
     const data = await res.json();

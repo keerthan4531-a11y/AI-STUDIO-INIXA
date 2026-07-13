@@ -395,7 +395,9 @@ export async function POST(req: Request) {
       }
 
       const handleStreamingResponse = async (res: any) => {
-        if (stream) {
+        const contentType = res.headers.get("content-type") || "";
+        
+        if (stream && !contentType.includes("application/json")) {
           const bodyStream = new ReadableStream({
             start(controller) {
               (res.body as any).on("data", (chunk: Buffer) =>
@@ -418,7 +420,10 @@ export async function POST(req: Request) {
             },
           });
         }
-        return NextResponse.json(await res.json());
+        
+        // If stream wasn't requested OR upstream returned JSON (ignoring stream request)
+        const data = await res.json();
+        return NextResponse.json(data);
       };
 
       // ── Step 2A: Direct Fetch (Super Fast) ──
@@ -437,8 +442,13 @@ export async function POST(req: Request) {
         clearTimeout(directTimeout);
 
         if (directRes.ok) {
-          console.log(`[Primary] Direct fetch succeeded!`);
-          return await handleStreamingResponse(directRes);
+          const contentType = directRes.headers.get("content-type") || "";
+          if (!contentType.includes("text/html")) {
+            console.log(`[Primary] Direct fetch succeeded!`);
+            return await handleStreamingResponse(directRes);
+          } else {
+            console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
+          }
         } else {
           console.warn(
             `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,
@@ -502,6 +512,10 @@ export async function POST(req: Request) {
               clearTimeout(timeoutId);
 
               if (g4fRes.ok) {
+                const contentType = g4fRes.headers.get("content-type") || "";
+                if (contentType.includes("text/html")) {
+                  return reject(new Error("Proxy returned HTML instead of valid API response"));
+                }
                 console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
                 cachedWorkingProxy = proxyUrl; // Cache the winner
                 resolve(g4fRes);

@@ -3,6 +3,9 @@ import perplexityWorker from './perplexity.js';
 import qwenWorker from './qwen.js';
 import baiduErnieWorker from './baidu-ernie.js';
 import metaAIWorker from './meta-ai.js';
+import updfWorker from './updf.js';
+import perplexityCopilotWorker from './perplexity-copilot.js';
+import surfsenseWorker from './surfsense.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -64,11 +67,26 @@ export default {
           return await qwenWorker.fetch(subRequest, env, ctx);
         }
         
+        // Route to Perplexity Copilot Direct
+        if (model.includes("copilot") || model.includes("perplexity-direct")) {
+          return await perplexityCopilotWorker.fetch(subRequest, env, ctx);
+        }
+        
+        // Route to UPDF
+        if (model.includes("updf") || model.includes("gpt-5.6") || model.includes("gpt5.6")) {
+          return await updfWorker.fetch(subRequest, env, ctx);
+        }
+
+        // Route to Surfsense
+        if (model.includes("surfsense") || model.includes("gpt-5.4")) {
+          return await surfsenseWorker.fetch(subRequest, env, ctx);
+        }
+
         // Route to Perplexity
         if (model.includes("turbo") || model.includes("sonar") || model.includes("gpt5") || model.includes("claude") || model.includes("grok") || model.includes("pplx")) {
           return await perplexityWorker.fetch(subRequest, env, ctx);
         }
-        
+
         // Route to Pollinations (Default for GPT-4o, OpenAI, Llama, Gemini, etc.)
         return await pollinationsWorker.fetch(subRequest, env, ctx);
       }

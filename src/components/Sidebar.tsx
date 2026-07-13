@@ -8,7 +8,7 @@ import { vibrate } from '../utils/helpers';
 import type { UserData } from './AuthScreen';
 import type { ChatSession } from '../App';
 
-export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix' | 'music';
+export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix' | 'music' | 'auto-pilot';
 
 interface SidebarProps {
   user: UserData;
@@ -56,6 +56,7 @@ const transitionProps = {
 const navItems = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
   { id: 'deep-research', icon: Globe, label: 'Deep Research', badge: 'AUTO' },
+  { id: 'auto-pilot', icon: Globe, label: 'Web Auto-Pilot', badge: 'BETA' },
   { id: 'note-ix', icon: BookMarked, label: 'NOTE-IX', badge: 'STUDIO' },
   { id: 'vibe', icon: Sparkles, label: 'Vibe Studio', badge: 'ELITE' },
   { id: 'pdf', icon: FileCode, label: 'PDF Chat', badge: 'RAG' },
@@ -170,6 +171,7 @@ export function DesktopSidebar({ user, activeTab, onTabChange, onNewChat, onSele
                   isActive ? "text-indigo-400" : "group-hover:scale-110",
                   item.id === 'vibe' && isActive && "text-fuchsia-400",
                   item.id === 'note-ix' && isActive && "text-fuchsia-400",
+                  item.id === 'auto-pilot' && isActive && "text-cyan-400",
                   item.id === 'deep-research' && isActive && "text-emerald-400"
                 )} />
                 <motion.span 

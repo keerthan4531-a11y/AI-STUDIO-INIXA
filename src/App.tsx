@@ -6,6 +6,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { VideoGenerator, ImageGenerator } from './components/Generators';
 import { MusicStudio } from './components/MusicStudio';
 import { ProfileScreen } from './components/ProfileScreen';
+import AutoPilotAgent from './components/AutoPilotAgent';
 import { AboutScreen } from './components/AboutScreen';
 import { AuthScreen, type UserData } from './components/AuthScreen';
 import { ModelSelector } from './components/ModelSelector';
@@ -265,6 +266,7 @@ export default function App() {
                 {activeTab === 'about' && <AboutScreen />}
                 {activeTab === 'api' && <DeveloperConsole />}
                 {activeTab === 'voice' && <VoiceAssistant />}
+                {activeTab === 'auto-pilot' && <AutoPilotAgent />}
                 {activeTab === 'deep-research' && <DeepResearchAgent currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
               </motion.div>
             </AnimatePresence>

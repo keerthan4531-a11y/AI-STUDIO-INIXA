@@ -1,7 +1,10 @@
 "use client";
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, ChevronRight, ChevronUp, Lightbulb } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Brain } from 'lucide-react';
+import { ThinkPanelMeta } from './think/ThinkPanelMeta';
+import { ThinkPanelDeepSeek } from './think/ThinkPanelDeepSeek';
+import { ThinkPanelNova } from './think/ThinkPanelNova';
 
 interface DeepThinkPanelProps {
   thinkingContent: string;
@@ -10,88 +13,18 @@ interface DeepThinkPanelProps {
 }
 
 export function DeepThinkPanel({ thinkingContent, isThinking, modelName }: DeepThinkPanelProps) {
-  const [expanded, setExpanded] = useState(isThinking);
+  // Pick a random variant on mount so it doesn't change during re-renders
+  const [variant] = React.useState(() => Math.floor(Math.random() * 3));
 
-  // Auto-collapse when thinking finishes
-  React.useEffect(() => {
-    if (!isThinking) setExpanded(false);
-    else setExpanded(true);
-  }, [isThinking]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] overflow-hidden mb-4"
-    >
-      {/* Header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <motion.div
-            animate={isThinking ? { rotate: [0, 360] } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center"
-          >
-            <Lightbulb className="w-4 h-4 text-amber-400" />
-          </motion.div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-amber-300">
-              {isThinking ? 'Thinking...' : 'Thought Process'}
-            </span>
-            {isThinking && (
-              <motion.div className="flex gap-1">
-                {[0, 0.15, 0.3].map(d => (
-                  <motion.div
-                    key={d}
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                    transition={{ repeat: Infinity, duration: 1, delay: d }}
-                    className="w-1 h-1 rounded-full bg-amber-400"
-                  />
-                ))}
-              </motion.div>
-            )}
-          </div>
-        </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-amber-400/50" /> : <ChevronRight className="w-4 h-4 text-amber-400/50" />}
-      </button>
-
-      {/* Content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-4 border-t border-amber-500/10">
-              <div className="mt-3 text-[13px] leading-relaxed text-white/50 whitespace-pre-wrap font-mono max-h-[300px] overflow-y-auto hide-scrollbar">
-                {thinkingContent || (
-                  <motion.span
-                    animate={{ opacity: [0.3, 0.8, 0.3] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    Analyzing the query and formulating a comprehensive response...
-                  </motion.span>
-                )}
-                {isThinking && (
-                  <motion.span
-                    animate={{ opacity: [1, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    className="inline-block w-[2px] h-[1em] bg-amber-400/80 ml-0.5 align-text-bottom"
-                  />
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+  switch (variant) {
+    case 0:
+      return <ThinkPanelDeepSeek thinkingContent={thinkingContent} isThinking={isThinking} />;
+    case 1:
+      return <ThinkPanelNova thinkingContent={thinkingContent} isThinking={isThinking} modelName={modelName} />;
+    case 2:
+    default:
+      return <ThinkPanelMeta thinkingContent={thinkingContent} isThinking={isThinking} modelName={modelName} />;
+  }
 }
 
 // Deep Think toggle button for the input area

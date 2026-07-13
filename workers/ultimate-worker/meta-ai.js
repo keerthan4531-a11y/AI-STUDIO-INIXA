@@ -459,68 +459,137 @@ async function metaAIChat(prompt, env) {
   // Step 6: Collect response
   return new Promise((resolve, reject) => {
     let fullText = "";
-    let currentText = "";
     let timeout;
     const chunks = [];
+    let state = {
+        currentText: "",
+        currentThinkText: "",
+        sentImages: new Set(),
+        thinkStarted: false,
+        thinkEnded: false
+      };
 
     const resetTimeout = () => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => {
         ws.close();
-        if (fullText || currentText) {
-          resolve({ text: fullText || currentText, chunks });
+        if (fullText) {
+          resolve({ text: fullText, chunks });
         } else {
           reject(new Error("Response timeout — no text received"));
         }
-      }, 5000); // 5 second timeout for no new data
+      }, 30000); // 30 second timeout for no new data
     };
 
     resetTimeout();
 
     ws.addEventListener("message", (event) => {
-      resetTimeout();
       try {
-        let data = event.data;
-        let bytes;
-        if (typeof data === "string") {
-          bytes = new TextEncoder().encode(data);
-        } else if (data instanceof ArrayBuffer) {
-          bytes = new Uint8Array(data);
-        } else {
-          return;
-        }
-
+        const bytes = new Uint8Array(event.data);
+        if (bytes[0] === 0x0f) return;
         const objects = extractJsonObjects(bytes);
+        
         for (const obj of objects) {
-          const eventType = obj.type;
-
-          if (eventType === "patch") {
+          let delta = "";
+          let gotRealContent = false;
+          
+          if (obj.type === "patch") {
             for (const op of (obj.operations || [])) {
-              if (
-                op.op === "delta" &&
-                op.path === "/sections/0/view_model/primitive/text" &&
-                typeof op.value === "string"
-              ) {
-                currentText += op.value;
-                chunks.push(op.value);
+              if (op.op === "delta" && op.path && op.path.endsWith("/view_model/primitive/text") && typeof op.value === "string") {
+                delta += op.value;
+                state.currentText += op.value;
+                gotRealContent = true;
+              } else if (op.op === "add" && op.value?.view_model?.primitive?.__typename === "GenAIImagePrimitive") {
+                const url = op.value.view_model.primitive.full_image?.url || op.value.view_model.primitive.preview_image?.url;
+                if (url) {
+                  const base_url = url.split("?")[0];
+                  if (!state.sentImages.has(base_url)) {
+                    state.sentImages.add(base_url);
+                    delta += `\n\n![image](${url})\n\n`;
+                    gotRealContent = true;
+                  }
+                }
               }
             }
-          } else if (eventType === "full") {
+          } else if (obj.type === "full") {
             const sections = obj.response?.sections || [];
             for (const section of sections) {
-              const text = section?.view_model?.primitive?.text;
-              if (typeof text === "string") {
-                if (text.startsWith(currentText)) {
-                  const delta = text.slice(currentText.length);
-                  if (delta) chunks.push(delta);
+              const primitive = section?.view_model?.primitive;
+              if (!primitive) continue;
+
+              if (primitive.__typename === "GenAIBotThinkingStatusPrimitive") {
+                const thinkStr = primitive.subtitle_detail;
+                if (typeof thinkStr === "string" && thinkStr !== state.currentThinkText) {
+                  if (!state.thinkStarted) {
+                    delta += "<think>\n";
+                    state.thinkStarted = true;
+                  }
+                  if (thinkStr.startsWith(state.currentThinkText)) {
+                    delta += thinkStr.slice(state.currentThinkText.length);
+                  } else {
+                    delta += thinkStr;
+                  }
+                  state.currentThinkText = thinkStr;
                 }
-                currentText = text;
-                fullText = text;
-                break;
+                
+                if (primitive.is_in_progress === false && state.thinkStarted && !state.thinkEnded) {
+                  delta += "\n</think>\n";
+                  state.thinkEnded = true;
+                }
+                
+                const artifacts = primitive.subtitle_artifacts || [];
+                for (const art of artifacts) {
+                  if (art.__typename === "GenAIImagePrimitive") {
+                    const url = art.full_image?.url || art.preview_image?.url;
+                    if (url) {
+                      const base_url = url.split("?")[0];
+                      if (!state.sentImages.has(base_url)) {
+                        state.sentImages.add(base_url);
+                        delta += `\n\n![image](${url})\n\n`;
+                        gotRealContent = true;
+                      }
+                    }
+                  }
+                }
+              }
+
+              if (primitive.__typename === "GenAIImagePrimitive") {
+                const url = primitive.full_image?.url || primitive.preview_image?.url;
+                if (url) {
+                  const base_url = url.split("?")[0];
+                  if (!state.sentImages.has(base_url)) {
+                    state.sentImages.add(base_url);
+                    delta += `\n\n![image](${url})\n\n`;
+                    gotRealContent = true;
+                  }
+                }
+              }
+
+              if (typeof primitive.text === "string") {
+                if (primitive.text !== state.currentText) {
+                  if (primitive.text.startsWith(state.currentText)) {
+                    delta += primitive.text.slice(state.currentText.length);
+                  } else {
+                    delta += primitive.text;
+                  }
+                  state.currentText = primitive.text;
+                  gotRealContent = true;
+                }
               }
             }
           }
+
+          if (gotRealContent && state.thinkStarted && !state.thinkEnded) {
+            delta = "\n</think>\n" + delta;
+            state.thinkEnded = true;
+          }
+
+          if (delta) {
+            chunks.push(delta);
+            fullText += delta;
+          }
         }
+        if (objects.length > 0) resetTimeout();
       } catch (e) {
         console.error("[MetaWorker] Message parse error:", e);
       }
@@ -594,7 +663,13 @@ function metaAIChatStream(prompt, env) {
       ws.send(buildPromptFrame(prompt, conversationId, promptRequestId, "home"));
 
       let sentRole = false;
-      let currentText = "";
+      let state = {
+        currentText: "",
+        currentThinkText: "",
+        sentImages: new Set(),
+        thinkStarted: false,
+        thinkEnded: false
+      };
       let timeout;
 
       const resetTimeout = () => {
@@ -609,7 +684,7 @@ function metaAIChatStream(prompt, env) {
             await writer.write(encoder.encode("data: [DONE]\n\n"));
             await writer.close();
           } catch (e) {}
-        }, 5000);
+        }, 30000);
       };
 
       resetTimeout();
@@ -627,27 +702,97 @@ function metaAIChatStream(prompt, env) {
           const objects = extractJsonObjects(bytes);
           for (const obj of objects) {
             let delta = "";
+            let gotRealContent = false;
+            
             if (obj.type === "patch") {
               for (const op of (obj.operations || [])) {
-                if (op.op === "delta" && op.path === "/sections/0/view_model/primitive/text" && typeof op.value === "string") {
-                  delta = op.value;
-                  currentText += delta;
+                if (op.op === "delta" && op.path && op.path.endsWith("/view_model/primitive/text") && typeof op.value === "string") {
+                  delta += op.value;
+                  state.currentText += op.value;
+                  gotRealContent = true;
+                } else if (op.op === "add" && op.value?.view_model?.primitive?.__typename === "GenAIImagePrimitive") {
+                  const url = op.value.view_model.primitive.full_image?.url || op.value.view_model.primitive.preview_image?.url;
+                  if (url) {
+                    const base_url = url.split("?")[0];
+                    if (!state.sentImages.has(base_url)) {
+                      state.sentImages.add(base_url);
+                      delta += `\n\n![image](${url})\n\n`;
+                      gotRealContent = true;
+                    }
+                  }
                 }
               }
             } else if (obj.type === "full") {
               const sections = obj.response?.sections || [];
               for (const section of sections) {
-                const text = section?.view_model?.primitive?.text;
-                if (typeof text === "string" && text !== currentText) {
-                  if (text.startsWith(currentText)) {
-                    delta = text.slice(currentText.length);
-                  } else {
-                    delta = text;
+                const primitive = section?.view_model?.primitive;
+                if (!primitive) continue;
+
+                if (primitive.__typename === "GenAIBotThinkingStatusPrimitive") {
+                  const thinkStr = primitive.subtitle_detail;
+                  if (typeof thinkStr === "string" && thinkStr !== state.currentThinkText) {
+                    if (!state.thinkStarted) {
+                      delta += "<think>\n";
+                      state.thinkStarted = true;
+                    }
+                    if (thinkStr.startsWith(state.currentThinkText)) {
+                      delta += thinkStr.slice(state.currentThinkText.length);
+                    } else {
+                      delta += thinkStr;
+                    }
+                    state.currentThinkText = thinkStr;
                   }
-                  currentText = text;
-                  break;
+                  
+                  if (primitive.is_in_progress === false && state.thinkStarted && !state.thinkEnded) {
+                    delta += "\n</think>\n";
+                    state.thinkEnded = true;
+                  }
+                  
+                  const artifacts = primitive.subtitle_artifacts || [];
+                  for (const art of artifacts) {
+                    if (art.__typename === "GenAIImagePrimitive") {
+                      const url = art.full_image?.url || art.preview_image?.url;
+                      if (url) {
+                        const base_url = url.split("?")[0];
+                        if (!state.sentImages.has(base_url)) {
+                          state.sentImages.add(base_url);
+                          delta += `\n\n![image](${url})\n\n`;
+                          gotRealContent = true;
+                        }
+                      }
+                    }
+                  }
+                }
+
+                if (primitive.__typename === "GenAIImagePrimitive") {
+                  const url = primitive.full_image?.url || primitive.preview_image?.url;
+                  if (url) {
+                    const base_url = url.split("?")[0];
+                    if (!state.sentImages.has(base_url)) {
+                      state.sentImages.add(base_url);
+                      delta += `\n\n![image](${url})\n\n`;
+                      gotRealContent = true;
+                    }
+                  }
+                }
+
+                if (typeof primitive.text === "string") {
+                  if (primitive.text !== state.currentText) {
+                    if (primitive.text.startsWith(state.currentText)) {
+                      delta += primitive.text.slice(state.currentText.length);
+                    } else {
+                      delta += primitive.text;
+                    }
+                    state.currentText = primitive.text;
+                    gotRealContent = true;
+                  }
                 }
               }
+            }
+
+            if (gotRealContent && state.thinkStarted && !state.thinkEnded) {
+              delta = "\n</think>\n" + delta;
+              state.thinkEnded = true;
             }
 
             if (delta) {

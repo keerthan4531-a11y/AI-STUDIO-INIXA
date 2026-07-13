@@ -253,6 +253,16 @@ export function MessageContent({ content, isCodex, onOpenArtifact }: {
         table: ({ children }: any) => <div className="overflow-x-auto my-7 -mx-4 sm:mx-0 rounded-2xl sm:rounded-[24px] border border-white/10 shadow-2xl"><table className="w-full border-collapse text-[12px] sm:text-[14px] bg-[#0a0a0b]">{children}</table></div>,
         th: ({ children }: any) => <th className="border-b border-r last:border-r-0 border-white/10 bg-white/[0.04] px-3 py-3 sm:px-5 sm:py-4 text-left font-black uppercase tracking-widest text-[10px] sm:text-[11px] text-white/40">{children}</th>,
         td: ({ children }: any) => <td className="border-b border-r last:border-r-0 last:border-b-0 border-white/5 px-3 py-3 sm:px-5 sm:py-4 text-white/80">{children}</td>,
+        img: ({ src, alt }: any) => (
+          <div className="my-4 relative group rounded-2xl overflow-hidden max-w-sm sm:max-w-md border border-white/[0.08] shadow-2xl">
+            <img 
+              src={src} 
+              alt={alt || "Generated Image"} 
+              referrerPolicy="no-referrer" 
+              className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.02]" 
+            />
+          </div>
+        ),
       }}>
         {processedContent}
       </ReactMarkdown>

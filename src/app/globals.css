@@ -6,6 +6,67 @@
 @tailwind utilities;
 
 /* ============================================
+   Inixa Design System — CSS Variables
+   Following shadcn/ui pattern with Inixa dark theme
+   ============================================ */
+
+@layer base {
+  :root {
+    --background: 222 47% 3%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 6%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 263 70% 66%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 217 33% 15%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 12%;
+    --input: 217 33% 12%;
+    --ring: 263 70% 66%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 4%;
+    --sidebar-foreground: 215 20% 55%;
+    --sidebar-primary: 263 70% 66%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 10%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 33% 10%;
+    --sidebar-ring: 263 70% 66%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ============================================
    Landing Page Styles
    ============================================ */
 
@@ -76,4 +137,23 @@
 
 .landing-card-glow:hover {
   box-shadow: 0 0 40px rgba(139, 92, 246, 0.15), 0 20px 60px -15px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   Reasoning Trace Scrollbar Styles
+   ============================================ */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a30 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { 
+  width: 6px; 
+}
+.scrollbar-thin::-webkit-scrollbar-thumb { 
+  background: #2a2a30; 
+  border-radius: 999px; 
+}
+.scrollbar-thin::-webkit-scrollbar-track { 
+  background: transparent; 
 }

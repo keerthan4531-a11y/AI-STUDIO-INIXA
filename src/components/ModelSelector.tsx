@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, XCircle, Bot, Zap as ZapIcon, Brain, Sparkles, Star, Boxes, Code, Terminal, Globe, Eye } from 'lucide-react';
 import { cn } from './GlassCard';
-import { OpenAILogo, GeminiLogo, GrokLogo, ClaudeLogo } from './Logos';
+import { OpenAILogo, GeminiLogo, GrokLogo, ClaudeLogo, MetaLogo, BaiduLogo, DeepSeekLogo, KimiLogo, ZaiLogo, QwenLogo, MiniMaxLogo } from './Logos';
 import { AI_MODELS, type AIModel } from '../api/aiEngine';
 import { vibrate } from '../utils/helpers';
 
-function ModelIcon({ model, active }: { model: AIModel; active: boolean }) {
+export function ModelIcon({ model, active }: { model: AIModel; active: boolean }) {
   const size = 20;
   const color = active ? "white" : (model.iconColor || "currentColor");
   
@@ -15,6 +15,13 @@ function ModelIcon({ model, active }: { model: AIModel; active: boolean }) {
   if (model.label.toLowerCase().includes('gemini')) return <GeminiLogo size={size} />;
   if (model.label.toLowerCase().includes('claude')) return <ClaudeLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('gpt') || model.label.toLowerCase().includes('openai')) return <OpenAILogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('meta') || model.label.toLowerCase().includes('llama')) return <MetaLogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('baidu') || model.label.toLowerCase().includes('ernie')) return <BaiduLogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('deepseek')) return <DeepSeekLogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('kimi')) return <KimiLogo size={size} />;
+  if (model.label.toLowerCase().includes('glm') || model.label.toLowerCase().includes('zai')) return <ZaiLogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('qwen')) return <QwenLogo size={size} />;
+  if (model.label.toLowerCase().includes('minimax') || model.label.toLowerCase().includes('hailuo')) return <MiniMaxLogo size={size} />;
 
   switch (model.icon) {
     case 'Zap': return <ZapIcon size={size} className={cn(active ? "text-white" : "text-blue-400")} />;
