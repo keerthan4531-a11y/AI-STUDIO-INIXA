@@ -136,9 +136,9 @@ export default {
                 
                 for (const block of jsonData.blocks || []) {
                   for (const patch of block.diff_block?.patches || []) {
-                    if (patch.path === "/progress" || patch.path.startsWith("/goals") || patch.path.startsWith("/steps/0")) continue;
+                    if (patch.path === "/progress" || patch.path.startsWith("/goals")) continue;
                     
-                    if (patch.path.endsWith("/text") || patch.path === "/content") {
+                    if (patch.path.endsWith("/text") || patch.path.endsWith("/content")) {
                       let value = patch.value || "";
                       if (typeof value === "object") {
                         value = value.answer || value.text || "";
