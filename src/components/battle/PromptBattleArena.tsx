@@ -41,6 +41,8 @@ export function PromptBattleArena() {
 
   // Q1 6 Contexts Sub-Progression State
   const [activeContextIndex, setActiveContextIndex] = useState<number>(0);
+  const [stage1Completed, setStage1Completed] = useState<boolean>(false);
+  const [silentToastMsg, setSilentToastMsg] = useState<string | null>(null);
   const [contextProgress, setContextProgress] = useState<Record<string, { score: number; accuracy: number }>>(() => {
     try {
       const user = localStorage.getItem('inixa_battle_username');
@@ -236,6 +238,74 @@ export function PromptBattleArena() {
       setAiOutput('Error generating response. Please check AI Engine backend connection.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleCompleteTaskSilent = async () => {
+    if (!userPrompt.trim() || isEvaluating) return;
+    vibrate(50);
+    setIsEvaluating(true);
+
+    const activeCtx = selectedChallenge.contexts ? selectedChallenge.contexts[activeContextIndex] : null;
+
+    // Evaluate Image-to-Prompt Keyword Match
+    let matchedCount = 0;
+    const required = activeCtx?.requiredKeywords || [];
+    required.forEach(kw => {
+      if (userPrompt.toLowerCase().includes(kw.toLowerCase())) matchedCount++;
+    });
+
+    const keywordScore = required.length > 0 ? Math.round((matchedCount / required.length) * 100) : 85;
+    const promptLenBonus = Math.min(10, Math.floor(userPrompt.length / 25));
+    const finalScore = Math.min(100, Math.max(30, keywordScore + promptLenBonus));
+
+    const ctxId = activeCtx?.id || `ctx-${activeContextIndex}`;
+    const updatedCtxProgress = {
+      ...contextProgress,
+      [ctxId]: { score: finalScore, accuracy: keywordScore }
+    };
+
+    setContextProgress(updatedCtxProgress);
+    if (battleUser) {
+      localStorage.setItem(`inixa_battle_context_progress_${battleUser}`, JSON.stringify(updatedCtxProgress));
+    }
+
+    setIsEvaluating(false);
+
+    // If there are more tasks left in Stage 1
+    if (activeContextIndex < (selectedChallenge.contexts?.length || 6) - 1) {
+      setSilentToastMsg(`✓ Task ${activeContextIndex + 1} Saved Silently! Moving to Task ${activeContextIndex + 2}...`);
+      setTimeout(() => setSilentToastMsg(null), 3000);
+
+      setActiveContextIndex(prev => prev + 1);
+      setUserPrompt('');
+      setAiOutput('');
+      setEvaluationResult(null);
+    } else {
+      // All 6 Image Tasks Completed! Compute Final Stage Score
+      const allCtxScores = Object.values(updatedCtxProgress).map(x => x.score);
+      const avgStageScore = allCtxScores.length > 0 ? Math.round(allCtxScores.reduce((a, b) => a + b, 0) / allCtxScores.length) : 85;
+      const totalCumulative = Math.round((avgStageScore / 100) * 600);
+
+      const updatedProgress = {
+        ...progress,
+        [selectedChallenge.id]: {
+          score: totalCumulative,
+          accuracy: avgStageScore,
+          timestamp: Date.now()
+        }
+      };
+      setProgress(updatedProgress);
+      setStage1Completed(true);
+
+      if (battleUser) {
+        localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+        syncLeaderboardBackend(battleUser, updatedProgress);
+      }
+
+      setTimeout(() => {
+        setShowLeaderboardModal(true);
+      }, 1000);
     }
   };
 
@@ -800,6 +870,39 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
                     </div>
                   )}
 
+                  {/* Target AI Image Display Panel for Stage 1 Image-to-Prompt */}
+                  {selectedChallenge.contexts && selectedChallenge.contexts[activeContextIndex]?.imageUrl && (
+                    <div className="bg-gradient-to-r from-indigo-950/50 via-purple-950/40 to-black/60 p-4 rounded-2xl border border-indigo-500/40 flex flex-col md:flex-row gap-4 items-center shadow-xl">
+                      <div className="relative w-full md:w-60 h-44 rounded-xl overflow-hidden border border-white/20 shadow-2xl group shrink-0 bg-black">
+                        <img
+                          src={selectedChallenge.contexts[activeContextIndex]?.imageUrl}
+                          alt="Target AI Artwork"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-amber-300 font-bold border border-amber-500/40 shadow">
+                          TARGET IMAGE {activeContextIndex + 1}/6
+                        </span>
+                      </div>
+                      <div className="flex-1 space-y-2 text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-indigo-300 uppercase tracking-wider">
+                            {selectedChallenge.contexts[activeContextIndex]?.title}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            VISUAL TARGET
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/80 leading-relaxed font-medium">
+                          {selectedChallenge.contexts[activeContextIndex]?.visualDescription}
+                        </p>
+                        <div className="text-[11px] text-indigo-200 font-mono bg-indigo-500/10 p-2.5 rounded-xl border border-indigo-500/20 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Inspect the image & write instructions to recreate its visual elements!</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Sample Input / Context data */}
                   <div className="bg-black/40 p-4 rounded-2xl border border-white/10 shadow-inner">
                     <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1.5 flex items-center justify-between">
@@ -857,33 +960,74 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
                 rows={5}
                 className="w-full bg-white/[0.03] border border-white/15 focus:border-indigo-500/80 rounded-xl p-4 text-xs font-mono text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-y"
               />
+              {/* Silent Save Toast Banner */}
+              {silentToastMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between shadow-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>{silentToastMsg}</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-mono">SILENTLY STORED</span>
+                </motion.div>
+              )}
+
               <div className="flex items-center justify-between gap-3 mt-1">
                 <div className="text-xs text-white/50 flex items-center gap-2 font-mono">
                   <Brain className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Model: <strong className="text-indigo-300">{activeModel.label}</strong></span>
                 </div>
-                <button
-                  onClick={handleRunPrompt}
-                  disabled={isGenerating || !userPrompt.trim()}
-                  className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg",
-                    isGenerating || !userPrompt.trim()
-                      ? "bg-white/10 text-white/30 cursor-not-allowed"
-                      : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:brightness-110 shadow-indigo-600/30"
-                  )}
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Streaming Response...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 fill-white" />
-                      Execute Prompt
-                    </>
-                  )}
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRunPrompt}
+                    disabled={isGenerating || !userPrompt.trim()}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg",
+                      isGenerating || !userPrompt.trim()
+                        ? "bg-white/10 text-white/30 cursor-not-allowed"
+                        : "bg-white/10 hover:bg-white/20 text-white border border-white/15"
+                    )}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 fill-white" />
+                        Test Prompt
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleCompleteTaskSilent}
+                    disabled={isEvaluating || !userPrompt.trim()}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-xl",
+                      isEvaluating || !userPrompt.trim()
+                        ? "bg-white/10 text-white/30 cursor-not-allowed"
+                        : "bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 text-white hover:brightness-110 shadow-emerald-500/30"
+                    )}
+                  >
+                    {isEvaluating ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        Complete Task & Move to Next ➔
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
