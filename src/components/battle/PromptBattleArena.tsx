@@ -425,7 +425,7 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
       }
 
       // Check Disregard Filter
-      if (cleanAiOutput.includes(expectedIgnoreTicket)) {
+      if (expectedIgnoreTicket && cleanAiOutput.includes(expectedIgnoreTicket)) {
         constraintScore -= 30;
         feedbackIssues.push(`Failed to filter out disregarded ticket #${expectedIgnoreTicket}.`);
       }
