@@ -15,19 +15,21 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
   // TEXT RESEARCH CHALLENGES
   {
     id: 'tr-1',
-    title: 'Unstructured Data to Typed JSON',
+    title: 'Unstructured Data to Hardcore Typed JSON',
     category: 'text-research',
-    difficulty: 'Medium',
+    difficulty: 'Hard',
     timeLimitSeconds: 240,
-    description: 'You are provided with a messy support transcript. Write a prompt to extract key metadata (User, Issue Severity, Operating System, Root Cause, Action Items) into pure valid JSON without markdown wrapping or extra conversational fluff.',
-    sampleInput: `Transcript: Customer John Doe (ID 9842) called at 10:15 AM complaining that the desktop app on Windows 11 keeps crashing whenever he uploads a file > 50MB. Agent investigated and found a buffer overflow in the upload streaming service. Recommending patch v2.4.1 deployment by end of day.`,
-    targetOutputOrGoal: `{\n  "userId": 9842,\n  "customerName": "John Doe",\n  "os": "Windows 11",\n  "severity": "HIGH",\n  "rootCause": "Buffer overflow in upload streaming service",\n  "recommendedFix": "Deploy patch v2.4.1"\n}`,
+    description: 'Write a prompt to parse a noisy support log into strict JSON. You MUST force the AI to perform unit math conversion, string normalization, and key sorting.',
+    sampleInput: `Transcript: [DISREGARD Mac report #101]. Real Customer John Doe (ID 9842) called complaining desktop app on Windows 11 crashes when uploading files > 50MB. Investigation confirmed buffer overflow in upload streaming service. Recommending patch v2.4.1 deployment by end of day.`,
+    targetOutputOrGoal: `{\n  "customer_id": 9842,\n  "file_limit_bytes": 52428800,\n  "name": "john_doe",\n  "os_code": "WIN_11_X64",\n  "patch_num": 2.41,\n  "root_cause_slug": "buffer_overflow_upload_streaming"\n}`,
     constraints: [
-      'Output MUST be 100% valid JSON',
-      'No markdown ```json fences allowed in response',
-      'No polite intro/outro text (e.g. "Here is your JSON:")'
+      'MUST convert 50MB to exact bytes integer: 52428800 (50 * 1024 * 1024)',
+      'MUST format all string values in snake_case without spaces (e.g. "john_doe")',
+      'MUST extract patch "v2.4.1" as numeric float 2.41',
+      'JSON keys MUST be strictly in ALPHABETICAL ORDER',
+      'No markdown ```json fences allowed & no intro/outro text'
     ],
-    evaluationCriteria: 'Strict JSON schema compliance, key accuracy, and zero conversational filler.'
+    evaluationCriteria: 'Unit math calculation (52428800), float patch, snake_case strings, alphabetical key sorting.'
   },
   {
     id: 'tr-2',
