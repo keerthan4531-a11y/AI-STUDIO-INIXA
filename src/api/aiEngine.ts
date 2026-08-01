@@ -100,6 +100,39 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#06b6d4',
     description: 'Perplexity Copilot via direct Cloudflare worker'
   },
+  {
+    id: 'g4f-deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro',
+    engine: 'g4f',
+    modelStr: 'g4f/deepseek-v4-pro',
+    badge: 'PRO',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V4 Pro — 552 req, 1369ms'
+  },
+  {
+    id: 'qw-qwen3.7-max',
+    label: 'Qwen 3.7 Max (Worker)',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-max',
+    badge: 'MAX',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Max — dedicated worker'
+  },
+  {
+    id: 'qw-qwen3.7-plus',
+    label: 'Qwen 3.7 Plus (Worker)',
+    engine: 'g4f',
+    modelStr: 'qwen_worker/qwen3.7-plus',
+    badge: 'PLUS',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
+  },
 
   // ════════════════════════════════════════════════════════════════
   // 🟢 META AI

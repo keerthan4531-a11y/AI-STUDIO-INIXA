@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -14,6 +14,7 @@ import { DataChartAgent } from './DataChartAgent';
 import { MathSolverAgent } from './MathSolverAgent';
 import { FlashcardAgent } from './FlashcardAgent';
 import { QuizAgent } from './QuizAgent';
+import { ArenaCodeBlock, parseFilesFromMarkdown, hasMultiFileCode } from './chat/ArenaCodeBlock';
 
 
 mermaid.initialize({
@@ -144,6 +145,15 @@ export function MessageContent({ content, isCodex, onOpenArtifact }: {
 }) {
   const cleanContent = content.includes('[SEARCH_MODE_ACTIVE]') ? content.split('\n\n')[1] || content : content.split('\n\n*(')[0];
 
+  // Arena-style multi-file code detection
+  const arenaFiles = useMemo(() => {
+    if (hasMultiFileCode(cleanContent)) {
+      const files = parseFilesFromMarkdown(cleanContent);
+      return files.length >= 2 ? files : null;
+    }
+    return null;
+  }, [cleanContent]);
+
   // Pre-process LaTeX delimiters: convert \[...\] to $$...$$ and \(...\) to $...$
   const processedContent = cleanContent
     .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$\n$1\n$$$$')
@@ -156,6 +166,25 @@ export function MessageContent({ content, isCodex, onOpenArtifact }: {
       }
       return match;
     });
+
+  // If arena-style multi-file code detected, render ArenaCodeBlock + text
+  if (arenaFiles) {
+    // Extract non-code text for context
+    const textOnly = cleanContent.replace(/```[\s\S]*?```/g, '').trim();
+    return (
+      <div className="text-[14.5px] sm:text-[15px] leading-[1.7] markdown-content text-white/85 break-words">
+        {textOnly && (
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={{
+            a: ({ href, children }: any) => <a href={href} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 transition-colors font-semibold">{children}</a>,
+            p: ({ children }: any) => <p className="mb-3 last:mb-0 leading-[1.7]">{children}</p>,
+            strong: ({ children }: any) => <strong className="font-bold text-white tracking-[0.01em]">{children}</strong>,
+            code: ({ children, ...props }: any) => <code className="bg-white/[0.08] px-1.5 py-0.5 rounded-md text-[#e2a874] font-mono text-[13.5px] border border-white/[0.05]" {...props}>{children}</code>,
+          }}>{textOnly}</ReactMarkdown>
+        )}
+        <ArenaCodeBlock files={arenaFiles} />
+      </div>
+    );
+  }
   
   return (
     <div className="text-[14.5px] sm:text-[15px] leading-[1.7] markdown-content text-white/85 break-words">

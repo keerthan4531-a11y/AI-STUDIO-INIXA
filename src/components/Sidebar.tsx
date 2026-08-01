@@ -1,14 +1,14 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MessageSquare, Image as ImageIcon, Video, Plus, X, Settings2, FileCode, Trash2, Info, Sparkles, Code2, Mic, MoreHorizontal, Globe, BookMarked, Music } from 'lucide-react';
+import { Search, MessageSquare, Image as ImageIcon, Video, Plus, X, Settings2, FileCode, Trash2, Info, Sparkles, Code2, Mic, MoreHorizontal, Globe, BookMarked, Music, Swords } from 'lucide-react';
 import { cn } from './GlassCard';
 import { InixaLogo } from './Logos';
 import { vibrate } from '../utils/helpers';
 import type { UserData } from './AuthScreen';
 import type { ChatSession } from '../App';
 
-export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix' | 'music' | 'auto-pilot';
+export type TabType = 'video' | 'image' | 'chat' | 'codex' | 'pdf' | 'profile' | 'about' | 'vibe' | 'api' | 'voice' | 'deep-research' | 'note-ix' | 'music' | 'auto-pilot' | 'arena' | 'prompt-battle';
 
 interface SidebarProps {
   user: UserData;
@@ -55,6 +55,8 @@ const transitionProps = {
 
 const navItems = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
+  { id: 'prompt-battle', icon: Swords, label: 'Prompt Battle', badge: 'COLLEGE' },
+  { id: 'arena', icon: Swords, label: 'Arena', badge: 'VS' },
   { id: 'deep-research', icon: Globe, label: 'Deep Research', badge: 'AUTO' },
   { id: 'auto-pilot', icon: Globe, label: 'Web Auto-Pilot', badge: 'BETA' },
   { id: 'note-ix', icon: BookMarked, label: 'NOTE-IX', badge: 'STUDIO' },
