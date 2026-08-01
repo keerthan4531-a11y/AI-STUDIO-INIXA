@@ -71,7 +71,8 @@ export function PromptBattleArena() {
     feedback: string;
   } | null>(null);
 
-  // Timer state
+  // Timer state (No Pause Option permitted!)
+  const [timerStarted, setTimerStarted] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(selectedChallenge.timeLimitSeconds);
   const [timerRunning, setTimerRunning] = useState<boolean>(false);
 
@@ -93,6 +94,7 @@ export function PromptBattleArena() {
     setSelectedChallenge(defaultCh);
     setTimeLeft(defaultCh.timeLimitSeconds);
     setTimerRunning(false);
+    setTimerStarted(false);
     setUserPrompt('');
     setAiOutput('');
     setEvaluationResult(null);
@@ -113,9 +115,17 @@ export function PromptBattleArena() {
     setSelectedChallenge(ch);
     setTimeLeft(ch.timeLimitSeconds);
     setTimerRunning(false);
+    setTimerStarted(false);
+    setActiveContextIndex(0);
     setUserPrompt('');
     setAiOutput('');
     setEvaluationResult(null);
+  };
+
+  const handleStartTimer = () => {
+    vibrate(60);
+    setTimerStarted(true);
+    setTimerRunning(true);
   };
 
   const handleSelectModel = (m: AIModel) => {
@@ -239,42 +249,6 @@ export function PromptBattleArena() {
     }
   };
 
-  const executeSafeJudgeCall = async (judgeSystemPrompt: string, selectedModel: AIModel): Promise<string> => {
-    // 1. Try with currently selected model
-    try {
-      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, selectedModel);
-      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
-        return res;
-      }
-    } catch (e) {
-      console.warn('Selected AI Judge model failed, trying worker fallback 1...', e);
-    }
-
-    // 2. Try direct Cloudflare Worker model UPDF Flagship
-    const updfModel = AI_MODELS.find(m => m.id === 'updf-gpt-5-6') || selectedModel;
-    try {
-      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, updfModel);
-      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
-        return res;
-      }
-    } catch (e) {
-      console.warn('UPDF Judge model failed, trying worker fallback 2...', e);
-    }
-
-    // 3. Try Pollinations Auto Direct Worker
-    const pollinationsModel = AI_MODELS.find(m => m.id === 'unlimited-pollinations') || selectedModel;
-    try {
-      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, pollinationsModel);
-      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
-        return res;
-      }
-    } catch (e) {
-      console.warn('Pollinations Judge model failed.', e);
-    }
-
-    return '';
-  };
-
   const handleEvaluateScore = async () => {
     if (!aiOutput || isEvaluating) return;
     vibrate(50);
@@ -313,7 +287,11 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
 }`;
 
     try {
-      const rawJudgeOutput = await executeSafeJudgeCall(judgeSystemPrompt, activeModel);
+      const rawJudgeOutput = await aiChat(
+        [{ role: 'user', content: judgeSystemPrompt }],
+        undefined,
+        activeModel
+      );
 
       // 1. Clean LLM Judge output (strip <think> tags & markdown fences)
       let cleanedJudgeText = (rawJudgeOutput || '')
@@ -373,9 +351,10 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         }
       }
 
+      // Check Math Unit Conversion Bytes dynamically for active context
       const activeCtx = selectedChallenge.contexts ? selectedChallenge.contexts[activeContextIndex] : null;
-      const expectedBytesStr = activeCtx?.bytesConversion ? String(activeCtx.bytesConversion) : '52428800';
-      const expectedIgnoreTicket = activeCtx?.ignoreTicket || '101';
+      const expectedBytesStr = activeCtx ? String(activeCtx.bytesConversion) : '52428800';
+      const expectedIgnoreTicket = activeCtx ? activeCtx.ignoreTicket : '101';
 
       if (selectedChallenge.constraints.some(c => c.toLowerCase().includes('bytes'))) {
         if (!cleanAiOutput.includes(expectedBytesStr)) {
@@ -386,7 +365,7 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
       }
 
       // Check Disregard Filter
-      if (expectedIgnoreTicket && cleanAiOutput.includes(expectedIgnoreTicket)) {
+      if (cleanAiOutput.includes(expectedIgnoreTicket)) {
         constraintScore -= 30;
         feedbackIssues.push(`Failed to filter out disregarded ticket #${expectedIgnoreTicket}.`);
       }
@@ -418,103 +397,34 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         finalFeedback = `Penalties Applied: ${feedbackIssues.join(' ')}`;
       }
 
-      // Save into Tournament Progress Memory & Sub-context Memory
-      if (selectedChallenge.contexts && activeCtx) {
-        const updatedCtxProgress = {
-          ...contextProgress,
-          [activeCtx.id]: {
-            score: overallScore,
-            accuracy: finalAccuracy,
-            constraintMatch: finalConstraint,
-            tokenEfficiency: finalTokenEff,
-            feedback: finalFeedback
-          }
-        };
-        setContextProgress(updatedCtxProgress);
-        if (battleUser) {
-          localStorage.setItem(`inixa_battle_context_progress_${battleUser}`, JSON.stringify(updatedCtxProgress));
-        }
+      setEvaluationResult({
+        score: overallScore,
+        accuracy: finalAccuracy,
+        constraintMatch: finalConstraint,
+        tokenEfficiency: finalTokenEff,
+        feedback: finalFeedback
+      });
 
-        const completedCtxsForChallenge = selectedChallenge.contexts.filter(c => !!updatedCtxProgress[c.id]);
-        const isStageFullyComplete = completedCtxsForChallenge.length === selectedChallenge.contexts.length;
-
-        if (!isStageFullyComplete) {
-          // Keep individual context score HIDDEN in background memory!
-          setEvaluationResult(null);
-
-          // Advance to next uncompleted context after short delay
-          if (activeContextIndex < selectedChallenge.contexts.length - 1) {
-            setTimeout(() => {
-              setActiveContextIndex(prev => prev + 1);
-              setUserPrompt('');
-              setAiOutput('');
-              setEvaluationResult(null);
-            }, 600);
-          }
-        } else {
-          // ALL 6 TASKS IN STAGE COMPLETE! Calculate Stage Overall Final Score
-          const totalStageScore = completedCtxsForChallenge.reduce((acc, c) => acc + (updatedCtxProgress[c.id]?.score || 0), 0);
-          const stageAvgScore = Math.round(totalStageScore / selectedChallenge.contexts.length);
-          const stageAvgAcc = Math.round(completedCtxsForChallenge.reduce((acc, c) => acc + (updatedCtxProgress[c.id]?.accuracy || 0), 0) / selectedChallenge.contexts.length);
-
-          const updatedProgress = {
-            ...progress,
-            [selectedChallenge.id]: {
-              score: stageAvgScore,
-              accuracy: stageAvgAcc,
-              timestamp: Date.now()
-            }
-          };
-          setProgress(updatedProgress);
-          if (battleUser) {
-            localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
-            syncLeaderboardBackend(battleUser, updatedProgress);
-          }
-
-          // REVEAL STAGE OVERALL FINAL SCORE TO USER!
-          setEvaluationResult({
-            score: stageAvgScore,
-            accuracy: stageAvgAcc,
-            constraintMatch: 95,
-            tokenEfficiency: 90,
-            feedback: `Stage Completed! Overall Average Score across all 6 Tasks: ${stageAvgScore}%`
-          });
-
-          if (selectedChallenge.questionNumber === 6) {
-            setTimeout(() => {
-              setShowLeaderboardModal(true);
-            }, 1200);
-          }
-        }
-      } else {
-        // Single task challenge (Q3 - Q6)
-        setEvaluationResult({
+      // Save into Tournament Progress Memory
+      const updatedProgress = {
+        ...progress,
+        [selectedChallenge.id]: {
           score: overallScore,
           accuracy: finalAccuracy,
-          constraintMatch: finalConstraint,
-          tokenEfficiency: finalTokenEff,
-          feedback: finalFeedback
-        });
-
-        const updatedProgress = {
-          ...progress,
-          [selectedChallenge.id]: {
-            score: overallScore,
-            accuracy: finalAccuracy,
-            timestamp: Date.now()
-          }
-        };
-        setProgress(updatedProgress);
-        if (battleUser) {
-          localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
-          syncLeaderboardBackend(battleUser, updatedProgress);
+          timestamp: Date.now()
         }
+      };
+      setProgress(updatedProgress);
+      if (battleUser) {
+        localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+        syncLeaderboardBackend(battleUser, updatedProgress);
+      }
 
-        if (selectedChallenge.questionNumber === 6) {
-          setTimeout(() => {
-            setShowLeaderboardModal(true);
-          }, 1200);
-        }
+      // Automatically open Leaderboard upon completing Q6
+      if (selectedChallenge.questionNumber === 6) {
+        setTimeout(() => {
+          setShowLeaderboardModal(true);
+        }, 1200);
       }
     } catch (e) {
       console.error('Judge Processing Error', e);
@@ -798,171 +708,159 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
 
           {/* Right Column: Challenge Workspace & Prompt Editor */}
           <div className="lg:col-span-8 flex flex-col gap-5">
-            {/* Active Challenge Header Card */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#101322] via-[#0d0f1a] to-[#080910] border border-white/15 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-black text-white">{selectedChallenge.title}</h2>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                      {selectedChallenge.category === 'text-research' ? 'Text Research' : 'Coding'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/60 mt-1">{selectedChallenge.description}</p>
+            {!timerStarted ? (
+              /* Pre-Start Launcher Screen (Questions & Contexts Hidden until Timer Starts) */
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-indigo-950/60 via-[#0d0f1d] to-black/80 border border-indigo-500/30 shadow-2xl flex flex-col items-center text-center gap-6 relative overflow-hidden my-auto">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 border border-white/20">
+                  <Play className="w-8 h-8 fill-white ml-1" />
                 </div>
 
-                {/* Timer HUD Display (NO PAUSE BUTTON ALLOWED!) */}
-                <div className="flex items-center gap-2.5 bg-black/60 px-4 py-2 rounded-2xl border border-amber-500/30 shadow-lg">
-                  <Clock className={cn("w-4 h-4", timerRunning ? "text-amber-400 animate-spin" : "text-white/40")} />
-                  <span className="text-base font-mono font-black text-amber-300 tracking-wider">{formatTime(timeLeft)}</span>
-                  {timerRunning ? (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse">
-                      LIVE BATTLE
+                <div className="max-w-lg space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase">
+                      STAGE {selectedChallenge.questionNumber} READY
                     </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded text-[9px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      LOCKED
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                      ⏱️ {Math.floor(selectedChallenge.timeLimitSeconds / 60)} MINUTES TIME LIMIT
                     </span>
-                  )}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white">{selectedChallenge.title}</h2>
+                  <p className="text-xs text-white/60 leading-relaxed">{selectedChallenge.description}</p>
                 </div>
+
+                {/* Important Rules Checklist */}
+                <div className="bg-black/50 border border-white/10 p-4 rounded-2xl max-w-md w-full text-left space-y-2.5 text-xs">
+                  <div className="font-bold text-amber-400 uppercase text-[10px] tracking-wider flex items-center gap-1.5 border-b border-white/10 pb-2">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Tournament Rules (Strict)
+                  </div>
+                  <div className="flex items-start gap-2 text-white/80">
+                    <ShieldAlert className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                    <span>Questions & Context Transcripts are hidden until you click Start.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-white/80">
+                    <Clock className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                    <span>Timer starts ticking immediately upon launch (<strong>NO PAUSE OPTION</strong>).</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-white/80">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>AI Judge will strictly evaluate schema compliance, math unit bytes, & sorting rules.</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleStartTimer}
+                  className="w-full max-w-md py-4 rounded-2xl text-sm font-extrabold bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 text-white hover:brightness-110 shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 group border border-white/20 animate-pulse"
+                >
+                  <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+                  START CHALLENGE (Timer Starts Immediately)
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
-
-              {/* UNLOCK OVERLAY: Reveal Question & Data ONLY AFTER Timer Starts */}
-              {!timerRunning ? (
-                <div className="p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-purple-950/40 to-black/80 border border-indigo-500/30 text-center flex flex-col items-center justify-center gap-4 shadow-2xl relative overflow-hidden my-2">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 shadow-lg shadow-indigo-500/20 animate-pulse">
-                    <Lock className="w-8 h-8 text-indigo-400" />
-                  </div>
-                  <div className="max-w-md">
-                    <h3 className="text-lg font-black text-white">Battle Question & Data Locked</h3>
-                    <p className="text-xs text-white/60 mt-1">
-                      Click the button below to start your {Math.floor(selectedChallenge.timeLimitSeconds / 60)}-minute timer and reveal the Question Context & Target Constraints!
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setTimerRunning(true);
-                      vibrate(50);
-                    }}
-                    className="px-8 py-3.5 rounded-2xl text-xs font-black bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 text-white shadow-xl shadow-emerald-500/30 hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    <Play className="w-4 h-4 fill-white" />
-                    START BATTLE & UNLOCK QUESTION
-                  </button>
-                </div>
-              ) : (
-                /* REVEALED BATTLE WORKSPACE */
-                <div className="space-y-4">
-                  {/* If Challenge has Sub-Contexts (Q1 6 Contexts) */}
-                  {selectedChallenge.contexts && (
-                    <div className="bg-indigo-950/40 p-3.5 rounded-2xl border border-indigo-500/30 flex flex-col gap-2.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-indigo-300 flex items-center gap-1.5">
-                          <BookOpen className="w-4 h-4 text-indigo-400" />
-                          Q1 Sub-Contexts ({activeContextIndex + 1} of {selectedChallenge.contexts.length})
+            ) : (
+              <>
+                {/* Active Challenge Header Card */}
+                <div className="p-5 rounded-2xl bg-gradient-to-b from-white/[0.05] to-white/[0.02] border border-white/10 flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-extrabold text-white">{selectedChallenge.title}</h2>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                          {selectedChallenge.category === 'text-research' ? 'Text Research' : 'Coding'}
                         </span>
+                      </div>
+                      <p className="text-xs text-white/60 mt-1">{selectedChallenge.description}</p>
+                    </div>
+
+                    {/* Timer Controls (No Pause Option permitted!) */}
+                    <div className="flex items-center gap-2 bg-amber-950/40 px-3.5 py-2 rounded-xl border border-amber-500/40 animate-pulse">
+                      <Clock className="w-4 h-4 text-amber-400 animate-spin" />
+                      <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">LIVE TIMER:</span>
+                      <span className="text-base font-mono font-black text-amber-300">{formatTime(timeLeft)}</span>
+                    </div>
+                  </div>
+
+              {/* If Challenge has Sub-Contexts (Q1 6 Contexts) */}
+              {selectedChallenge.contexts && (
+                <div className="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-indigo-400" />
+                      Q1 Sub-Contexts ({activeContextIndex + 1} of {selectedChallenge.contexts.length})
+                    </span>
+                    <button
+                      onClick={handleSkipContext}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white/80 transition-all flex items-center gap-1"
+                    >
+                      Skip Context <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {selectedChallenge.contexts.map((ctx, idx) => {
+                      const isActive = idx === activeContextIndex;
+                      const isCtxDone = !!contextProgress[ctx.id];
+
+                      return (
                         <button
-                          onClick={handleSkipContext}
-                          className="px-3 py-1 rounded-xl text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white/80 transition-all flex items-center gap-1"
+                          key={ctx.id}
+                          onClick={() => {
+                            setActiveContextIndex(idx);
+                            setUserPrompt('');
+                            setAiOutput('');
+                            setEvaluationResult(null);
+                            vibrate(20);
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1",
+                            isActive
+                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-white/30"
+                              : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                          )}
                         >
-                          Skip Context <ArrowRight className="w-3 h-3" />
+                          {isCtxDone && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
+                          Context {idx + 1}
                         </button>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                        {selectedChallenge.contexts.map((ctx, idx) => {
-                          const isActive = idx === activeContextIndex;
-                          const isCtxDone = !!contextProgress[ctx.id];
-
-                          return (
-                            <button
-                              key={ctx.id}
-                              onClick={() => {
-                                setActiveContextIndex(idx);
-                                setUserPrompt('');
-                                setAiOutput('');
-                                setEvaluationResult(null);
-                                vibrate(20);
-                              }}
-                              className={cn(
-                                "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1",
-                                isActive
-                                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-white/30"
-                                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-                              )}
-                            >
-                              {isCtxDone && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
-                              Context {idx + 1}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Target AI Image Card (For Q2 AI Image Reverse Prompting) */}
-                  {selectedChallenge.contexts && selectedChallenge.contexts[activeContextIndex]?.imagePath ? (
-                    <div className="bg-black/50 p-4 rounded-2xl border border-purple-500/30 flex flex-col items-center gap-3 shadow-xl">
-                      <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center justify-between w-full">
-                        <span className="flex items-center gap-1.5">
-                          <Sparkles className="w-4 h-4 text-purple-400" />
-                          Target AI Image to Reverse Prompt ({activeContextIndex + 1} of 6)
-                        </span>
-                        <span className="text-purple-300 font-mono text-[10px] font-bold bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30">
-                          {selectedChallenge.contexts[activeContextIndex]?.title}
-                        </span>
-                      </div>
-
-                      <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl max-h-72 w-full flex items-center justify-center bg-black/80 p-2">
-                        <img
-                          src={selectedChallenge.contexts[activeContextIndex]?.imagePath}
-                          alt={selectedChallenge.contexts[activeContextIndex]?.title}
-                          className="max-h-64 w-auto object-contain rounded-xl hover:scale-105 transition-all duration-300"
-                        />
-                      </div>
-                      <div className="text-xs text-purple-200/90 font-mono text-center bg-purple-950/40 px-3 py-1.5 rounded-xl border border-purple-500/20 w-full">
-                        🎯 Goal: Write a prompt that describes the subject, style, lighting, color scheme, and camera composition of this image.
-                      </div>
-                    </div>
-                  ) : (
-                    /* Sample Input / Context text data */
-                    <div className="bg-black/40 p-4 rounded-2xl border border-white/10 shadow-inner">
-                      <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-indigo-300">
-                          <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                          Input Data / Context Provided
-                        </span>
-                        {selectedChallenge.contexts && (
-                          <span className="text-indigo-300 font-mono text-[10px] font-bold bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30">
-                            {selectedChallenge.contexts[activeContextIndex]?.title}
-                          </span>
-                        )}
-                      </div>
-                      <pre className="text-xs text-indigo-100 font-mono whitespace-pre-wrap overflow-x-auto max-h-32 leading-relaxed">
-                        {selectedChallenge.contexts
-                          ? selectedChallenge.contexts[activeContextIndex]?.sampleInput
-                          : selectedChallenge.sampleInput}
-                      </pre>
-                    </div>
-                  )}
-
-                  {/* Target Constraints Checklist */}
-                  <div className="bg-indigo-950/30 p-4 rounded-2xl border border-indigo-500/30">
-                    <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <ShieldAlert className="w-4 h-4" />
-                      Target Constraints (Must Follow)
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {selectedChallenge.constraints.map((c, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-white/90 bg-white/[0.03] p-2 rounded-xl border border-white/5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span>{c}</span>
-                        </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
+
+              {/* Sample Input / Context data */}
+              <div className="bg-black/30 p-3.5 rounded-xl border border-white/5">
+                <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-indigo-400" />
+                    Input Data / Context Provided
+                  </span>
+                  {selectedChallenge.contexts && (
+                    <span className="text-indigo-300 font-mono text-[10px]">
+                      {selectedChallenge.contexts[activeContextIndex]?.title}
+                    </span>
+                  )}
+                </div>
+                <pre className="text-xs text-indigo-200 font-mono whitespace-pre-wrap overflow-x-auto max-h-28">
+                  {selectedChallenge.contexts
+                    ? selectedChallenge.contexts[activeContextIndex]?.sampleInput
+                    : selectedChallenge.sampleInput}
+                </pre>
+              </div>
+
+              {/* Target Constraints Checklist */}
+              <div className="bg-indigo-950/20 p-3.5 rounded-xl border border-indigo-500/20">
+                <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Target Constraints (Must Follow)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedChallenge.constraints.map((c, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-white/80">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{c}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Prompt Editor Box */}
@@ -1113,6 +1011,8 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
               </div>
               );
             })()}
+              </>
+            )}
           </div>
         </div>
       ) : (
