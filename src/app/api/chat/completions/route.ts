@@ -892,56 +892,6 @@ export async function POST(req: Request) {
       const errorText = await proxyResponse.text();
       console.error('Cloudflare Proxy error:', proxyResponse.status, errorText);
 
-      // Smart Recovery: Check if Cloudflare Worker returned 403 status code but included valid stream chunks
-      if (errorText.includes('chat.completion') || errorText.includes('"choices"')) {
-        let extractedText = '';
-        const lines = errorText.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-            try {
-              const chunkJson = JSON.parse(line.slice(6));
-              const delta = chunkJson.choices?.[0]?.delta?.content || chunkJson.choices?.[0]?.message?.content || '';
-              if (delta) extractedText += delta;
-            } catch {}
-          }
-        }
-
-        if (extractedText.trim()) {
-          console.log('[Route Recovery] Successfully recovered text from 403 stream payload!');
-          return NextResponse.json({
-            id: 'chatcmpl-recovered',
-            object: 'chat.completion',
-            created: Math.floor(Date.now() / 1000),
-            model: selectedModel,
-            choices: [{
-              index: 0,
-              message: { role: 'assistant', content: extractedText },
-              finish_reason: 'stop'
-            }],
-            reply: extractedText
-          });
-        }
-      }
-
-      // Auto Fallback to Pollinations AI for local dev resilience
-      try {
-        console.log('[Route Fallback] Attempting Pollinations auto fallback...');
-        const fallbackRes = await fetch('https://text.pollinations.ai/openai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: formattedMessages,
-            model: 'openai'
-          })
-        });
-        if (fallbackRes.ok) {
-          const fallbackData = await fallbackRes.json();
-          return NextResponse.json(fallbackData);
-        }
-      } catch (fbErr) {
-        console.warn('[Route Fallback] Pollinations fallback failed:', fbErr);
-      }
-
       // Parse error details from Cloudflare Proxy
       let errorMessage = 'AI provider error. ';
       try {
@@ -953,6 +903,8 @@ export async function POST(req: Request) {
         errorMessage += errorText.slice(0, 200);
       }
 
+      // Return 502 (Bad Gateway) — the upstream provider failed, not our route
+      // Return 502 (Bad Gateway) — the upstream provider failed, not our route
       return NextResponse.json(
         { error: errorMessage, reply: `⚠️ ${errorMessage}\n\nPlease check your Cloudflare Worker logs.` },
         {

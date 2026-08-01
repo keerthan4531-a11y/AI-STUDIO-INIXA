@@ -4,10 +4,8 @@ export interface ContextItem {
   title: string;
   sampleInput: string;
   targetOutputOrGoal: string;
-  bytesConversion?: number;
-  ignoreTicket?: string;
-  imagePath?: string;
-  imagePromptGoal?: string;
+  bytesConversion: number;
+  ignoreTicket: string;
 }
 
 export interface BattleChallenge {
@@ -104,69 +102,19 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
   {
     id: 'q2',
     questionNumber: 2,
-    title: 'Q2: AI Image Reverse Prompt Engineering (6 Images)',
+    title: 'Q2: Zero-Hallucination Academic Extraction',
     category: 'text-research',
-    difficulty: 'Insane',
-    timeLimitSeconds: 360, // Exactly 6 Minutes Total
-    description: 'Inspect 6 target AI generated images. Write detailed reverse engineering prompts to recreate the style, lighting, subject, and composition of each image.',
-    targetOutputOrGoal: 'High fidelity descriptive prompt capturing image subject, lighting, style, color palette, and camera settings.',
+    difficulty: 'Hard',
+    timeLimitSeconds: 300,
+    description: 'Extract exact quantitative findings from a complex research snippet into a markdown table. Your prompt must prevent the model from inferring or adding any numbers not explicitly stated.',
+    sampleInput: `Study Results: Group A (n=120) showed a 34.2% increase in retention after 6 weeks of micro-learning. Group B (n=115) control group showed 4.1% increase. P-value was < 0.001. Dropout rate in Group A was 5%, while Group B was 12%. No adverse events were logged in either arm.`,
+    targetOutputOrGoal: `| Cohort | Sample Size (n) | Retention Increase (%) | Dropout Rate (%) | P-Value |\n|---|---|---|---|---|\n| Group A | 120 | 34.2% | 5% | < 0.001 |\n| Group B | 115 | 4.1% | 12% | < 0.001 |`,
     constraints: [
-      'Must describe main subject, artistic medium/style, and color palette accurately',
-      'Must specify lighting conditions (e.g. golden hour, volumetric glow, neon lighting)',
-      'Must include camera or rendering quality descriptors (e.g. 8k resolution, cinematic composition)',
-      'No vague single-word prompts (Minimum 25 words per prompt)'
+      'Output MUST be a GitHub Markdown table only',
+      'Strict zero-hallucination constraint',
+      'Under 50 total output tokens'
     ],
-    evaluationCriteria: 'Visual descriptor accuracy, artistic medium precision, lighting details, and vocabulary richness.',
-    contexts: [
-      {
-        id: 'q2-img1',
-        contextNumber: 1,
-        title: 'Image 1 of 6: Cyberpunk Neon Warrior',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: 'Cyberpunk female samurai, neon cyan katana, rainy Tokyo alley, glowing holographic billboards, cinematic lighting, 8k resolution.',
-        imagePath: '/battle-assets/img_task_1.png'
-      },
-      {
-        id: 'q2-img2',
-        contextNumber: 2,
-        title: 'Image 2 of 6: Golden Hour Orbital Station',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: 'Ring orbital space station over Earth sunrise, golden hour lens flare, photorealistic sci-fi architecture, high detail.',
-        imagePath: '/battle-assets/img_task_2.png'
-      },
-      {
-        id: 'q2-img3',
-        contextNumber: 3,
-        title: 'Image 3 of 6: Bioluminescent Crystal Cave Dragon',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: 'Translucent glowing bioluminescent purple dragon inside dark quartz crystal cave, fantasy digital art, 4k render.',
-        imagePath: '/battle-assets/img_task_3.png'
-      },
-      {
-        id: 'q2-img4',
-        contextNumber: 4,
-        title: 'Image 4 of 6: Synthwave Vaporwave Grid Highway',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: 'Retro 80s synthwave red sports car driving into wireframe neon sun, purple grid horizon, palm trees, vaporwave aesthetics.',
-        imagePath: '/battle-assets/img_task_4.png'
-      },
-      {
-        id: 'q2-img5',
-        contextNumber: 5,
-        title: 'Image 5 of 6: Steampunk Clockwork Mechanical Owl',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: 'Intricate steampunk owl made of brass gears and copper cogs, glowing amber eyes, perched on antique leather book, macro photo.',
-        imagePath: '/battle-assets/img_task_5.png'
-      },
-      {
-        id: 'q2-img6',
-        contextNumber: 6,
-        title: 'Image 6 of 6: Floating Isometric Cyber Island',
-        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
-        targetOutputOrGoal: '3D isometric floating island, futuristic glass skyscrapers, waterfalls dropping into space, flying vehicles, octane render.',
-        imagePath: '/battle-assets/img_task_6.png'
-      }
-    ]
+    evaluationCriteria: 'Table formatting accuracy, numerical precision, token brevity.'
   },
   {
     id: 'q3',
