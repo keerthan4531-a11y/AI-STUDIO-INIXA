@@ -13,6 +13,21 @@ import { PromptBattleRulebookModal } from './PromptBattleRulebookModal';
 import { BattleLoginModal } from './BattleLoginModal';
 import { BattleLeaderboardModal, type LeaderboardEntry } from './BattleLeaderboardModal';
 
+// ─── Battle Arena Dedicated AI Model ────────────────────────────────
+// Baidu ERNIE 5.1 via CF Worker — unauthenticated SSE, no rate limit issues
+// All contestants use this same model for fair, consistent evaluation.
+const BATTLE_JUDGE_MODEL: AIModel = {
+  id: 'baidu-ernie-5.1',
+  label: 'Baidu Ernie 5.1',
+  engine: 'custom',
+  modelStr: 'ernie/ERINE-5.1',
+  badge: 'BAIDU',
+  badgeColor: 'red',
+  icon: 'Brain',
+  iconColor: '#ef4444',
+  description: 'Baidu ERNIE-5.1 unauthenticated SSE proxy'
+};
+
 export function PromptBattleArena() {
   // Contestant Auth state
   const [battleUser, setBattleUser] = useState<string | null>(() => {
@@ -54,7 +69,7 @@ export function PromptBattleArena() {
 
   // Model selection state
   const [activeModel, setActiveModel] = useState<AIModel>(() => {
-    return getSelectedModel();
+    return BATTLE_JUDGE_MODEL; // Force all contestants to use ERNIE 5.1
   });
   const [showModelDropdown, setShowModelDropdown] = useState<boolean>(false);
   
@@ -228,7 +243,7 @@ export function PromptBattleArena() {
         (chunk: string) => {
           setAiOutput(chunk); // Real-time streaming update token by token!
         },
-        activeModel
+        BATTLE_JUDGE_MODEL // Always use dedicated Battle Arena model
       );
       setAiOutput(result);
     } catch (e) {
@@ -280,7 +295,7 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
       const rawJudgeOutput = await aiChat(
         [{ role: 'user', content: judgeSystemPrompt }],
         undefined,
-        activeModel
+        BATTLE_JUDGE_MODEL // Always use dedicated Battle Arena model for judging
       );
 
       // 1. Clean LLM Judge output (strip <think> tags & markdown fences)
