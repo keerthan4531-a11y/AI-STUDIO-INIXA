@@ -39,6 +39,19 @@ export function PromptBattleArena() {
     return {};
   });
 
+  // Q1 6 Contexts Sub-Progression State
+  const [activeContextIndex, setActiveContextIndex] = useState<number>(0);
+  const [contextProgress, setContextProgress] = useState<Record<string, { score: number; accuracy: number }>>(() => {
+    try {
+      const user = localStorage.getItem('inixa_battle_username');
+      if (user) {
+        const saved = localStorage.getItem(`inixa_battle_context_progress_${user}`);
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return {};
+  });
+
   // Model selection state
   const [activeModel, setActiveModel] = useState<AIModel>(() => {
     return getSelectedModel();
@@ -177,6 +190,16 @@ export function PromptBattleArena() {
     ? Math.round(Object.values(progress).reduce((acc, curr) => acc + curr.accuracy, 0) / completedCount)
     : 0;
 
+  const handleSkipContext = () => {
+    if (selectedChallenge.contexts && activeContextIndex < selectedChallenge.contexts.length - 1) {
+      vibrate(30);
+      setActiveContextIndex(prev => prev + 1);
+      setUserPrompt('');
+      setAiOutput('');
+      setEvaluationResult(null);
+    }
+  };
+
   const handleRunPrompt = async () => {
     if (!userPrompt.trim() || isGenerating) return;
     vibrate(40);
@@ -184,10 +207,14 @@ export function PromptBattleArena() {
     setAiOutput('');
     setEvaluationResult(null);
 
+    const activeSampleInput = selectedChallenge.contexts
+      ? selectedChallenge.contexts[activeContextIndex]?.sampleInput || selectedChallenge.sampleInput
+      : selectedChallenge.sampleInput;
+
     const fullMessages = [
       {
         role: 'system',
-        content: `You are participating in a Prompt Engineering Battle. Execute the contestant's prompt accurately based on the provided sample input context below:\n\nCONTEXT INPUT:\n${selectedChallenge.sampleInput || 'N/A'}`
+        content: `You are participating in a Prompt Engineering Battle. Execute the contestant's prompt accurately based on the provided sample input context below:\n\nCONTEXT INPUT:\n${activeSampleInput || 'N/A'}`
       },
       {
         role: 'user',
@@ -314,19 +341,23 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         }
       }
 
-      // Check Math Unit Conversion Bytes (52428800)
-      if (selectedChallenge.constraints.some(c => c.includes('52428800'))) {
-        if (!cleanAiOutput.includes('52428800')) {
+      // Check Math Unit Conversion Bytes dynamically for active context
+      const activeCtx = selectedChallenge.contexts ? selectedChallenge.contexts[activeContextIndex] : null;
+      const expectedBytesStr = activeCtx ? String(activeCtx.bytesConversion) : '52428800';
+      const expectedIgnoreTicket = activeCtx ? activeCtx.ignoreTicket : '101';
+
+      if (selectedChallenge.constraints.some(c => c.toLowerCase().includes('bytes'))) {
+        if (!cleanAiOutput.includes(expectedBytesStr)) {
           accuracyScore -= 30;
           constraintScore -= 25;
-          feedbackIssues.push('Failed 50MB to 52428800 bytes unit conversion.');
+          feedbackIssues.push(`Failed MB to bytes unit conversion (Expected: ${expectedBytesStr}).`);
         }
       }
 
-      // Check Disregard Filter (#101)
-      if (selectedChallenge.sampleInput?.includes('DISREGARD') && cleanAiOutput.includes('101')) {
+      // Check Disregard Filter
+      if (cleanAiOutput.includes(expectedIgnoreTicket)) {
         constraintScore -= 30;
-        feedbackIssues.push('Failed to filter out disregarded report #101.');
+        feedbackIssues.push(`Failed to filter out disregarded ticket #${expectedIgnoreTicket}.`);
       }
 
       // Check Forbidden Character Ban (e.g. letter 'e')
@@ -693,18 +724,72 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
                 </div>
               </div>
 
-              {/* Sample Input / Context data */}
-              {selectedChallenge.sampleInput && (
-                <div className="bg-black/30 p-3.5 rounded-xl border border-white/5">
-                  <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <BookOpen className="w-3 h-3 text-indigo-400" />
-                    Input Data / Context Provided
+              {/* If Challenge has Sub-Contexts (Q1 6 Contexts) */}
+              {selectedChallenge.contexts && (
+                <div className="bg-indigo-950/40 p-3 rounded-xl border border-indigo-500/30 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-indigo-400" />
+                      Q1 Sub-Contexts ({activeContextIndex + 1} of {selectedChallenge.contexts.length})
+                    </span>
+                    <button
+                      onClick={handleSkipContext}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white/80 transition-all flex items-center gap-1"
+                    >
+                      Skip Context <ArrowRight className="w-3 h-3" />
+                    </button>
                   </div>
-                  <pre className="text-xs text-indigo-200 font-mono whitespace-pre-wrap overflow-x-auto max-h-28">
-                    {selectedChallenge.sampleInput}
-                  </pre>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                    {selectedChallenge.contexts.map((ctx, idx) => {
+                      const isActive = idx === activeContextIndex;
+                      const isCtxDone = !!contextProgress[ctx.id];
+
+                      return (
+                        <button
+                          key={ctx.id}
+                          onClick={() => {
+                            setActiveContextIndex(idx);
+                            setUserPrompt('');
+                            setAiOutput('');
+                            setEvaluationResult(null);
+                            vibrate(20);
+                          }}
+                          className={cn(
+                            "px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1",
+                            isActive
+                              ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-white/30"
+                              : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                          )}
+                        >
+                          {isCtxDone && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
+                          Context {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
+
+              {/* Sample Input / Context data */}
+              <div className="bg-black/30 p-3.5 rounded-xl border border-white/5">
+                <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-indigo-400" />
+                    Input Data / Context Provided
+                  </span>
+                  {selectedChallenge.contexts && (
+                    <span className="text-indigo-300 font-mono text-[10px]">
+                      {selectedChallenge.contexts[activeContextIndex]?.title}
+                    </span>
+                  )}
+                </div>
+                <pre className="text-xs text-indigo-200 font-mono whitespace-pre-wrap overflow-x-auto max-h-28">
+                  {selectedChallenge.contexts
+                    ? selectedChallenge.contexts[activeContextIndex]?.sampleInput
+                    : selectedChallenge.sampleInput}
+                </pre>
+              </div>
 
               {/* Target Constraints Checklist */}
               <div className="bg-indigo-950/20 p-3.5 rounded-xl border border-indigo-500/20">
