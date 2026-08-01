@@ -138,13 +138,13 @@ export function PromptBattleArena() {
     vibrate(50);
     setIsEvaluating(true);
 
-    const judgeSystemPrompt = `You are an expert AI Competition Judge evaluating a Prompt Engineering contestant submission.
-Evaluate the contestant's PROMPT and AI OUTPUT against the Target Goal and Constraints below.
+    const judgeSystemPrompt = `You are a strict, highly demanding AI Competition Judge evaluating a Prompt Engineering contestant submission.
+Be EXTREMELY STRICT in your scoring. Apply heavy penalties for non-compliance.
 
 TARGET GOAL:
 ${selectedChallenge.targetOutputOrGoal}
 
-CONSTRAINTS:
+CONSTRAINTS TO ENFORCE (CRITICAL):
 ${selectedChallenge.constraints.map(c => `- ${c}`).join('\n')}
 
 EVALUATION CRITERIA:
@@ -155,6 +155,11 @@ ${userPrompt}
 
 AI GENERATED OUTPUT:
 ${aiOutput}
+
+SCORING RULES:
+1. If ANY constraint is violated (e.g. markdown fences present when forbidden, forbidden characters used, wrong complexity), deduct 40-50 points immediately from constraintMatch & score!
+2. If the contestant prompt is short/lazy without delimiters, role setting, or explicit formatting rules, cap tokenEfficiency at 50%.
+3. Only award 90%+ scores to prompts that use professional prompt engineering techniques (role assignment, XML/quote delimiters, negative constraints).
 
 Respond ONLY with a JSON object in this exact format (no markdown fences):
 {
@@ -382,7 +387,8 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
                         ch.difficulty === 'Easy' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                         ch.difficulty === 'Medium' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
                         ch.difficulty === 'Hard' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                        ch.difficulty === 'Extreme' && "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                        ch.difficulty === 'Extreme' && "bg-rose-500/10 text-rose-400 border-rose-500/20",
+                        ch.difficulty === 'Insane' && "bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse shadow-md shadow-purple-500/20"
                       )}>
                         {ch.difficulty}
                       </span>

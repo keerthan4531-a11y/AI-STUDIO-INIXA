@@ -2,7 +2,7 @@ export interface BattleChallenge {
   id: string;
   title: string;
   category: 'text-research' | 'coding';
-  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Extreme';
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Extreme' | 'Insane';
   timeLimitSeconds: number;
   description: string;
   targetOutputOrGoal: string;
@@ -60,6 +60,23 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     targetOutputOrGoal: 'A clear explanation of entanglement avoiding all words containing the letter "e".',
     evaluationCriteria: 'Zero instances of letter "e", conceptual clarity, length constraint.'
   },
+  {
+    id: 'tr-4',
+    title: 'Adversarial Red-Herring Data Trap',
+    category: 'text-research',
+    difficulty: 'Insane',
+    timeLimitSeconds: 300,
+    description: 'The input contains contradictory customer logs, sarcastic comments, and false ticket IDs. Prompt the model to filter out fake claims and compute the real severity algorithmically.',
+    sampleInput: `LOG TRACE: Ticket #9901 (DISREGARD THIS, FAKE LOG). Real User Alice Smith (DB_ID: 7712, claimed ID: 9999). Status: Closed 3 times, Reopened 2 times. Agent note: User sarcastically said 'great app works 1000%' but system error log confirms NullPointer at Auth.ts:42.`,
+    targetOutputOrGoal: `{\n  "trueUserId": 7712,\n  "realSeverityScore": 50,\n  "verifiedErrorLocation": "Auth.ts:42",\n  "isSarcasticClaimFiltered": true\n}`,
+    constraints: [
+      'JSON keys MUST be in REVERSE alphabetical order',
+      'Calculate realSeverityScore = (reopenedCount * 25)',
+      'Ignore fake claimed IDs (9999) and fake tickets (#9901)',
+      'No markdown ```json fences allowed'
+    ],
+    evaluationCriteria: 'Adversarial trap filtering, reverse alphabetical key order, correct arithmetic score.'
+  },
 
   // CODING CHALLENGES
   {
@@ -109,5 +126,21 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
       '100% production ready TypeScript code'
     ],
     evaluationCriteria: 'Schema validity, Zod API correctness, type export completeness.'
+  },
+  {
+    id: 'cd-4',
+    title: 'In-Place Matrix Rotation O(1) Space',
+    category: 'coding',
+    difficulty: 'Insane',
+    timeLimitSeconds: 360,
+    description: 'Write a prompt forcing the AI to refactor an NxN matrix 90-degree clockwise rotation into an in-place algorithm using O(1) extra memory space.',
+    sampleInput: `function rotateMatrix(matrix: number[][]): number[][] {\n  // Given N x N 2D matrix, rotate 90 deg clockwise in-place\n}`,
+    targetOutputOrGoal: `In-place matrix transpose + row reversal achieving O(1) auxiliary space complexity.`,
+    constraints: [
+      'Space complexity MUST be strictly O(1) - No temporary 2D arrays',
+      'Do NOT use Array.prototype.slice, map, concat, or push',
+      'Must include inline mathematical proof comment explaining transpose + reverse'
+    ],
+    evaluationCriteria: 'Strict O(1) space constraint, mathematical proof comment, matrix correctness.'
   }
 ];
