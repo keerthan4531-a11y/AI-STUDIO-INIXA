@@ -176,27 +176,122 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         undefined,
         activeModel
       );
+
+      // 1. Clean LLM Judge output (strip <think> tags & markdown fences)
+      let cleanedJudgeText = (rawJudgeOutput || '')
+        .replace(/<think>[\s\S]*?<\/think>/g, '')
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+
+      const jsonMatch = cleanedJudgeText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedJudgeText = jsonMatch[0];
+      }
+
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(cleanedJudgeText);
+      } catch (err) {
+        console.warn('LLM Judge JSON parse failed, utilizing deterministic rule engine fallback.');
+      }
+
+      // 2. Deterministic Dynamic Constraint Rules Engine
+      let accuracyScore = 95;
+      let constraintScore = 95;
+      let tokenEffScore = 90;
+      const feedbackIssues: string[] = [];
+
+      const cleanAiOutput = aiOutput.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+      // Check Markdown fences
+      if (cleanAiOutput.includes('```')) {
+        constraintScore -= 30;
+        feedbackIssues.push('Markdown fences (```) were included.');
+      }
+
+      // Check JSON validity if JSON is expected
+      let parsedAiOutput: any = null;
+      if (selectedChallenge.targetOutputOrGoal.trim().startsWith('{')) {
+        try {
+          parsedAiOutput = JSON.parse(cleanAiOutput.replace(/```json/g, '').replace(/```/g, '').trim());
+        } catch {
+          accuracyScore -= 40;
+          constraintScore -= 30;
+          feedbackIssues.push('Output is not valid parseable JSON.');
+        }
+      }
+
+      // Check Alphabetical Key Order if JSON
+      if (parsedAiOutput && typeof parsedAiOutput === 'object' && !Array.isArray(parsedAiOutput)) {
+        const keys = Object.keys(parsedAiOutput);
+        const sortedKeys = [...keys].sort();
+        const isAlphabetical = keys.join(',') === sortedKeys.join(',');
+        
+        if (!isAlphabetical && selectedChallenge.constraints.some(c => c.toLowerCase().includes('alphabetical'))) {
+          constraintScore -= 35;
+          accuracyScore -= 20;
+          feedbackIssues.push(`Keys not in alphabetical order (Found: ${keys.join(', ')}).`);
+        }
+      }
+
+      // Check Math Unit Conversion Bytes (52428800)
+      if (selectedChallenge.constraints.some(c => c.includes('52428800'))) {
+        if (!cleanAiOutput.includes('52428800')) {
+          accuracyScore -= 30;
+          constraintScore -= 25;
+          feedbackIssues.push('Failed 50MB to 52428800 bytes unit conversion.');
+        }
+      }
+
+      // Check Disregard Filter (#101)
+      if (selectedChallenge.sampleInput?.includes('DISREGARD') && cleanAiOutput.includes('101')) {
+        constraintScore -= 30;
+        feedbackIssues.push('Failed to filter out disregarded report #101.');
+      }
+
+      // Check Forbidden Character Ban (e.g. letter 'e')
+      if (selectedChallenge.constraints.some(c => c.includes("'e'"))) {
+        const eCount = (cleanAiOutput.match(/e/gi) || []).length;
+        if (eCount > 0) {
+          constraintScore -= Math.min(60, eCount * 10);
+          feedbackIssues.push(`Forbidden letter 'e' appeared ${eCount} times.`);
+        }
+      }
+
+      // Check Contestant Prompt Quality
+      if (userPrompt.trim().length < 30 || !userPrompt.includes('<') && !userPrompt.includes('"')) {
+        tokenEffScore = Math.min(tokenEffScore, 55);
+        feedbackIssues.push('Prompt is simplistic; missing delimiters or explicit role rules.');
+      }
+
+      // Combine LLM Judge & Deterministic Rule Engine
+      const finalAccuracy = Math.max(10, Math.min(100, parsed?.accuracy ?? accuracyScore));
+      const finalConstraint = Math.max(10, Math.min(100, parsed?.constraintMatch ?? constraintScore));
+      const finalTokenEff = Math.max(10, Math.min(100, parsed?.tokenEfficiency ?? tokenEffScore));
       
-      const cleanJson = rawJudgeOutput.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
+      const overallScore = Math.round((finalAccuracy * 0.4) + (finalConstraint * 0.4) + (finalTokenEff * 0.2));
+
+      let finalFeedback = parsed?.feedback || 'Evaluated prompt against constraints.';
+      if (feedbackIssues.length > 0) {
+        finalFeedback = `Penalties Applied: ${feedbackIssues.join(' ')}`;
+      }
 
       setEvaluationResult({
-        score: parsed.score || 88,
-        accuracy: parsed.accuracy || 90,
-        constraintMatch: parsed.constraintMatch || 92,
-        tokenEfficiency: parsed.tokenEfficiency || 84,
-        feedback: parsed.feedback || 'Excellent constraint compliance with precise output formatting.'
+        score: overallScore,
+        accuracy: finalAccuracy,
+        constraintMatch: finalConstraint,
+        tokenEfficiency: finalTokenEff,
+        feedback: finalFeedback
       });
     } catch (e) {
-      console.error('Judge Parsing Error', e);
-      const promptLen = userPrompt.length;
-      const score = Math.min(96, Math.max(65, 100 - Math.abs(promptLen - 140) / 8));
+      console.error('Judge Processing Error', e);
       setEvaluationResult({
-        score: Math.round(score),
-        accuracy: 90,
-        constraintMatch: 94,
-        tokenEfficiency: 85,
-        feedback: 'Evaluated prompt structure against goal constraints successfully.'
+        score: 45,
+        accuracy: 40,
+        constraintMatch: 50,
+        tokenEfficiency: 45,
+        feedback: 'Failed constraint verification. Output did not satisfy strict schema requirements.'
       });
     } finally {
       setIsEvaluating(false);
