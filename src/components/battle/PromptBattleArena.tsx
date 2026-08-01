@@ -124,14 +124,46 @@ export function PromptBattleArena() {
     return !!progress[prevQ.id];
   };
 
+  const syncLeaderboardBackend = async (
+    username: string,
+    currentProgress: Record<string, { score: number; accuracy: number }>
+  ) => {
+    try {
+      const qValues = Object.values(currentProgress);
+      const cCount = qValues.length;
+      const totalScore = qValues.reduce((acc, curr) => acc + curr.score, 0);
+      const avgAcc = cCount > 0 ? Math.round(qValues.reduce((acc, curr) => acc + curr.accuracy, 0) / cCount) : 0;
+
+      await fetch('/api/battle/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          totalScore,
+          completedQuestions: cCount,
+          avgAccuracy: avgAcc,
+          timeSpentMinutes: 12.5
+        })
+      });
+    } catch (e) {
+      console.error('Failed to sync leaderboard backend:', e);
+    }
+  };
+
   const handleLoginSuccess = (username: string) => {
     setBattleUser(username);
     localStorage.setItem('inixa_battle_username', username);
+    let loadedProgress = {};
     try {
       const saved = localStorage.getItem(`inixa_battle_progress_${username}`);
-      if (saved) setProgress(JSON.parse(saved));
-      else setProgress({});
+      if (saved) {
+        loadedProgress = JSON.parse(saved);
+        setProgress(loadedProgress);
+      } else {
+        setProgress({});
+      }
     } catch {}
+    syncLeaderboardBackend(username, loadedProgress);
   };
 
   const handleLogout = () => {
@@ -344,6 +376,7 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
       setProgress(updatedProgress);
       if (battleUser) {
         localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+        syncLeaderboardBackend(battleUser, updatedProgress);
       }
 
       // Automatically open Leaderboard upon completing Q6
