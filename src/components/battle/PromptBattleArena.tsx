@@ -41,8 +41,6 @@ export function PromptBattleArena() {
 
   // Q1 6 Contexts Sub-Progression State
   const [activeContextIndex, setActiveContextIndex] = useState<number>(0);
-  const [stage1Completed, setStage1Completed] = useState<boolean>(false);
-  const [silentToastMsg, setSilentToastMsg] = useState<string | null>(null);
   const [contextProgress, setContextProgress] = useState<Record<string, { score: number; accuracy: number }>>(() => {
     try {
       const user = localStorage.getItem('inixa_battle_username');
@@ -192,6 +190,16 @@ export function PromptBattleArena() {
     ? Math.round(Object.values(progress).reduce((acc, curr) => acc + curr.accuracy, 0) / completedCount)
     : 0;
 
+  const handleSkipContext = () => {
+    if (selectedChallenge.contexts && activeContextIndex < selectedChallenge.contexts.length - 1) {
+      vibrate(30);
+      setActiveContextIndex(prev => prev + 1);
+      setUserPrompt('');
+      setAiOutput('');
+      setEvaluationResult(null);
+    }
+  };
+
   const handleRunPrompt = async () => {
     if (!userPrompt.trim() || isGenerating) return;
     vibrate(40);
@@ -199,10 +207,14 @@ export function PromptBattleArena() {
     setAiOutput('');
     setEvaluationResult(null);
 
+    const activeSampleInput = selectedChallenge.contexts
+      ? selectedChallenge.contexts[activeContextIndex]?.sampleInput || selectedChallenge.sampleInput
+      : selectedChallenge.sampleInput;
+
     const fullMessages = [
       {
         role: 'system',
-        content: `You are participating in a Prompt Engineering Battle. Execute the contestant's prompt accurately based on the provided sample input context below:\n\nCONTEXT INPUT:\n${selectedChallenge.sampleInput || 'N/A'}`
+        content: `You are participating in a Prompt Engineering Battle. Execute the contestant's prompt accurately based on the provided sample input context below:\n\nCONTEXT INPUT:\n${activeSampleInput || 'N/A'}`
       },
       {
         role: 'user',
@@ -224,65 +236,6 @@ export function PromptBattleArena() {
       setAiOutput('Error generating response. Please check AI Engine backend connection.');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleCompleteTaskSilent = async () => {
-    if (!userPrompt.trim() || isEvaluating) return;
-    vibrate(50);
-    setIsEvaluating(true);
-
-    // Evaluate Image-to-Prompt Keyword Match for selectedChallenge
-    let matchedCount = 0;
-    const required = selectedChallenge.requiredKeywords || [];
-    required.forEach(kw => {
-      if (userPrompt.toLowerCase().includes(kw.toLowerCase())) matchedCount++;
-    });
-
-    const keywordScore = required.length > 0 ? Math.round((matchedCount / required.length) * 100) : 85;
-    const promptLenBonus = Math.min(10, Math.floor(userPrompt.length / 25));
-    const questionScore = Math.min(100, Math.max(30, keywordScore + promptLenBonus));
-
-    const updatedProgress = {
-      ...progress,
-      [selectedChallenge.id]: {
-        score: questionScore,
-        accuracy: keywordScore,
-        timestamp: Date.now()
-      }
-    };
-
-    setProgress(updatedProgress);
-    setIsEvaluating(false);
-
-    if (battleUser) {
-      localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
-      syncLeaderboardBackend(battleUser, updatedProgress);
-    }
-
-    const currentQIdx = BATTLE_CHALLENGES.findIndex(x => x.id === selectedChallenge.id);
-
-    // If there are more questions left (Q1 to Q5)
-    if (currentQIdx < BATTLE_CHALLENGES.length - 1) {
-      const nextQ = BATTLE_CHALLENGES[currentQIdx + 1];
-      setSilentToastMsg(`✓ Question ${selectedChallenge.questionNumber} Saved Silently! Moving to Q${nextQ.questionNumber}...`);
-      setTimeout(() => setSilentToastMsg(null), 3000);
-
-      // Advance to Next Question automatically
-      setSelectedChallenge(nextQ);
-      setTimeLeft(nextQ.timeLimitSeconds);
-      setTimerRunning(false); // Question starts locked until timer start!
-      setUserPrompt('');
-      setAiOutput('');
-      setEvaluationResult(null);
-    } else {
-      // Q6 Completed! Compute Final Stage Score & Reveal Overall Score
-      setStage1Completed(true);
-      setSilentToastMsg('🏆 Stage 1 Complete! All 6 Image Questions Submitted.');
-
-      setTimeout(() => {
-        setShowLeaderboardModal(true);
-      }, 1000);
     }
   };
 
@@ -388,12 +341,22 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         }
       }
 
+      const activeCtx = selectedChallenge.contexts ? selectedChallenge.contexts[activeContextIndex] : null;
+      const expectedBytesStr = activeCtx?.bytesConversion ? String(activeCtx.bytesConversion) : '52428800';
+      const expectedIgnoreTicket = activeCtx?.ignoreTicket || '101';
+
       if (selectedChallenge.constraints.some(c => c.toLowerCase().includes('bytes'))) {
-        if (!cleanAiOutput.includes('52428800')) {
+        if (!cleanAiOutput.includes(expectedBytesStr)) {
           accuracyScore -= 30;
           constraintScore -= 25;
-          feedbackIssues.push('Failed MB to bytes unit conversion.');
+          feedbackIssues.push(`Failed MB to bytes unit conversion (Expected: ${expectedBytesStr}).`);
         }
+      }
+
+      // Check Disregard Filter
+      if (expectedIgnoreTicket && cleanAiOutput.includes(expectedIgnoreTicket)) {
+        constraintScore -= 30;
+        feedbackIssues.push(`Failed to filter out disregarded ticket #${expectedIgnoreTicket}.`);
       }
 
       // Check Forbidden Character Ban (e.g. letter 'e')
@@ -423,34 +386,103 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         finalFeedback = `Penalties Applied: ${feedbackIssues.join(' ')}`;
       }
 
-      setEvaluationResult({
-        score: overallScore,
-        accuracy: finalAccuracy,
-        constraintMatch: finalConstraint,
-        tokenEfficiency: finalTokenEff,
-        feedback: finalFeedback
-      });
+      // Save into Tournament Progress Memory & Sub-context Memory
+      if (selectedChallenge.contexts && activeCtx) {
+        const updatedCtxProgress = {
+          ...contextProgress,
+          [activeCtx.id]: {
+            score: overallScore,
+            accuracy: finalAccuracy,
+            constraintMatch: finalConstraint,
+            tokenEfficiency: finalTokenEff,
+            feedback: finalFeedback
+          }
+        };
+        setContextProgress(updatedCtxProgress);
+        if (battleUser) {
+          localStorage.setItem(`inixa_battle_context_progress_${battleUser}`, JSON.stringify(updatedCtxProgress));
+        }
 
-      // Save into Tournament Progress Memory
-      const updatedProgress = {
-        ...progress,
-        [selectedChallenge.id]: {
+        const completedCtxsForChallenge = selectedChallenge.contexts.filter(c => !!updatedCtxProgress[c.id]);
+        const isStageFullyComplete = completedCtxsForChallenge.length === selectedChallenge.contexts.length;
+
+        if (!isStageFullyComplete) {
+          // Keep individual context score HIDDEN in background memory!
+          setEvaluationResult(null);
+
+          // Advance to next uncompleted context after short delay
+          if (activeContextIndex < selectedChallenge.contexts.length - 1) {
+            setTimeout(() => {
+              setActiveContextIndex(prev => prev + 1);
+              setUserPrompt('');
+              setAiOutput('');
+              setEvaluationResult(null);
+            }, 600);
+          }
+        } else {
+          // ALL 6 TASKS IN STAGE COMPLETE! Calculate Stage Overall Final Score
+          const totalStageScore = completedCtxsForChallenge.reduce((acc, c) => acc + (updatedCtxProgress[c.id]?.score || 0), 0);
+          const stageAvgScore = Math.round(totalStageScore / selectedChallenge.contexts.length);
+          const stageAvgAcc = Math.round(completedCtxsForChallenge.reduce((acc, c) => acc + (updatedCtxProgress[c.id]?.accuracy || 0), 0) / selectedChallenge.contexts.length);
+
+          const updatedProgress = {
+            ...progress,
+            [selectedChallenge.id]: {
+              score: stageAvgScore,
+              accuracy: stageAvgAcc,
+              timestamp: Date.now()
+            }
+          };
+          setProgress(updatedProgress);
+          if (battleUser) {
+            localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+            syncLeaderboardBackend(battleUser, updatedProgress);
+          }
+
+          // REVEAL STAGE OVERALL FINAL SCORE TO USER!
+          setEvaluationResult({
+            score: stageAvgScore,
+            accuracy: stageAvgAcc,
+            constraintMatch: 95,
+            tokenEfficiency: 90,
+            feedback: `Stage Completed! Overall Average Score across all 6 Tasks: ${stageAvgScore}%`
+          });
+
+          if (selectedChallenge.questionNumber === 6) {
+            setTimeout(() => {
+              setShowLeaderboardModal(true);
+            }, 1200);
+          }
+        }
+      } else {
+        // Single task challenge (Q3 - Q6)
+        setEvaluationResult({
           score: overallScore,
           accuracy: finalAccuracy,
-          timestamp: Date.now()
-        }
-      };
-      setProgress(updatedProgress);
-      if (battleUser) {
-        localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
-        syncLeaderboardBackend(battleUser, updatedProgress);
-      }
+          constraintMatch: finalConstraint,
+          tokenEfficiency: finalTokenEff,
+          feedback: finalFeedback
+        });
 
-      // Automatically open Leaderboard upon completing Q6
-      if (selectedChallenge.questionNumber === 6) {
-        setTimeout(() => {
-          setShowLeaderboardModal(true);
-        }, 1200);
+        const updatedProgress = {
+          ...progress,
+          [selectedChallenge.id]: {
+            score: overallScore,
+            accuracy: finalAccuracy,
+            timestamp: Date.now()
+          }
+        };
+        setProgress(updatedProgress);
+        if (battleUser) {
+          localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+          syncLeaderboardBackend(battleUser, updatedProgress);
+        }
+
+        if (selectedChallenge.questionNumber === 6) {
+          setTimeout(() => {
+            setShowLeaderboardModal(true);
+          }, 1200);
+        }
       }
     } catch (e) {
       console.error('Judge Processing Error', e);
@@ -789,50 +821,95 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
               ) : (
                 /* REVEALED BATTLE WORKSPACE */
                 <div className="space-y-4">
-                  {/* Target AI Image Display Panel for Stage 1 Image-to-Prompt */}
-                  {selectedChallenge.imageUrl && (
-                    <div className="bg-gradient-to-r from-indigo-950/50 via-purple-950/40 to-black/60 p-4 rounded-2xl border border-indigo-500/40 flex flex-col md:flex-row gap-4 items-center shadow-xl">
-                      <div className="relative w-full md:w-64 h-48 rounded-xl overflow-hidden border border-white/20 shadow-2xl group shrink-0 bg-black">
-                        <img
-                          src={selectedChallenge.imageUrl}
-                          alt="Target AI Artwork"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-amber-300 font-bold border border-amber-500/40 shadow">
-                          TARGET IMAGE {selectedChallenge.questionNumber}/6
+                  {/* If Challenge has Sub-Contexts (Q1 6 Contexts) */}
+                  {selectedChallenge.contexts && (
+                    <div className="bg-indigo-950/40 p-3.5 rounded-2xl border border-indigo-500/30 flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                          <BookOpen className="w-4 h-4 text-indigo-400" />
+                          Q1 Sub-Contexts ({activeContextIndex + 1} of {selectedChallenge.contexts.length})
                         </span>
+                        <button
+                          onClick={handleSkipContext}
+                          className="px-3 py-1 rounded-xl text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white/80 transition-all flex items-center gap-1"
+                        >
+                          Skip Context <ArrowRight className="w-3 h-3" />
+                        </button>
                       </div>
-                      <div className="flex-1 space-y-2 text-left">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-indigo-300 uppercase tracking-wider">
-                            {selectedChallenge.title}
-                          </span>
-                          <span className="px-2 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            VISUAL TARGET
-                          </span>
-                        </div>
-                        <p className="text-xs text-white/80 leading-relaxed font-medium">
-                          {selectedChallenge.visualDescription}
-                        </p>
-                        <div className="text-[11px] text-indigo-200 font-mono bg-indigo-500/10 p-2.5 rounded-xl border border-indigo-500/20 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>Inspect the target image on the left & write a prompt to recreate its visual elements!</span>
-                        </div>
+
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                        {selectedChallenge.contexts.map((ctx, idx) => {
+                          const isActive = idx === activeContextIndex;
+                          const isCtxDone = !!contextProgress[ctx.id];
+
+                          return (
+                            <button
+                              key={ctx.id}
+                              onClick={() => {
+                                setActiveContextIndex(idx);
+                                setUserPrompt('');
+                                setAiOutput('');
+                                setEvaluationResult(null);
+                                vibrate(20);
+                              }}
+                              className={cn(
+                                "px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1",
+                                isActive
+                                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-1 ring-white/30"
+                                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                              )}
+                            >
+                              {isCtxDone && <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />}
+                              Context {idx + 1}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
 
-                  {/* Sample Input / Context data */}
-                  {selectedChallenge.sampleInput && (
+                  {/* Target AI Image Card (For Q2 AI Image Reverse Prompting) */}
+                  {selectedChallenge.contexts && selectedChallenge.contexts[activeContextIndex]?.imagePath ? (
+                    <div className="bg-black/50 p-4 rounded-2xl border border-purple-500/30 flex flex-col items-center gap-3 shadow-xl">
+                      <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center justify-between w-full">
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-purple-400" />
+                          Target AI Image to Reverse Prompt ({activeContextIndex + 1} of 6)
+                        </span>
+                        <span className="text-purple-300 font-mono text-[10px] font-bold bg-purple-500/20 px-2.5 py-0.5 rounded-full border border-purple-500/30">
+                          {selectedChallenge.contexts[activeContextIndex]?.title}
+                        </span>
+                      </div>
+
+                      <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl max-h-72 w-full flex items-center justify-center bg-black/80 p-2">
+                        <img
+                          src={selectedChallenge.contexts[activeContextIndex]?.imagePath}
+                          alt={selectedChallenge.contexts[activeContextIndex]?.title}
+                          className="max-h-64 w-auto object-contain rounded-xl hover:scale-105 transition-all duration-300"
+                        />
+                      </div>
+                      <div className="text-xs text-purple-200/90 font-mono text-center bg-purple-950/40 px-3 py-1.5 rounded-xl border border-purple-500/20 w-full">
+                        🎯 Goal: Write a prompt that describes the subject, style, lighting, color scheme, and camera composition of this image.
+                      </div>
+                    </div>
+                  ) : (
+                    /* Sample Input / Context text data */
                     <div className="bg-black/40 p-4 rounded-2xl border border-white/10 shadow-inner">
                       <div className="text-[11px] font-bold text-white/50 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-indigo-300">
                           <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
                           Input Data / Context Provided
                         </span>
+                        {selectedChallenge.contexts && (
+                          <span className="text-indigo-300 font-mono text-[10px] font-bold bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30">
+                            {selectedChallenge.contexts[activeContextIndex]?.title}
+                          </span>
+                        )}
                       </div>
                       <pre className="text-xs text-indigo-100 font-mono whitespace-pre-wrap overflow-x-auto max-h-32 leading-relaxed">
-                        {selectedChallenge.sampleInput}
+                        {selectedChallenge.contexts
+                          ? selectedChallenge.contexts[activeContextIndex]?.sampleInput
+                          : selectedChallenge.sampleInput}
                       </pre>
                     </div>
                   )}
@@ -874,74 +951,33 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
                 rows={5}
                 className="w-full bg-white/[0.03] border border-white/15 focus:border-indigo-500/80 rounded-xl p-4 text-xs font-mono text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-y"
               />
-              {/* Silent Save Toast Banner */}
-              {silentToastMsg && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between shadow-lg"
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>{silentToastMsg}</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-mono">SILENTLY STORED</span>
-                </motion.div>
-              )}
-
               <div className="flex items-center justify-between gap-3 mt-1">
                 <div className="text-xs text-white/50 flex items-center gap-2 font-mono">
                   <Brain className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Model: <strong className="text-indigo-300">{activeModel.label}</strong></span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleRunPrompt}
-                    disabled={isGenerating || !userPrompt.trim()}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg",
-                      isGenerating || !userPrompt.trim()
-                        ? "bg-white/10 text-white/30 cursor-not-allowed"
-                        : "bg-white/10 hover:bg-white/20 text-white border border-white/15"
-                    )}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Testing...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4 fill-white" />
-                        Test Prompt
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleCompleteTaskSilent}
-                    disabled={isEvaluating || !userPrompt.trim()}
-                    className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all shadow-xl",
-                      isEvaluating || !userPrompt.trim()
-                        ? "bg-white/10 text-white/30 cursor-not-allowed"
-                        : "bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 text-white hover:brightness-110 shadow-emerald-500/30"
-                    )}
-                  >
-                    {isEvaluating ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-white" />
-                        Complete Task & Move to Next ➔
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={handleRunPrompt}
+                  disabled={isGenerating || !userPrompt.trim()}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg",
+                    isGenerating || !userPrompt.trim()
+                      ? "bg-white/10 text-white/30 cursor-not-allowed"
+                      : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:brightness-110 shadow-indigo-600/30"
+                  )}
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Streaming Response...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-white" />
+                      Execute Prompt
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 

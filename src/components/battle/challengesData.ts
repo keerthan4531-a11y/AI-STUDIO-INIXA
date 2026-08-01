@@ -1,139 +1,238 @@
+export interface ContextItem {
+  id: string;
+  contextNumber: number;
+  title: string;
+  sampleInput: string;
+  targetOutputOrGoal: string;
+  bytesConversion?: number;
+  ignoreTicket?: string;
+  imagePath?: string;
+  imagePromptGoal?: string;
+}
+
 export interface BattleChallenge {
   id: string;
   questionNumber: number;
   title: string;
-  category: 'image-to-prompt' | 'text-research' | 'coding';
+  category: 'text-research' | 'coding';
   difficulty: 'Easy' | 'Medium' | 'Hard' | 'Extreme' | 'Insane';
   timeLimitSeconds: number;
   description: string;
   targetOutputOrGoal: string;
   constraints: string[];
   sampleInput?: string;
-  imageUrl?: string;
-  visualDescription?: string;
-  requiredKeywords?: string[];
   evaluationCriteria: string;
+  contexts?: ContextItem[];
 }
 
 export const BATTLE_CHALLENGES: BattleChallenge[] = [
   {
     id: 'q1',
     questionNumber: 1,
-    title: 'Q1: Cyberpunk Neon Cityscape',
-    category: 'image-to-prompt',
-    difficulty: 'Hard',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 1 carefully. Write detailed prompt instructions to recreate the futuristic night cityscape, flying vehicles, neon reflections, and holograms.',
-    imageUrl: '/battle-assets/img_task_1.png',
-    visualDescription: 'A futuristic cyberpunk city at night with blue & violet neon lights, flying vehicles between towering skyscrapers, holographic billboards, and wet asphalt reflections.',
-    requiredKeywords: ['cyberpunk', 'neon', 'flying vehicles', 'skyscrapers', 'hologram', 'wet pavement'],
-    sampleInput: 'TARGET IMAGE 1: Futuristic Cyberpunk Cityscape at Night with Flying Vehicles & Holograms',
-    targetOutputOrGoal: 'Prompt describing a futuristic night cyberpunk city with glowing neon skyscrapers, flying vehicles, and wet street reflections.',
+    title: 'Q1: Unstructured Data to Hardcore Typed JSON (6 Contexts)',
+    category: 'text-research',
+    difficulty: 'Insane',
+    timeLimitSeconds: 360, // Exactly 6 Minutes Total
+    description: 'Write a prompt to parse 6 different noisy support log contexts into strict JSON. Perform exact MB-to-Bytes unit calculation, string normalization, and key sorting.',
+    sampleInput: `Transcript: [DISREGARD Mac report #101]. Real Customer John Doe (ID 9842) called complaining desktop app on Windows 11 crashes when uploading files > 50MB. Investigation confirmed buffer overflow in upload streaming service. Recommending patch v2.4.1 deployment by end of day.`,
+    targetOutputOrGoal: `{\n  "customer_id": 9842,\n  "file_limit_bytes": 52428800,\n  "name": "john_doe",\n  "os_code": "WIN_11_X64",\n  "patch_num": 2.41,\n  "root_cause_slug": "buffer_overflow_upload_streaming"\n}`,
     constraints: [
-      'MUST describe key visual subjects, color scheme (neon blue/violet), and urban style',
-      'MUST specify flying vehicles between skyscrapers and wet street reflections',
-      'No low-effort or generic prompts under 15 words'
+      'MUST convert megabytes (e.g. 50MB) to exact bytes integer (50 * 1024 * 1024)',
+      'MUST format all string values in snake_case without spaces (e.g. "john_doe")',
+      'MUST extract patch numbers as numeric floats (e.g. 2.41)',
+      'JSON keys MUST be strictly in ALPHABETICAL ORDER',
+      'No markdown ```json fences allowed & no intro/outro text'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    evaluationCriteria: 'Exact math unit calculation, float patch, snake_case strings, alphabetical key sorting, ignore fake tickets.',
+    contexts: [
+      {
+        id: 'q1-c1',
+        contextNumber: 1,
+        title: 'Context 1 of 6: Customer John Doe (Windows 11, 50MB)',
+        sampleInput: `Transcript: [DISREGARD Mac report #101]. Real Customer John Doe (ID 9842) called complaining desktop app on Windows 11 crashes when uploading files > 50MB. Investigation confirmed buffer overflow in upload streaming service. Recommending patch v2.4.1 deployment by end of day.`,
+        targetOutputOrGoal: `{\n  "customer_id": 9842,\n  "file_limit_bytes": 52428800,\n  "name": "john_doe",\n  "os_code": "WIN_11_X64",\n  "patch_num": 2.41,\n  "root_cause_slug": "buffer_overflow_upload_streaming"\n}`,
+        bytesConversion: 52428800,
+        ignoreTicket: '101'
+      },
+      {
+        id: 'q1-c2',
+        contextNumber: 2,
+        title: 'Context 2 of 6: Verified User Sarah Connor (Android 14, 120MB)',
+        sampleInput: `Transcript: [IGNORE iOS ticket #404]. Verified User Sarah Connor (ID 7712) reported mobile app on Android 14 freezing when rendering logs > 120MB. Root cause identified as heap exhaustion in JSON parsing engine. Recommending hotfix v3.1.0 deployment by 6:00 PM.`,
+        targetOutputOrGoal: `{\n  "customer_id": 7712,\n  "file_limit_bytes": 125829120,\n  "name": "sarah_connor",\n  "os_code": "ANDROID_14",\n  "patch_num": 3.1,\n  "root_cause_slug": "heap_exhaustion_json_parsing"\n}`,
+        bytesConversion: 125829120,
+        ignoreTicket: '404'
+      },
+      {
+        id: 'q1-c3',
+        contextNumber: 3,
+        title: 'Context 3 of 6: Real Customer Marcus Aurelius (Linux Ubuntu, 256MB)',
+        sampleInput: `Transcript: [DISREGARD Ubuntu draft #999]. Real Customer Marcus Aurelius (ID 3341) reported CLI tool on Linux Ubuntu 22.04 throwing Segmentation Fault when piping data > 256MB. Root cause stack memory leak in IPC pipeline. Recommending patch v1.8.4 deployment ASAP.`,
+        targetOutputOrGoal: `{\n  "customer_id": 3341,\n  "file_limit_bytes": 268435456,\n  "name": "marcus_aurelius",\n  "os_code": "LINUX_UBUNTU_22_04",\n  "patch_num": 1.84,\n  "root_cause_slug": "stack_memory_leak_ipc"\n}`,
+        bytesConversion: 268435456,
+        ignoreTicket: '999'
+      },
+      {
+        id: 'q1-c4',
+        contextNumber: 4,
+        title: 'Context 4 of 6: Enterprise Customer Emma Watson (macOS Sonoma, 80MB)',
+        sampleInput: `Transcript: [IGNORE Web portal note #202]. Enterprise Customer Emma Watson (ID 5590) reported Cloud Dashboard on macOS Sonoma crashing when exporting report > 80MB. Root cause unhandled exception in PDF rendering worker. Recommending patch v4.0.2 deployment tonight.`,
+        targetOutputOrGoal: `{\n  "customer_id": 5590,\n  "file_limit_bytes": 83886080,\n  "name": "emma_watson",\n  "os_code": "MACOS_SONOMA",\n  "patch_num": 4.02,\n  "root_cause_slug": "unhandled_exception_pdf_worker"\n}`,
+        bytesConversion: 83886080,
+        ignoreTicket: '202'
+      },
+      {
+        id: 'q1-c5',
+        contextNumber: 5,
+        title: 'Context 5 of 6: Real Customer David Miller (Windows Server 2022, 500MB)',
+        sampleInput: `Transcript: [DISREGARD Windows Server legacy log #303]. Real Customer David Miller (ID 1188) reported backend API client on Windows Server 2022 timing out on payloads > 500MB. Root cause socket timeout in TLS handshake module. Recommending patch v5.12.0 deployment tomorrow morning.`,
+        targetOutputOrGoal: `{\n  "customer_id": 1188,\n  "file_limit_bytes": 524288000,\n  "name": "david_miller",\n  "os_code": "WIN_SERVER_2022",\n  "patch_num": 5.12,\n  "root_cause_slug": "socket_timeout_tls_handshake"\n}`,
+        bytesConversion: 524288000,
+        ignoreTicket: '303'
+      },
+      {
+        id: 'q1-c6',
+        contextNumber: 6,
+        title: 'Context 6 of 6: Key Customer Priyadarshini K (Windows 11, 1024MB)',
+        sampleInput: `Transcript: [IGNORE Android beta ticket #707]. Key Customer Priyadarshini K (ID 8844) reported desktop client on Windows 11 crashing when loading database > 1024MB. Root cause memory deadlock in SQLite sync thread. Recommending emergency patch v6.0.1 deployment immediately.`,
+        targetOutputOrGoal: `{\n  "customer_id": 8844,\n  "file_limit_bytes": 1073741824,\n  "name": "priyadarshini_k",\n  "os_code": "WIN_11_X64",\n  "patch_num": 6.01,\n  "root_cause_slug": "memory_deadlock_sqlite_sync"\n}`,
+        bytesConversion: 1073741824,
+        ignoreTicket: '707'
+      }
+    ]
   },
   {
     id: 'q2',
     questionNumber: 2,
-    title: 'Q2: 3D Glass AI Neural Network Sphere',
-    category: 'image-to-prompt',
-    difficulty: 'Hard',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 2 carefully. Write detailed prompt instructions describing the floating glowing glass sphere containing AI neural network nodes over a metallic microchip grid.',
-    imageUrl: '/battle-assets/img_task_2.png',
-    visualDescription: 'A 3D glass sphere floating above a dark metallic circuit microchip grid, containing glowing cyan AI neural network nodes and synapse connections.',
-    requiredKeywords: ['glass sphere', 'neural network', 'cyan', 'circuit board', 'microchip', 'floating'],
-    sampleInput: 'TARGET IMAGE 2: 3D Glowing Glass Sphere containing AI Neural Network Nodes over Microchip Grid',
-    targetOutputOrGoal: 'Prompt describing a floating glass sphere with glowing cyan neural nodes over a dark microchip background.',
+    title: 'Q2: AI Image Reverse Prompt Engineering (6 Images)',
+    category: 'text-research',
+    difficulty: 'Insane',
+    timeLimitSeconds: 360, // Exactly 6 Minutes Total
+    description: 'Inspect 6 target AI generated images. Write detailed reverse engineering prompts to recreate the style, lighting, subject, and composition of each image.',
+    targetOutputOrGoal: 'High fidelity descriptive prompt capturing image subject, lighting, style, color palette, and camera settings.',
     constraints: [
-      'MUST describe floating glass sphere with glowing cyan synapse neural nodes',
-      'MUST specify microchip circuit board background and metallic reflection',
-      'No low-effort or generic prompts under 15 words'
+      'Must describe main subject, artistic medium/style, and color palette accurately',
+      'Must specify lighting conditions (e.g. golden hour, volumetric glow, neon lighting)',
+      'Must include camera or rendering quality descriptors (e.g. 8k resolution, cinematic composition)',
+      'No vague single-word prompts (Minimum 25 words per prompt)'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    evaluationCriteria: 'Visual descriptor accuracy, artistic medium precision, lighting details, and vocabulary richness.',
+    contexts: [
+      {
+        id: 'q2-img1',
+        contextNumber: 1,
+        title: 'Image 1 of 6: Cyberpunk Neon Warrior',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: 'Cyberpunk female samurai, neon cyan katana, rainy Tokyo alley, glowing holographic billboards, cinematic lighting, 8k resolution.',
+        imagePath: '/battle-assets/img_task_1.png'
+      },
+      {
+        id: 'q2-img2',
+        contextNumber: 2,
+        title: 'Image 2 of 6: Golden Hour Orbital Station',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: 'Ring orbital space station over Earth sunrise, golden hour lens flare, photorealistic sci-fi architecture, high detail.',
+        imagePath: '/battle-assets/img_task_2.png'
+      },
+      {
+        id: 'q2-img3',
+        contextNumber: 3,
+        title: 'Image 3 of 6: Bioluminescent Crystal Cave Dragon',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: 'Translucent glowing bioluminescent purple dragon inside dark quartz crystal cave, fantasy digital art, 4k render.',
+        imagePath: '/battle-assets/img_task_3.png'
+      },
+      {
+        id: 'q2-img4',
+        contextNumber: 4,
+        title: 'Image 4 of 6: Synthwave Vaporwave Grid Highway',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: 'Retro 80s synthwave red sports car driving into wireframe neon sun, purple grid horizon, palm trees, vaporwave aesthetics.',
+        imagePath: '/battle-assets/img_task_4.png'
+      },
+      {
+        id: 'q2-img5',
+        contextNumber: 5,
+        title: 'Image 5 of 6: Steampunk Clockwork Mechanical Owl',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: 'Intricate steampunk owl made of brass gears and copper cogs, glowing amber eyes, perched on antique leather book, macro photo.',
+        imagePath: '/battle-assets/img_task_5.png'
+      },
+      {
+        id: 'q2-img6',
+        contextNumber: 6,
+        title: 'Image 6 of 6: Floating Isometric Cyber Island',
+        sampleInput: 'Analyze the image displayed above and write a detailed reverse prompt to recreate it.',
+        targetOutputOrGoal: '3D isometric floating island, futuristic glass skyscrapers, waterfalls dropping into space, flying vehicles, octane render.',
+        imagePath: '/battle-assets/img_task_6.png'
+      }
+    ]
   },
   {
     id: 'q3',
     questionNumber: 3,
-    title: 'Q3: Underwater Bioluminescent Realm',
-    category: 'image-to-prompt',
+    title: 'Q3: Constrained Roleplay & Reasoning',
+    category: 'text-research',
     difficulty: 'Extreme',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 3 carefully. Write prompt instructions detailing the deep ocean underwater coral reef, glowing bioluminescent jellyfish, and sleek exploration submarine.',
-    imageUrl: '/battle-assets/img_task_3.png',
-    visualDescription: 'Deep ocean underwater scene with glowing bioluminescent jellyfish, magenta and cyan coral reefs, and a sleek high-tech submarine floating in deep blue water.',
-    requiredKeywords: ['underwater', 'bioluminescent jellyfish', 'coral reef', 'submarine', 'cyan and magenta'],
-    sampleInput: 'TARGET IMAGE 3: Deep Ocean Bioluminescent Coral Reef with Glowing Jellyfish & Submarine',
-    targetOutputOrGoal: 'Prompt describing a deep ocean underwater scene with glowing jellyfish, coral reefs, and a submarine.',
+    timeLimitSeconds: 180,
+    description: 'Instruct the AI to explain Quantum Entanglement to a high schooler while obeying strict negative constraint rules.',
     constraints: [
-      'MUST describe deep underwater lighting and bioluminescent jellyfish',
-      'MUST specify magenta/cyan coral reef colors and high-tech submarine',
-      'No low-effort or generic prompts under 15 words'
+      'Do NOT use the letter "e" anywhere in the explanation',
+      'Must explain the core concept accurately in under 60 words',
+      'Must sound like an encouraging mentor'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    targetOutputOrGoal: 'A clear explanation of entanglement avoiding all words containing the letter "e".',
+    evaluationCriteria: 'Zero instances of letter "e", conceptual clarity, length constraint.'
   },
   {
     id: 'q4',
     questionNumber: 4,
-    title: 'Q4: Fantasy Floating Sky Island Castle',
-    category: 'image-to-prompt',
-    difficulty: 'Extreme',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 4 carefully. Write detailed prompt instructions to capture the floating sky island, medieval castle, cascading cloud waterfalls, golden hour sunset, and dragon silhouette.',
-    imageUrl: '/battle-assets/img_task_4.png',
-    visualDescription: 'A floating sky island with a majestic medieval castle, cascading waterfalls pouring into clouds below, golden hour sunset lighting, and a flying dragon silhouette.',
-    requiredKeywords: ['floating island', 'castle', 'waterfall', 'sunset', 'dragon', 'sky'],
-    sampleInput: 'TARGET IMAGE 4: Fantasy Floating Sky Island Castle with Waterfalls & Sunset Dragon Silhouette',
-    targetOutputOrGoal: 'Prompt describing a floating island castle in the sky with waterfalls, golden sunset light, and a dragon.',
+    title: 'Q4: Algorithmic Optimization O(N^2) -> O(N)',
+    category: 'coding',
+    difficulty: 'Medium',
+    timeLimitSeconds: 300,
+    description: 'Prompt the model to refactor a slow nested-loop duplicate detection function into an optimal O(N) HashMap solution in TypeScript, with JSDoc comments and zero external libraries.',
+    sampleInput: `function findDuplicates(arr: number[]): number[] {\n  const dupes: number[] = [];\n  for(let i=0; i<arr.length; i++) {\n    for(let j=i+1; j<arr.length; j++) {\n      if(arr[i] === arr[j] && !dupes.includes(arr[i])) {\n        dupes.push(arr[i]);\n      }\n    }\n  }\n  return dupes;\n}`,
+    targetOutputOrGoal: `An optimized TypeScript function using a Set/Map achieving O(N) time complexity with typed signatures and JSDoc documentation.`,
     constraints: [
-      'MUST describe sky floating island with medieval castle architecture',
-      'MUST specify golden hour sunset lighting, waterfalls, and flying dragon',
-      'No low-effort or generic prompts under 15 words'
+      'Time complexity must be strictly O(N)',
+      'Must include JSDoc comments',
+      'Must be pure TypeScript without third-party dependencies'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    evaluationCriteria: 'Algorithmic correctness, time complexity improvement, code cleanliness.'
   },
   {
     id: 'q5',
     questionNumber: 5,
-    title: 'Q5: Cybernetic Robot Warrior Mech Portrait',
-    category: 'image-to-prompt',
-    difficulty: 'Insane',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 5 carefully. Write detailed prompt instructions describing the macro portrait of a cybernetic warrior with polished titanium facial armor and glowing blue optics.',
-    imageUrl: '/battle-assets/img_task_5.png',
-    visualDescription: 'Hyper-realistic macro portrait of a futuristic cybernetic robot warrior with titanium facial armor, glowing blue optical eyes, and energetic power lines.',
-    requiredKeywords: ['cybernetic', 'robot warrior', 'portrait', 'glowing blue eyes', 'titanium armor', 'mechanical'],
-    sampleInput: 'TARGET IMAGE 5: Cybernetic Robot Warrior Close-Up Portrait with Glowing Blue Optics',
-    targetOutputOrGoal: 'Prompt describing a macro portrait of a cybernetic warrior with titanium armor plates and glowing blue eyes.',
+    title: 'Q5: Reverse Code Engineering',
+    category: 'coding',
+    difficulty: 'Hard',
+    timeLimitSeconds: 300,
+    description: 'Write a prompt that takes an input data array and expected transformation trace, and generates the cleanest tail-recursive function in JavaScript.',
+    sampleInput: `Input: [1, [2, [3, 4], 5], 6]\nExpected Output: [1, 2, 3, 4, 5, 6]\nRequirement: Flatten deeply nested arrays without Array.prototype.flat()`,
+    targetOutputOrGoal: `A clean recursive flattening function in JavaScript without using built-in flat().`,
     constraints: [
-      'MUST describe macro facial armor details and polished titanium metal',
-      'MUST specify glowing blue optical eyes and energetic circuit lines',
-      'No low-effort or generic prompts under 15 words'
+      'Cannot use Array.prototype.flat or flatMap',
+      'Must handle arbitrary nesting depth',
+      'Must include clean line-by-line inline comments'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    evaluationCriteria: 'Correctness on edge cases, constraint compliance, functional programming style.'
   },
   {
     id: 'q6',
     questionNumber: 6,
-    title: 'Q6: Crystalline Glass Prism Rainbow Refraction',
-    category: 'image-to-prompt',
+    title: 'Q6: In-Place Matrix Rotation O(1) Space',
+    category: 'coding',
     difficulty: 'Insane',
-    timeLimitSeconds: 360, // 6 Minutes
-    description: 'Inspect Target Image 6 carefully. Write detailed prompt instructions for a 3D crystalline glass prism refracting a white laser beam into a brilliant rainbow light spectrum.',
-    imageUrl: '/battle-assets/img_task_6.png',
-    visualDescription: 'Minimalist 3D render of a crystalline glass prism sitting on a dark reflective surface, refracting a bright laser beam into a brilliant rainbow light spectrum.',
-    requiredKeywords: ['glass prism', 'rainbow refraction', 'laser beam', 'reflective surface', 'minimalist 3d'],
-    sampleInput: 'TARGET IMAGE 6: Crystalline Glass Prism Refracting Laser Light Beam into Rainbow Spectrum',
-    targetOutputOrGoal: 'Prompt describing a 3D glass prism refracting a white laser beam into a vivid rainbow light spectrum on a dark surface.',
+    timeLimitSeconds: 360,
+    description: 'Write a prompt forcing the AI to refactor an NxN matrix 90-degree clockwise rotation into an in-place algorithm using O(1) extra memory space.',
+    sampleInput: `function rotateMatrix(matrix: number[][]): number[][] {\n  // Given N x N 2D matrix, rotate 90 deg clockwise in-place\n}`,
+    targetOutputOrGoal: `In-place matrix transpose + row reversal achieving O(1) auxiliary space complexity.`,
     constraints: [
-      'MUST describe crystalline glass geometry and dark reflective surface',
-      'MUST specify bright white laser beam input and multi-color rainbow refraction output',
-      'No low-effort or generic prompts under 15 words'
+      'Space complexity MUST be strictly O(1) - No temporary 2D arrays',
+      'Do NOT use Array.prototype.slice, map, concat, or push',
+      'Must include inline mathematical proof comment explaining transpose + reverse'
     ],
-    evaluationCriteria: 'Visual keyword matching, style precision, composition detail, and artistic fidelity.'
+    evaluationCriteria: 'Strict O(1) space constraint, mathematical proof comment, matrix correctness.'
   }
 ];
