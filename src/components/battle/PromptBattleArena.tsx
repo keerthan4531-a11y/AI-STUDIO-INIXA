@@ -239,6 +239,42 @@ export function PromptBattleArena() {
     }
   };
 
+  const executeSafeJudgeCall = async (judgeSystemPrompt: string, selectedModel: AIModel): Promise<string> => {
+    // 1. Try with currently selected model
+    try {
+      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, selectedModel);
+      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('Selected AI Judge model failed, trying worker fallback 1...', e);
+    }
+
+    // 2. Try direct Cloudflare Worker model UPDF Flagship
+    const updfModel = AI_MODELS.find(m => m.id === 'updf-gpt-5-6') || selectedModel;
+    try {
+      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, updfModel);
+      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('UPDF Judge model failed, trying worker fallback 2...', e);
+    }
+
+    // 3. Try Pollinations Auto Direct Worker
+    const pollinationsModel = AI_MODELS.find(m => m.id === 'unlimited-pollinations') || selectedModel;
+    try {
+      const res = await aiChat([{ role: 'user', content: judgeSystemPrompt }], undefined, pollinationsModel);
+      if (res && !res.startsWith('⚠️') && !res.startsWith('❌') && !res.includes('Error')) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('Pollinations Judge model failed.', e);
+    }
+
+    return '';
+  };
+
   const handleEvaluateScore = async () => {
     if (!aiOutput || isEvaluating) return;
     vibrate(50);
@@ -277,11 +313,7 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
 }`;
 
     try {
-      const rawJudgeOutput = await aiChat(
-        [{ role: 'user', content: judgeSystemPrompt }],
-        undefined,
-        activeModel
-      );
+      const rawJudgeOutput = await executeSafeJudgeCall(judgeSystemPrompt, activeModel);
 
       // 1. Clean LLM Judge output (strip <think> tags & markdown fences)
       let cleanedJudgeText = (rawJudgeOutput || '')
