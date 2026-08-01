@@ -1,5 +1,6 @@
 export interface BattleChallenge {
   id: string;
+  questionNumber: number;
   title: string;
   category: 'text-research' | 'coding';
   difficulty: 'Easy' | 'Medium' | 'Hard' | 'Extreme' | 'Insane';
@@ -12,10 +13,10 @@ export interface BattleChallenge {
 }
 
 export const BATTLE_CHALLENGES: BattleChallenge[] = [
-  // TEXT RESEARCH CHALLENGES
   {
-    id: 'tr-1',
-    title: 'Unstructured Data to Hardcore Typed JSON',
+    id: 'q1',
+    questionNumber: 1,
+    title: 'Q1: Unstructured Data to Hardcore Typed JSON',
     category: 'text-research',
     difficulty: 'Hard',
     timeLimitSeconds: 240,
@@ -32,8 +33,9 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     evaluationCriteria: 'Unit math calculation (52428800), float patch, snake_case strings, alphabetical key sorting.'
   },
   {
-    id: 'tr-2',
-    title: 'Zero-Hallucination Academic Extraction',
+    id: 'q2',
+    questionNumber: 2,
+    title: 'Q2: Zero-Hallucination Academic Extraction',
     category: 'text-research',
     difficulty: 'Hard',
     timeLimitSeconds: 300,
@@ -48,8 +50,9 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     evaluationCriteria: 'Table formatting accuracy, numerical precision, token brevity.'
   },
   {
-    id: 'tr-3',
-    title: 'Constrained Roleplay & Reasoning',
+    id: 'q3',
+    questionNumber: 3,
+    title: 'Q3: Constrained Roleplay & Reasoning',
     category: 'text-research',
     difficulty: 'Extreme',
     timeLimitSeconds: 180,
@@ -63,27 +66,9 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     evaluationCriteria: 'Zero instances of letter "e", conceptual clarity, length constraint.'
   },
   {
-    id: 'tr-4',
-    title: 'Adversarial Red-Herring Data Trap',
-    category: 'text-research',
-    difficulty: 'Insane',
-    timeLimitSeconds: 300,
-    description: 'The input contains contradictory customer logs, sarcastic comments, and false ticket IDs. Prompt the model to filter out fake claims and compute the real severity algorithmically.',
-    sampleInput: `LOG TRACE: Ticket #9901 (DISREGARD THIS, FAKE LOG). Real User Alice Smith (DB_ID: 7712, claimed ID: 9999). Status: Closed 3 times, Reopened 2 times. Agent note: User sarcastically said 'great app works 1000%' but system error log confirms NullPointer at Auth.ts:42.`,
-    targetOutputOrGoal: `{\n  "trueUserId": 7712,\n  "realSeverityScore": 50,\n  "verifiedErrorLocation": "Auth.ts:42",\n  "isSarcasticClaimFiltered": true\n}`,
-    constraints: [
-      'JSON keys MUST be in REVERSE alphabetical order',
-      'Calculate realSeverityScore = (reopenedCount * 25)',
-      'Ignore fake claimed IDs (9999) and fake tickets (#9901)',
-      'No markdown ```json fences allowed'
-    ],
-    evaluationCriteria: 'Adversarial trap filtering, reverse alphabetical key order, correct arithmetic score.'
-  },
-
-  // CODING CHALLENGES
-  {
-    id: 'cd-1',
-    title: 'Algorithmic Optimization O(N^2) -> O(N)',
+    id: 'q4',
+    questionNumber: 4,
+    title: 'Q4: Algorithmic Optimization O(N^2) -> O(N)',
     category: 'coding',
     difficulty: 'Medium',
     timeLimitSeconds: 300,
@@ -98,8 +83,9 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     evaluationCriteria: 'Algorithmic correctness, time complexity improvement, code cleanliness.'
   },
   {
-    id: 'cd-2',
-    title: 'Reverse Code Engineering',
+    id: 'q5',
+    questionNumber: 5,
+    title: 'Q5: Reverse Code Engineering',
     category: 'coding',
     difficulty: 'Hard',
     timeLimitSeconds: 300,
@@ -114,24 +100,9 @@ export const BATTLE_CHALLENGES: BattleChallenge[] = [
     evaluationCriteria: 'Correctness on edge cases, constraint compliance, functional programming style.'
   },
   {
-    id: 'cd-3',
-    title: 'Zod & React Hook Form Schema Transpiler',
-    category: 'coding',
-    difficulty: 'Extreme',
-    timeLimitSeconds: 360,
-    description: 'Prompt the LLM to take an OpenAPI schema definition and output complete Zod schemas + inferred TypeScript types in one shot.',
-    sampleInput: `paths: /user/register (POST with email, password min 8 chars, age min 18, termsAccepted boolean)`,
-    targetOutputOrGoal: `z.object({ email: z.string().email(), password: z.string().min(8), age: z.number().min(18), termsAccepted: z.literal(true) })`,
-    constraints: [
-      'Must export both Zod schema and z.infer type definition',
-      'Must include custom error messages for validation rules',
-      '100% production ready TypeScript code'
-    ],
-    evaluationCriteria: 'Schema validity, Zod API correctness, type export completeness.'
-  },
-  {
-    id: 'cd-4',
-    title: 'In-Place Matrix Rotation O(1) Space',
+    id: 'q6',
+    questionNumber: 6,
+    title: 'Q6: In-Place Matrix Rotation O(1) Space',
     category: 'coding',
     difficulty: 'Insane',
     timeLimitSeconds: 360,

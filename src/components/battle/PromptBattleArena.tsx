@@ -1,9 +1,8 @@
-"use client";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Swords, Play, Send, Award, Clock, Code2, BookOpen, CheckCircle2,
-  Sparkles, Monitor, Users, RefreshCw, Zap, ShieldAlert, Check, Copy, AlertTriangle, ArrowRight, ChevronDown, Brain
+  Sparkles, Monitor, Users, RefreshCw, Zap, ShieldAlert, Check, Copy, AlertTriangle, ArrowRight, ChevronDown, Brain, Lock, Trophy, Printer, LogOut, User
 } from 'lucide-react';
 import { cn } from '../GlassCard';
 import { BATTLE_CHALLENGES, type BattleChallenge } from './challengesData';
@@ -11,19 +10,40 @@ import { aiChat, AI_MODELS, getSelectedModel, setSelectedModel, type AIModel } f
 import { vibrate } from '../../utils/helpers';
 import { CyberReasoningStream } from './CyberReasoningStream';
 import { PromptBattleRulebookModal } from './PromptBattleRulebookModal';
-import { Printer } from 'lucide-react';
+import { BattleLoginModal } from './BattleLoginModal';
+import { BattleLeaderboardModal, type LeaderboardEntry } from './BattleLeaderboardModal';
 
 export function PromptBattleArena() {
+  // Contestant Auth state
+  const [battleUser, setBattleUser] = useState<string | null>(() => {
+    try { return localStorage.getItem('inixa_battle_username'); } catch { return null; }
+  });
+
   const [activeCategory, setActiveCategory] = useState<'text-research' | 'coding'>('text-research');
   const [selectedChallenge, setSelectedChallenge] = useState<BattleChallenge>(BATTLE_CHALLENGES[0]);
   const [viewMode, setViewMode] = useState<'contestant' | 'projector'>('contestant');
+
+  // Modals state
+  const [showRulebookModal, setShowRulebookModal] = useState<boolean>(false);
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState<boolean>(false);
+
+  // Tournament Progress Memory: { [questionId: string]: { score: number, accuracy: number, timestamp: number } }
+  const [progress, setProgress] = useState<Record<string, { score: number; accuracy: number; timestamp: number }>>(() => {
+    try {
+      const user = localStorage.getItem('inixa_battle_username');
+      if (user) {
+        const saved = localStorage.getItem(`inixa_battle_progress_${user}`);
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return {};
+  });
 
   // Model selection state
   const [activeModel, setActiveModel] = useState<AIModel>(() => {
     return getSelectedModel();
   });
   const [showModelDropdown, setShowModelDropdown] = useState<boolean>(false);
-  const [showRulebookModal, setShowRulebookModal] = useState<boolean>(false);
   
   // Contestant State
   const [userPrompt, setUserPrompt] = useState<string>('');
@@ -97,6 +117,33 @@ export function PromptBattleArena() {
     const s = secs % 60;
     return `${mins}:${s < 10 ? '0' : ''}${s}`;
   };
+
+  const isQuestionUnlocked = (qIndex: number): boolean => {
+    if (qIndex === 0) return true; // Question 1 is always unlocked!
+    const prevQ = BATTLE_CHALLENGES[qIndex - 1];
+    return !!progress[prevQ.id];
+  };
+
+  const handleLoginSuccess = (username: string) => {
+    setBattleUser(username);
+    localStorage.setItem('inixa_battle_username', username);
+    try {
+      const saved = localStorage.getItem(`inixa_battle_progress_${username}`);
+      if (saved) setProgress(JSON.parse(saved));
+      else setProgress({});
+    } catch {}
+  };
+
+  const handleLogout = () => {
+    setBattleUser(null);
+    localStorage.removeItem('inixa_battle_username');
+  };
+
+  const completedCount = Object.keys(progress).length;
+  const totalCumulativeScore = Object.values(progress).reduce((acc, curr) => acc + curr.score, 0);
+  const avgAccuracy = completedCount > 0
+    ? Math.round(Object.values(progress).reduce((acc, curr) => acc + curr.accuracy, 0) / completedCount)
+    : 0;
 
   const handleRunPrompt = async () => {
     if (!userPrompt.trim() || isGenerating) return;
@@ -284,6 +331,27 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         tokenEfficiency: finalTokenEff,
         feedback: finalFeedback
       });
+
+      // Save into Tournament Progress Memory
+      const updatedProgress = {
+        ...progress,
+        [selectedChallenge.id]: {
+          score: overallScore,
+          accuracy: finalAccuracy,
+          timestamp: Date.now()
+        }
+      };
+      setProgress(updatedProgress);
+      if (battleUser) {
+        localStorage.setItem(`inixa_battle_progress_${battleUser}`, JSON.stringify(updatedProgress));
+      }
+
+      // Automatically open Leaderboard upon completing Q6
+      if (selectedChallenge.questionNumber === 6) {
+        setTimeout(() => {
+          setShowLeaderboardModal(true);
+        }, 1200);
+      }
     } catch (e) {
       console.error('Judge Processing Error', e);
       setEvaluationResult({
@@ -327,19 +395,44 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
               </span>
             </div>
             <p className="text-xs text-white/50 mt-0.5">
-              College Edition — Text Research & High-Speed Algorithmic Prompting
+              College Edition — 6 Sequential Prompting Challenges
             </p>
           </div>
         </div>
 
-        {/* View Mode Toggle: Contestant vs Auditorium 1v1 */}
+        {/* User Badge, Leaderboard & View Mode */}
         <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
+          {battleUser && (
+            <div className="flex items-center gap-2 bg-indigo-950/60 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs">
+              <User className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="font-bold text-white">{battleUser}</span>
+              <span className="font-mono text-amber-400 font-black ml-1">
+                {totalCumulativeScore}<span className="text-[10px] text-white/40">/600</span>
+              </span>
+              <button
+                onClick={handleLogout}
+                title="Logout Contestant"
+                className="ml-1 text-white/40 hover:text-rose-400 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => { setShowLeaderboardModal(true); vibrate(20); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-all shadow-md"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            Leaderboard
+          </button>
+
           <button
             onClick={() => { setShowRulebookModal(true); vibrate(20); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all shadow-md"
           >
             <Printer className="w-3.5 h-3.5 text-emerald-400" />
-            Rulebook & PDF Guide
+            Rulebook
           </button>
 
           <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10 flex-1 sm:flex-none">
@@ -458,40 +551,75 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
               </AnimatePresence>
             </div>
 
-            {/* Challenges List */}
+            {/* Sequential Questions List (Q1 to Q6) */}
             <div className="flex flex-col gap-3">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-white/40">
-                {activeCategory === 'text-research' ? '🧠 Research Challenges' : '💻 Algorithmic Challenges'}
-              </h2>
-              {filteredChallenges.map((ch) => {
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
+                  <Swords className="w-3.5 h-3.5 text-indigo-400" />
+                  Tournament Questions (Q1 - Q6)
+                </h2>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                  {completedCount}/6 Completed
+                </span>
+              </div>
+
+              {BATTLE_CHALLENGES.map((ch, idx) => {
                 const isSelected = ch.id === selectedChallenge.id;
+                const isUnlocked = isQuestionUnlocked(idx);
+                const qResult = progress[ch.id];
+                const isCompleted = !!qResult;
+
                 return (
                   <div
                     key={ch.id}
-                    onClick={() => handleSelectChallenge(ch)}
+                    onClick={() => {
+                      if (isUnlocked) {
+                        handleSelectChallenge(ch);
+                      } else {
+                        vibrate(80);
+                      }
+                    }}
                     className={cn(
-                      "p-4 rounded-xl border transition-all cursor-pointer relative overflow-hidden group",
-                      isSelected
-                        ? "bg-indigo-950/40 border-indigo-500/50 ring-1 ring-indigo-500/30"
-                        : "bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/20"
+                      "p-4 rounded-xl border transition-all relative overflow-hidden group select-none",
+                      !isUnlocked && "opacity-40 cursor-not-allowed bg-black/40 border-white/5",
+                      isUnlocked && !isSelected && "bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/20 cursor-pointer",
+                      isSelected && "bg-indigo-950/40 border-indigo-500/50 ring-1 ring-indigo-500/30 cursor-pointer"
                     )}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className={cn(
-                        "text-[10px] font-black px-2 py-0.5 rounded-md uppercase border",
-                        ch.difficulty === 'Easy' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                        ch.difficulty === 'Medium' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
-                        ch.difficulty === 'Hard' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                        ch.difficulty === 'Extreme' && "bg-rose-500/10 text-rose-400 border-rose-500/20",
-                        ch.difficulty === 'Insane' && "bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse shadow-md shadow-purple-500/20"
-                      )}>
-                        {ch.difficulty}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-[10px] font-black px-2 py-0.5 rounded-md uppercase border",
+                          ch.difficulty === 'Easy' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                          ch.difficulty === 'Medium' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                          ch.difficulty === 'Hard' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                          ch.difficulty === 'Extreme' && "bg-rose-500/10 text-rose-400 border-rose-500/20",
+                          ch.difficulty === 'Insane' && "bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse"
+                        )}>
+                          {ch.difficulty}
+                        </span>
+
+                        {isCompleted && (
+                          <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            ✓ Completed ({qResult.score}%)
+                          </span>
+                        )}
+
+                        {!isUnlocked && (
+                          <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md bg-black/60 text-white/40 border border-white/10">
+                            <Lock className="w-3 h-3 text-white/40" />
+                            Locked
+                          </span>
+                        )}
+                      </div>
+
                       <span className="text-[11px] text-white/40 font-mono flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {Math.floor(ch.timeLimitSeconds / 60)}m
                       </span>
                     </div>
+
                     <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors">
                       {ch.title}
                     </h3>
@@ -795,7 +923,19 @@ Respond ONLY with a JSON object in this exact format (no markdown fences):
         </div>
       )}
 
-      {/* Printable Rulebook & PDF Guide Modal */}
+      {/* Modals & Authentication Overlay */}
+      <BattleLoginModal isOpen={!battleUser} onLoginSuccess={handleLoginSuccess} />
+      <BattleLeaderboardModal
+        isOpen={showLeaderboardModal}
+        onClose={() => setShowLeaderboardModal(false)}
+        currentUserEntry={{
+          username: battleUser || 'Contestant',
+          totalScore: totalCumulativeScore,
+          completedQuestions: completedCount,
+          avgAccuracy: avgAccuracy,
+          timeSpentMinutes: 14.5
+        }}
+      />
       <PromptBattleRulebookModal isOpen={showRulebookModal} onClose={() => setShowRulebookModal(false)} />
     </div>
   );
