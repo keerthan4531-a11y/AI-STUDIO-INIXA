@@ -8,6 +8,7 @@ import perplexityCopilotWorker from './perplexity-copilot.js';
 import surfsenseWorker from './surfsense.js';
 import grokWorker from './grok.js';
 import nadanadaWorker from './nadanada.js';
+import copilotWorker from './copilot.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,7 @@ export default {
         return new Response(JSON.stringify({
           status: "ok",
           service: "Ultimate Serverless AI API",
-          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai"],
+          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot"],
           endpoints: ["/v1/chat/completions", "/v1/models"]
         }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
@@ -53,6 +54,11 @@ export default {
           headers: request.headers,
           body: bodyText
         });
+
+        // Route to Microsoft Copilot
+        if (model.includes("ms-copilot") || model.includes("microsoft") || model.includes("copilot-pro") || model.includes("copilot-think") || model.includes("copilot-gpt5")) {
+          return await copilotWorker.fetch(subRequest, env, ctx);
+        }
 
         // Route to Baidu ERNIE
         if (model.includes("ernie") || model.includes("erine") || model.includes("baidu")) {

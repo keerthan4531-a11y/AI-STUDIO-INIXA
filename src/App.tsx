@@ -20,7 +20,6 @@ import VoiceAssistant from './components/VoiceAssistant';
 import { DeepResearchAgent } from './components/DeepResearchAgent';
 import { NoteIXLayout } from './components/note-ix/NoteIXLayout';
 import { DualLLMChat } from './components/chat/DualLLMChat';
-import { PromptBattleArena } from './components/battle/PromptBattleArena';
 
 export interface ChatSession {
   id: string;
@@ -271,7 +270,6 @@ export default function App() {
                 {activeTab === 'auto-pilot' && <AutoPilotAgent />}
                 {activeTab === 'deep-research' && <DeepResearchAgent currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
                 {activeTab === 'arena' && <DualLLMChat currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
-                {activeTab === 'prompt-battle' && <PromptBattleArena />}
               </motion.div>
             </AnimatePresence>
           )}

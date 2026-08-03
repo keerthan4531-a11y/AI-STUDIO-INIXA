@@ -639,8 +639,22 @@ export async function POST(req: Request) {
 
     let proxyResponse: Response;
 
+    // Direct Microsoft Copilot native routing (via Cloudflare Worker)
+    if (selectedModel.startsWith('ms-copilot/')) {
+      const copilotModel = selectedModel.replace('ms-copilot/', '');
+      console.log(`[Copilot Route] Routing via Cloudflare Worker for model: ${copilotModel}`);
+      proxyResponse = await fetch(`${CF_WORKER_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: copilotModel,
+          messages: formattedMessages,
+          stream: stream === true,
+        }),
+      });
+    }
     // Direct Meta AI native routing (via Cloudflare Worker)
-    if (selectedModel.startsWith('meta-ai/')) {
+    else if (selectedModel.startsWith('meta-ai/')) {
       const metaModel = selectedModel.replace('meta-ai/', '');
       console.log(`[Meta Route] Routing via Cloudflare Worker for model: ${metaModel}`);
       proxyResponse = await fetch(`${CF_WORKER_URL}/v1/chat/completions`, {
@@ -930,6 +944,34 @@ export async function POST(req: Request) {
           'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
         },
       });
+    }
+
+    const contentType = proxyResponse.headers.get('content-type') || '';
+    if (contentType.includes('text/event-stream')) {
+      const text = await proxyResponse.text();
+      let replyContent = '';
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+          try {
+            const data = JSON.parse(jsonStr);
+            const delta = data.choices?.[0]?.delta?.content || data.choices?.[0]?.text || '';
+            if (delta) replyContent += delta;
+          } catch(e) {}
+        }
+      }
+      return NextResponse.json(
+        { reply: replyContent || 'Response complete' },
+        {
+          headers: {
+            'X-RateLimit-Limit': String(maxRequests),
+            'X-RateLimit-Remaining': String(remaining),
+            'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+          }
+        }
+      );
     }
 
     const proxyData = await proxyResponse.json();

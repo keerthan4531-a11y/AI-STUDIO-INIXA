@@ -100,38 +100,42 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#06b6d4',
     description: 'Perplexity Copilot via direct Cloudflare worker'
   },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🟢 MICROSOFT COPILOT
+  // ════════════════════════════════════════════════════════════════
   {
-    id: 'g4f-deepseek-v4-pro',
-    label: 'DeepSeek V4 Pro',
-    engine: 'g4f',
-    modelStr: 'g4f/deepseek-v4-pro',
-    badge: 'PRO',
+    id: 'ms-copilot-pro',
+    label: 'Microsoft Copilot Pro',
+    engine: 'custom',
+    modelStr: 'ms-copilot/copilot-pro',
+    badge: 'COPILOT',
     badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V4 Pro — 552 req, 1369ms'
+    icon: 'Sparkles',
+    iconColor: '#2563eb',
+    description: 'Microsoft Copilot (GPT-4o) via Cloudflare Worker'
   },
   {
-    id: 'qw-qwen3.7-max',
-    label: 'Qwen 3.7 Max (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-max',
-    badge: 'MAX',
-    badgeColor: 'violet',
+    id: 'ms-copilot-think',
+    label: 'Copilot Think Deeper',
+    engine: 'custom',
+    modelStr: 'ms-copilot/copilot-think',
+    badge: 'REASONING',
+    badgeColor: 'purple',
     icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Max — dedicated worker'
+    iconColor: '#9333ea',
+    description: 'Microsoft Copilot Deep Reasoning Mode (o1)'
   },
   {
-    id: 'qw-qwen3.7-plus',
-    label: 'Qwen 3.7 Plus (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-plus',
-    badge: 'PLUS',
-    badgeColor: 'violet',
+    id: 'ms-copilot-gpt5',
+    label: 'Copilot GPT-5 Smart',
+    engine: 'custom',
+    modelStr: 'ms-copilot/copilot-gpt5',
+    badge: 'SMART',
+    badgeColor: 'green',
     icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
+    iconColor: '#16a34a',
+    description: 'Microsoft Copilot Smart Mode (GPT-5)'
   },
 
   // ════════════════════════════════════════════════════════════════
