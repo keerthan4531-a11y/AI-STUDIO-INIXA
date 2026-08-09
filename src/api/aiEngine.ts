@@ -1144,7 +1144,6 @@ export const aiChat = async (
         }
       } // End of else block for checkProviderLimit
 
-      // Fallback: Use our Backend Proxy Pool
       endpointPath = '/api/chat/g4f';
       fetchUrl = `${API_BASE}${endpointPath}`;
     } else {
@@ -1152,59 +1151,61 @@ export const aiChat = async (
       fetchUrl = `${API_BASE}${endpointPath}`;
     }
 
-    const res = await fetch(fetchUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-        // Security update: Removed static secret. Backend now uses Origin + Rate Limiting.
-      },
-      body: JSON.stringify({
-        messages: conversationHistory,
-        model: modelStr,
-        provider: model.provider,
-        stream: !!onChunk
-      })
-    });
-
-    if (!res.ok) {
-      if (res.status === 429) {
-        return 'ΓÜá∩╕Å Rate limit exceeded. Please wait a moment and try again.';
-      }
+    // ── Client-Side 3-Attempt Silent Retry Loop ──
+    let lastResult = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const errorData = await res.json();
-        if (errorData.reply) return errorData.reply;
-        if (errorData.error) return `ΓÜá∩╕Å API Error: ${errorData.error}`;
-      } catch { }
-      return `Γ¥î Error: Server returned ${res.status}.`;
-    }
+        console.log(`[aiChat Client] Attempt ${attempt}/3 hitting ${fetchUrl} for ${modelStr}...`);
+        const res = await fetch(fetchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: conversationHistory,
+            model: modelStr,
+            provider: model.provider,
+            stream: !!onChunk
+          })
+        });
 
-    if (onChunk && res.body) {
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content || data.reply || '';
-        const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
-        let reply = content;
-        if (reasoning) {
-          reply = `<think>\n${reasoning}\n</think>\n${content}`;
+        if (res.ok) {
+          if (onChunk && res.body) {
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const data = await res.json();
+              const content = data.choices?.[0]?.message?.content || data.reply || '';
+              const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
+              let reply = content;
+              if (reasoning) reply = `<think>\n${reasoning}\n</think>\n${content}`;
+              if (reply) {
+                onChunk(reply);
+                return reply;
+              }
+            } else {
+              const sseReply = await handleSSEStream(res, onChunk);
+              if (sseReply && sseReply !== 'No response received from the AI model.') {
+                return sseReply;
+              }
+            }
+          } else {
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content || data.reply || '';
+            const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
+            let reply = content;
+            if (reasoning) reply = `<think>\n${reasoning}\n</think>\n${content}`;
+            if (reply) return reply;
+          }
         }
-        if (reply) onChunk(reply);
-        return reply || 'No response received from the AI model.';
-      } else {
-        return await handleSSEStream(res, onChunk);
+      } catch (err) {
+        console.warn(`[aiChat Client] Attempt ${attempt}/3 network error:`, err);
+      }
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 400 * attempt));
       }
     }
 
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || data.reply || '';
-    const reasoning = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
-
-    let reply = content;
-    if (reasoning) {
-      reply = `<think>\n${reasoning}\n</think>\n${content}`;
-    }
-
-    return reply || 'No response received from the AI model.';
+    return 'No response received from the AI model.';
   } catch (e) {
     console.error('Chat API Error', e);
     return 'Γ¥î Connection failed. Please try a different model or check your connection.';

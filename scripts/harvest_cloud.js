@@ -79,19 +79,19 @@ async function harvestToken(isClaude = false) {
 }
 
 async function run() {
-  console.log("🚀 Running Cloud Turnstile Harvester (Batch Pool)...");
-  // Harvest 3 sessions for GPT and 3 sessions for Claude
-  for (let i = 0; i < 3; i++) {
-    console.log(`[Batch ${i + 1}/3] Harvesting GPT...`);
+  console.log("🚀 Running Cloud Turnstile Harvester (Enterprise 50+ Pool)...");
+  // Harvest 8 sessions for GPT and 8 sessions for Claude
+  for (let i = 0; i < 8; i++) {
+    console.log(`[Batch ${i + 1}/8] Harvesting GPT...`);
     await harvestToken(false);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 500));
   }
-  for (let i = 0; i < 3; i++) {
-    console.log(`[Batch ${i + 1}/3] Harvesting Claude...`);
+  for (let i = 0; i < 8; i++) {
+    console.log(`[Batch ${i + 1}/8] Harvesting Claude...`);
     await harvestToken(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 500));
   }
-  console.log("Batch harvesting finished successfully.");
+  console.log("Enterprise batch harvesting finished successfully.");
 }
 
 run();

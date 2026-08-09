@@ -185,6 +185,17 @@ async function getValidSession(env = null, isClaude = false) {
     console.error("Upstash generic pop error:", e);
   }
 
+  // 4. JIT Edge Browser harvest fallback if available
+  if (env && env.MYBROWSER) {
+    try {
+      console.log(`[JIT Harvest] Pool empty. Triggering JIT Edge harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
+      const s = await harvestTokenViaBrowser(env, isClaude);
+      if (s) return s;
+    } catch (e) {
+      console.error("[JIT Harvest Error]:", e);
+    }
+  }
+
   return null;
 }
 
