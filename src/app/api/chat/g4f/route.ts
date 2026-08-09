@@ -369,17 +369,15 @@ export async function POST(req: Request) {
       let g4fModel = model;
       let targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
 
-      if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
+      if (model.startsWith("qwen_worker/")) {
+        g4fModel = model.replace("qwen_worker/", "");
+        targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
+      } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
+        // Send all minitool/claude models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
-        targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
-        if (model.includes("deepseek")) {
-          g4fModel = "minitool/gpt-5.6-luna";
-        } else if (model.includes("claude") || model.includes("opus")) {
-          g4fModel = "minitool/claude-opus-4.8";
-        } else {
-          g4fModel = "minitool/gpt-4o";
-        }
+        g4fModel = model.replace("g4f/", "");
+        targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
       } else {
         g4fModel = model.replace("g4f/", "");
       }
