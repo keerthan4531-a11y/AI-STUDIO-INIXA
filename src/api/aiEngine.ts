@@ -931,6 +931,7 @@ export const aiChat = async (
 
       let customDirectHeaders: Record<string, string> | null = null;
       let customDirectBody: string | null = null;
+      let provider = 'g4f';
 
       if (modelStr.startsWith('deepinfra/')) {
         directModelStr = modelStr.replace('deepinfra/', '');
