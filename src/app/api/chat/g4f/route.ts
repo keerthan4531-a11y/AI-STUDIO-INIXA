@@ -554,9 +554,9 @@ export async function POST(req: Request) {
           } else {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
-        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
-          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
-          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
+        } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("overchat/")) {
+          // Dedicated endpoints for minitool/claude/overchat. Return response directly to prevent model fallback.
+          console.warn(`[Primary] OverChat/MiniTool API returned ${directRes.status}. Returning response directly.`);
           return await handleStreamingResponse(directRes);
         } else {
           console.warn(

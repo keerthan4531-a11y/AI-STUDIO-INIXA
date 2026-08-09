@@ -868,8 +868,8 @@ export const aiChat = async (
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
-        directModelStr = modelStr;
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        // OverChat must go directly to Vercel backend /api/chat/g4f (Vercel IP bypasses OverChat WAF, whereas Cloudflare Worker IP gets 403)
+        directEndpoint = '';
         provider = 'overchat';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
@@ -881,7 +881,9 @@ export const aiChat = async (
         provider = 'g4f';
       }
 
-      if (checkProviderLimit(provider)) {
+      if (!directEndpoint) {
+        console.log(`[Frontend Fetch] Skipping direct fetch for ${modelStr}, routing straight to backend...`);
+      } else if (checkProviderLimit(provider)) {
         console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 2 minutes.`);
       } else {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
