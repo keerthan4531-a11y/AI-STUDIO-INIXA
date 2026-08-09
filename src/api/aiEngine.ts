@@ -798,14 +798,56 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
       const line = buffer.slice(0, boundary).trim();
       buffer = buffer.slice(boundary + 1);
 
-      if (line.startsWith('data: ')) {
-        const dataStr = line.slice(6).trim();
+      if (line.startsWith('data:')) {
+        const dataStr = line.replace(/^data:\s*/, '').trim();
         if (dataStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(dataStr);
           if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
-          const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
-          const reasoning = parsed.choices?.[0]?.delta?.reasoning_content || parsed.choices?.[0]?.delta?.reasoning || '';
+          
+          let content = '';
+          let reasoning = '';
+
+          // Format 1: OpenAI choices array (Grok, GLM, etc.)
+          if (parsed.choices && Array.isArray(parsed.choices) && parsed.choices.length > 0) {
+            const choice = parsed.choices[0];
+            if (choice.delta) {
+              if (typeof choice.delta === 'string') content = choice.delta;
+              else if (typeof choice.delta === 'object') {
+                if (choice.delta.content !== undefined && choice.delta.content !== null) content = choice.delta.content;
+                else if (choice.delta.text !== undefined && choice.delta.text !== null) content = choice.delta.text;
+                if (choice.delta.reasoning_content) reasoning = choice.delta.reasoning_content;
+                else if (choice.delta.reasoning) reasoning = choice.delta.reasoning;
+              }
+            } else if (choice.text !== undefined) {
+              content = choice.text;
+            } else if (choice.message?.content !== undefined) {
+              content = choice.message.content;
+            }
+          }
+
+          // Format 2: Claude content_block_delta or nested delta object
+          if (!content && parsed.delta) {
+            if (typeof parsed.delta === 'string') content = parsed.delta;
+            else if (typeof parsed.delta === 'object') {
+              if (parsed.delta.text !== undefined && parsed.delta.text !== null) content = parsed.delta.text;
+              else if (parsed.delta.content !== undefined && parsed.delta.content !== null) content = parsed.delta.content;
+            }
+          }
+
+          // Format 3: Direct text/content/message/reply properties
+          if (!content) {
+            if (typeof parsed.text === 'string') content = parsed.text;
+            else if (typeof parsed.content === 'string') content = parsed.content;
+            else if (typeof parsed.message === 'string') content = parsed.message;
+            else if (typeof parsed.reply === 'string') content = parsed.reply;
+          }
+
+          // Format 4: Reasoning content
+          if (!reasoning) {
+            if (typeof parsed.reasoning === 'string') reasoning = parsed.reasoning;
+            else if (typeof parsed.reasoning_content === 'string') reasoning = parsed.reasoning_content;
+          }
 
           if (reasoning) {
             if (!fullReply.includes('<think>')) {

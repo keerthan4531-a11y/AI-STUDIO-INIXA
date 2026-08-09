@@ -409,24 +409,7 @@ async function proxyChat(session, model, messages, temperature, request) {
   });
 
   if (isGrok || isGlm) {
-    const postText = await postRes.text();
-    console.log(`[MiniTool ${isGrok ? 'Grok' : 'GLM'}] POST response:`, postText);
-
-    const getHeaders = new Headers(headers);
-    getHeaders.set("Accept", "text/event-stream");
-    getHeaders.set("Cache-Control", "no-cache");
-    getHeaders.set("Pragma", "no-cache");
-    getHeaders.delete("Content-Type");
-    getHeaders.delete("X-Requested-With");
-
-    const sseUrl = (postText && postText.length > 5 && postText !== "refresh")
-      ? `${baseUrl}/${streamPhp}?streamtoken=${postText}`
-      : `${baseUrl}/${streamPhp}`;
-
-    const sseRes = await fetch(sseUrl, {
-      headers: getHeaders,
-    });
-    return { sseRes, selectModel };
+    return { sseRes: postRes, selectModel };
   }
 
   const streamToken = await postRes.text();
@@ -488,6 +471,8 @@ function createTransformStream(model) {
             }
 
             let content = null, reasoning = null;
+
+            // Format 1: OpenAI choices array (Grok, GLM, etc.)
             if (j.choices && Array.isArray(j.choices) && j.choices.length > 0) {
               const choice = j.choices[0];
               if (choice.delta) {
@@ -499,16 +484,35 @@ function createTransformStream(model) {
                   if (choice.delta.reasoning_content) reasoning = choice.delta.reasoning_content;
                   else if (choice.delta.reasoning) reasoning = choice.delta.reasoning;
                 }
+              } else if (choice.text !== undefined) {
+                content = choice.text;
+              } else if (choice.message?.content !== undefined) {
+                content = choice.message.content;
               }
-            } else if (typeof j.delta === "string") {
+            }
+
+            // Format 2: Claude content_block_delta or nested delta object
+            if (content === null && j.delta && typeof j.delta === "object") {
+              if (j.delta.text !== undefined && j.delta.text !== null) content = j.delta.text;
+              else if (j.delta.content !== undefined && j.delta.content !== null) content = j.delta.content;
+            }
+
+            // Format 3: GPT response.output_text.delta or raw string delta
+            if (content === null && typeof j.delta === "string") {
               content = j.delta;
-            } else if (j.delta && typeof j.delta === "object") {
-              if (j.delta.text) content = j.delta.text;
-              else if (j.delta.content) content = j.delta.content;
-            } else if (t === "response.output_text.delta" || t === "response.content_part.delta") {
-              content = j.delta;
-            } else if (t === "response.reasoning_summary_text.delta") {
-              reasoning = j.delta;
+            }
+
+            // Format 4: Direct text/content/message properties on j
+            if (content === null) {
+              if (typeof j.text === "string") content = j.text;
+              else if (typeof j.content === "string") content = j.content;
+              else if (typeof j.message === "string") content = j.message;
+            }
+
+            // Format 5: Reasoning content
+            if (reasoning === null) {
+              if (typeof j.reasoning === "string") reasoning = j.reasoning;
+              else if (typeof j.reasoning_content === "string") reasoning = j.reasoning_content;
             }
 
             if (content !== null || reasoning !== null) {
