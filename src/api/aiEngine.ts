@@ -314,87 +314,6 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
-  // ⚡ MINITOOL GROK & GLM MODELS
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'minitool-grok-4.5',
-    label: 'Grok 4.5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/grok-4.5',
-    badge: 'GROK',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'xAI Grok 4.5 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-grok-4.3',
-    label: 'Grok 4.3 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/grok-4.3',
-    badge: 'GROK',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'xAI Grok 4.3 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-grok-build-0.1',
-    label: 'Grok Build 0.1 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/grok-build-0.1',
-    badge: 'BUILD',
-    badgeColor: 'cyan',
-    icon: 'Code',
-    iconColor: '#06b6d4',
-    description: 'xAI Grok Build 0.1 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-glm-4.7-flash',
-    label: 'GLM 4.7 Flash (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4.7-flash',
-    badge: 'GLM',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Zhipu GLM 4.7 Flash via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-glm-5.2',
-    label: 'GLM 5.2 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-5.2',
-    badge: 'GLM-5',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Zhipu GLM 5.2 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-glm-5',
-    label: 'GLM 5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-5',
-    badge: 'GLM-5',
-    badgeColor: 'purple',
-    icon: 'Sparkles',
-    iconColor: '#a855f7',
-    description: 'Zhipu GLM 5 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-glm-4.6v-flashx',
-    label: 'GLM 4.6V FlashX (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4.6v-flashx',
-    badge: 'VISION',
-    badgeColor: 'cyan',
-    icon: 'Image',
-    iconColor: '#06b6d4',
-    description: 'Zhipu GLM 4.6V FlashX Vision via MiniToolAI Worker'
-  },
-
-  // ════════════════════════════════════════════════════════════════
   // 🟢 SURFSENSE
   // ════════════════════════════════════════════════════════════════
   {
@@ -1020,18 +939,18 @@ export const aiChat = async (
         provider = 'deepinfra';
       } else if (modelStr.startsWith('qwen_worker/')) {
         directModelStr = modelStr.replace('qwen_worker/', '');
-        directEndpoint = '';
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('minitool/')) {
         directModelStr = modelStr;
-        directEndpoint = '';
+        directEndpoint = ''; // Route via Next.js backend /api/chat/g4f for server-side handling
         provider = 'minitool';
       } else if (modelStr.startsWith('updf')) {
         directEndpoint = '';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
         directModelStr = modelStr;
-        directEndpoint = '';
+        directEndpoint = ''; // Skip direct fetch to avoid browser CORS; let /api/chat/g4f handle server fetch
         provider = 'overchat';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
