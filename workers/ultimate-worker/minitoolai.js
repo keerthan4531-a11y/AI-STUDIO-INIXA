@@ -90,7 +90,7 @@ const UPSTASH_TOKEN = 'gQAAAAAAATVCAAIgcDIzMDYyM2ZhYzBiMjE0Y2FhYmQyNzAwNmVkNjk2M
 
 // ─── Session Pool (In-Memory + Upstash Redis) ─────────────────────
 let sessionPool = [];
-const SESSION_TTL = 250_000; // ~4.2 minutes
+const SESSION_TTL = 600_000; // 10 Minutes: Turnstile token validity window
 
 async function pushSessionToRedis(session) {
   try {
@@ -189,33 +189,41 @@ async function getValidSession(env = null, serviceType = 'gpt') {
     return sessionPool.splice(matchingIndex, 1)[0];
   }
   
-  // 2. Fetch from Upstash Redis specific model pool
+  // 2. Fetch from Upstash Redis specific model pool (try up to 10 popped sessions)
   const redisKey = `minitool_${serviceType}_sessions`;
   try {
-    const res = await fetch(`${UPSTASH_URL}/lpop/${redisKey}`, {
-      headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
-    });
-    const data = await res.json();
-    if (data && data.result) {
-      const s = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-      if (Date.now() - s.timestamp < SESSION_TTL) {
-        return s;
+    for (let i = 0; i < 10; i++) {
+      const res = await fetch(`${UPSTASH_URL}/lpop/${redisKey}`, {
+        headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+      });
+      const data = await res.json();
+      if (data && data.result) {
+        const s = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+        if (Date.now() - s.timestamp < SESSION_TTL) {
+          return s;
+        }
+      } else {
+        break; // Queue is empty
       }
     }
   } catch (e) {
     console.error("Upstash pop error:", e);
   }
 
-  // 3. Fallback to generic pool
+  // 3. Fallback to generic pool (try up to 10 popped sessions)
   try {
-    const res = await fetch(`${UPSTASH_URL}/lpop/minitool_sessions`, {
-      headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
-    });
-    const data = await res.json();
-    if (data && data.result) {
-      const s = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-      if (Date.now() - s.timestamp < SESSION_TTL) {
-        return s;
+    for (let i = 0; i < 10; i++) {
+      const res = await fetch(`${UPSTASH_URL}/lpop/minitool_sessions`, {
+        headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+      });
+      const data = await res.json();
+      if (data && data.result) {
+        const s = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+        if (Date.now() - s.timestamp < SESSION_TTL) {
+          return s;
+        }
+      } else {
+        break; // Queue is empty
       }
     }
   } catch (e) {
