@@ -627,50 +627,37 @@ export default {
 
         let sseRes = null;
         let resolvedModel = selectModel;
-        let session = null;
+        let lastErr = null;
 
-        // Layer 1: Try up to 3 session tokens from Redis pool
-        for (let attempt = 0; attempt < 3; attempt++) {
-          session = await getValidSession(env, isClaude);
-          if (!session) break;
-
+        for (let attempt = 1; attempt <= 3; attempt++) {
           try {
+            let session = await getValidSession(env, isClaude);
+            if (!session && env && env.MYBROWSER) {
+              console.log(`[JIT Edge Harvest] Attempt ${attempt}: Triggering on-demand Edge Puppeteer harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
+              session = await harvestTokenViaBrowser(env, isClaude);
+            }
+            if (!session) {
+              throw new Error("No session available in Redis or Edge Browser harvest");
+            }
+
             const res = await proxyChat(session, model, body.messages || [], body.temperature, request);
             if (res && res.sseRes && res.sseRes.ok) {
               sseRes = res.sseRes;
               resolvedModel = res.selectModel;
               break;
+            } else {
+              throw new Error(`Proxy chat failed with status ${res?.sseRes?.status}`);
             }
-          } catch (e) {
-            console.warn(`[MiniTool Retry] Session attempt ${attempt + 1} failed: ${e.message}`);
+          } catch (err) {
+            console.warn(`[MiniTool Completion Attempt ${attempt}/3 Failed]: ${err.message}`);
+            lastErr = err;
           }
-        }
-
-        // Layer 2: On-Demand Edge Browser Harvest if Redis sessions failed or pool was empty
-        if (!sseRes && env && env.MYBROWSER) {
-          console.log(`[MiniTool Self-Healing] Redis sessions exhausted/empty. Triggering on-demand edge harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
-          try {
-            session = await harvestTokenViaBrowser(env, isClaude);
-            if (session) {
-              const res = await proxyChat(session, model, body.messages || [], body.temperature, request);
-              if (res && res.sseRes && res.sseRes.ok) {
-                sseRes = res.sseRes;
-                resolvedModel = res.selectModel;
-              }
-            }
-          } catch (e) {
-            console.error(`[MiniTool Self-Healing] On-demand edge harvest failed: ${e.message}`);
-          }
-        }
-
-        // Layer 3: Trigger background harvest to keep Redis pool filled for future requests
-        if (env && env.MYBROWSER && ctx && ctx.waitUntil) {
-          ctx.waitUntil(harvestTokenViaBrowser(env, isClaude));
         }
 
         if (!sseRes || !sseRes.ok) {
           return new Response(JSON.stringify({
-            error: "No active MiniTool session available after retries.",
+            error: `All session attempts failed: ${lastErr ? lastErr.message : 'Unknown error'}. Visit /minitool/init to activate.`,
+            init_url: `${url.origin}/minitool/init`,
           }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
