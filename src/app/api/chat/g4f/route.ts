@@ -484,32 +484,40 @@ export async function POST(req: Request) {
           signal: directController.signal as any,
         });
 
-        clearTimeout(directTimeout);
-
-        if (directRes.status === 402) {
-          is402Error = true;
-          console.warn(`[Primary] Endpoint returned 402 Payment Required for ${g4fModel}. Skipping proxy race...`);
-        } else if (directRes.ok) {
+        if (directRes.ok) {
           const contentType = directRes.headers.get("content-type") || "";
           if (!contentType.includes("text/html")) {
-            console.log(`[Primary] Direct fetch succeeded!`);
+            console.log(`[Primary] Direct fetch to ${targetEndpoint} succeeded!`);
             return await handleStreamingResponse(directRes);
-          } else {
-            console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
-        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
-          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
-          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
-          return await handleStreamingResponse(directRes);
-        } else {
-          console.warn(
-            `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,
-          );
+        }
+
+        console.warn(`[Primary] Endpoint returned ${directRes.status} for model ${g4fModel}. Attempting ultimate-worker fallback...`);
+        const fallbackModel = (g4fModel.includes("claude") || g4fModel.includes("opus")) ? "minitool/claude-opus-4.8" : "minitool/gpt-5.6-luna";
+        const workerFallbackRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: stream ? "text/event-stream" : "application/json" },
+          body: JSON.stringify({ ...body, model: fallbackModel, max_tokens: 8192 })
+        });
+
+        if (workerFallbackRes.ok) {
+          console.log(`[Primary] Ultimate worker fallback succeeded for ${g4fModel}!`);
+          return await handleStreamingResponse(workerFallbackRes);
         }
       } catch (err: any) {
-        console.warn(
-          `[Primary] Direct fetch failed: ${err.message || err}. Falling back to proxies...`,
-        );
+        console.warn(`[Primary] Direct fetch failed: ${err.message || err}. Attempting ultimate-worker fallback...`);
+        try {
+          const fallbackModel = (g4fModel.includes("claude") || g4fModel.includes("opus")) ? "minitool/claude-opus-4.8" : "minitool/gpt-5.6-luna";
+          const workerFallbackRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: stream ? "text/event-stream" : "application/json" },
+            body: JSON.stringify({ ...body, model: fallbackModel, max_tokens: 8192 })
+          });
+          if (workerFallbackRes.ok) {
+            console.log(`[Primary] Ultimate worker fallback succeeded for ${g4fModel}!`);
+            return await handleStreamingResponse(workerFallbackRes);
+          }
+        } catch (_) {}
       }
 
       // ── Step 2B: Proxy Pool Race (Only if not 402 Payment Required) ──
