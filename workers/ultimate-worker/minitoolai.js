@@ -788,6 +788,11 @@ export default {
             if (res && res.sseRes && res.sseRes.ok) {
               sseRes = res.sseRes;
               resolvedModel = res.selectModel;
+
+              // Re-push valid session to Redis if age < 4 minutes (token recycling)
+              if (ctx && (Date.now() - session.timestamp) < (SESSION_TTL - 30000)) {
+                ctx.waitUntil(pushSessionToRedis(session));
+              }
               break;
             } else {
               throw new Error(`Proxy chat failed with status ${res?.sseRes?.status}`);

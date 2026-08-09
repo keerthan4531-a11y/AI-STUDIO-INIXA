@@ -921,9 +921,7 @@ export const aiChat = async (
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('minitool/')) {
-        directModelStr = modelStr;
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
-        provider = 'minitool';
+        directEndpoint = ''; // Skip direct fetch for MiniTool models; use /api/chat/g4f proxy
       } else if (modelStr.startsWith('updf')) {
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
