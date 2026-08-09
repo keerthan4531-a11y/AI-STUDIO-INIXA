@@ -962,7 +962,9 @@ export const aiChat = async (
         provider = 'g4f';
       }
 
-      if (checkProviderLimit(provider)) {
+      if (!directEndpoint) {
+        console.log(`[Frontend Fetch] Direct endpoint disabled for ${provider}. Routing via Backend Proxy Pool...`);
+      } else if (checkProviderLimit(provider)) {
         console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 2 minutes.`);
       } else {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
