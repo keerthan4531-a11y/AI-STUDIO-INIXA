@@ -94,8 +94,8 @@ const SESSION_TTL = 250_000; // ~4.2 minutes
 
 async function pushSessionToRedis(session) {
   try {
-    const isClaude = session.is_claude === true;
-    const redisKey = isClaude ? 'minitool_claude_sessions' : 'minitool_gpt_sessions';
+    const serviceType = session.service_type || (session.is_claude ? 'claude' : 'gpt');
+    const redisKey = `minitool_${serviceType}_sessions`;
     
     await fetch(`${UPSTASH_URL}/lpush/${redisKey}/${encodeURIComponent(JSON.stringify(session))}`, {
       headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
@@ -109,31 +109,43 @@ async function pushSessionToRedis(session) {
   }
 }
 
-async function harvestTokenViaBrowser(env, isClaude = false) {
+async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
   if (!env || !env.MYBROWSER) return null;
-  console.log(`[Cloudflare Browser] Launching edge browser for ${isClaude ? 'Claude' : 'GPT'}...`);
+  console.log(`[Cloudflare Browser] Launching edge browser for ${serviceType}...`);
   let browser = null;
   try {
     browser = await puppeteer.launch(env.MYBROWSER);
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    const targetUrl = isClaude ? "https://minitoolai.com/Claude/" : "https://minitoolai.com/gpt-ai/";
     
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
+    let targetUrl = "https://minitoolai.com/gpt-ai/";
+    if (serviceType === 'claude') targetUrl = "https://minitoolai.com/Claude/";
+    else if (serviceType === 'grok') targetUrl = "https://minitoolai.com/grok/";
+    else if (serviceType === 'glm') targetUrl = "https://minitoolai.com/zai-glm/";
+
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
     
-    const result = await page.evaluate(async () => {
+    const htmlContent = await page.content();
+    const utMatch = htmlContent.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
+    const siMatch = htmlContent.match(/var\s+safety_identifier\s*=\s*['"]([^'"]+)['"]/);
+    const extractedUt = utMatch ? utMatch[1] : "";
+    const extractedSi = siMatch ? siMatch[1] : "";
+
+    const result = await page.evaluate(async (exUt, exSi) => {
       let getCft = () => window.cft || document.querySelector('[name="cf-turnstile-response"]')?.value || document.querySelector('textarea[name="g-recaptcha-response"]')?.value || "";
       let cft = getCft();
+      let ut = window.utoken || exUt;
+      let si = window.safety_identifier || exSi;
       let attempts = 0;
       while ((!cft || cft.length < 10 || cft === "error" || cft === "expired") && attempts < 50) {
         await new Promise(r => setTimeout(r, 200));
         cft = getCft();
-        ut = window.utoken || ut;
-        si = window.safety_identifier || si;
+        ut = window.utoken || ut || exUt;
+        si = window.safety_identifier || si || exSi;
         attempts++;
       }
       return { ut, si, cft };
-    });
+    }, extractedUt, extractedSi);
 
     const cookies = await page.cookies();
     const sessCookie = cookies.find(c => c.name === "PHPSESSID")?.value || "";
@@ -142,20 +154,21 @@ async function harvestTokenViaBrowser(env, isClaude = false) {
     browser = null;
 
     if (sessCookie && result.ut && result.cft && result.cft.length > 10) {
-      console.log(`[Cloudflare Browser] Harvested session: PHPSESSID=${sessCookie.substring(0,8)}..., cft_len=${result.cft.length}`);
+      console.log(`[Cloudflare Browser] Harvested session for ${serviceType}: PHPSESSID=${sessCookie.substring(0,8)}..., cft_len=${result.cft.length}`);
       const session = {
         phpsessid: sessCookie,
         utoken: result.ut,
         safety_identifier: result.si,
         cft: result.cft,
-        is_claude: isClaude,
+        service_type: serviceType,
+        is_claude: serviceType === 'claude',
         timestamp: Date.now()
       };
       await pushSessionToRedis(session);
       return session;
     }
   } catch (e) {
-    console.error("[Cloudflare Browser] Error harvesting token on edge:", e);
+    console.error(`[Cloudflare Browser] Error harvesting token for ${serviceType} on edge:`, e);
     if (browser) {
       try { await browser.close(); } catch(_) {}
     }
@@ -163,19 +176,21 @@ async function harvestTokenViaBrowser(env, isClaude = false) {
   return null;
 }
 
-async function getValidSession(env = null, isClaude = false) {
+async function getValidSession(env = null, serviceType = 'gpt') {
+  // Normalize boolean parameters if passed by legacy callers
+  if (typeof serviceType === 'boolean') {
+    serviceType = serviceType ? 'claude' : 'gpt';
+  }
+
   // 1. Clean expired local sessions
   sessionPool = sessionPool.filter(s => (Date.now() - s.timestamp) < SESSION_TTL);
-  const matchingIndex = sessionPool.findIndex(s => isClaude ? (s.is_claude === true) : (s.is_claude === false));
+  const matchingIndex = sessionPool.findIndex(s => (s.service_type || (s.is_claude ? 'claude' : 'gpt')) === serviceType);
   if (matchingIndex !== -1) {
     return sessionPool.splice(matchingIndex, 1)[0];
   }
-  if (sessionPool.length > 0) {
-    return sessionPool.pop();
-  }
   
   // 2. Fetch from Upstash Redis specific model pool
-  const redisKey = isClaude ? 'minitool_claude_sessions' : 'minitool_gpt_sessions';
+  const redisKey = `minitool_${serviceType}_sessions`;
   try {
     const res = await fetch(`${UPSTASH_URL}/lpop/${redisKey}`, {
       headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
@@ -210,8 +225,8 @@ async function getValidSession(env = null, isClaude = false) {
   // 4. JIT Edge Browser harvest fallback if available
   if (env && env.MYBROWSER) {
     try {
-      console.log(`[JIT Harvest] Pool empty. Triggering JIT Edge harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
-      const s = await harvestTokenViaBrowser(env, isClaude);
+      console.log(`[JIT Harvest] Pool empty. Triggering JIT Edge harvest for ${serviceType}...`);
+      const s = await harvestTokenViaBrowser(env, serviceType);
       if (s) return s;
     } catch (e) {
       console.error("[JIT Harvest Error]:", e);
@@ -394,6 +409,9 @@ async function proxyChat(session, model, messages, temperature, request) {
   });
 
   if (isGrok || isGlm) {
+    const postText = await postRes.text();
+    console.log(`[MiniTool ${isGrok ? 'Grok' : 'GLM'}] POST response:`, postText);
+
     const getHeaders = new Headers(headers);
     getHeaders.set("Accept", "text/event-stream");
     getHeaders.set("Cache-Control", "no-cache");
@@ -401,7 +419,11 @@ async function proxyChat(session, model, messages, temperature, request) {
     getHeaders.delete("Content-Type");
     getHeaders.delete("X-Requested-With");
 
-    const sseRes = await fetch(`${baseUrl}/${streamPhp}`, {
+    const sseUrl = (postText && postText.length > 5 && postText !== "refresh")
+      ? `${baseUrl}/${streamPhp}?streamtoken=${postText}`
+      : `${baseUrl}/${streamPhp}`;
+
+    const sseRes = await fetch(sseUrl, {
       headers: getHeaders,
     });
     return { sseRes, selectModel };
@@ -466,7 +488,19 @@ function createTransformStream(model) {
             }
 
             let content = null, reasoning = null;
-            if (typeof j.delta === "string") {
+            if (j.choices && Array.isArray(j.choices) && j.choices.length > 0) {
+              const choice = j.choices[0];
+              if (choice.delta) {
+                if (typeof choice.delta === "string") {
+                  content = choice.delta;
+                } else if (typeof choice.delta === "object") {
+                  if (choice.delta.content !== undefined && choice.delta.content !== null) content = choice.delta.content;
+                  else if (choice.delta.text !== undefined && choice.delta.text !== null) content = choice.delta.text;
+                  if (choice.delta.reasoning_content) reasoning = choice.delta.reasoning_content;
+                  else if (choice.delta.reasoning) reasoning = choice.delta.reasoning;
+                }
+              }
+            } else if (typeof j.delta === "string") {
               content = j.delta;
             } else if (j.delta && typeof j.delta === "object") {
               if (j.delta.text) content = j.delta.text;
@@ -660,6 +694,8 @@ export default {
           return new Response(JSON.stringify({ ok: false, error: "Invalid cft token" }), { headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
+        const serviceType = data.service_type || (data.is_claude ? 'claude' : 'gpt');
+
         // Build session
         let session;
         if (data.phpsessid && data.utoken) {
@@ -668,12 +704,13 @@ export default {
             utoken: data.utoken,
             safety_identifier: data.safety_identifier || "",
             cft: data.cft,
-            is_claude: data.is_claude || !data.safety_identifier,
+            service_type: serviceType,
+            is_claude: serviceType === 'claude',
             timestamp: Date.now()
           };
         } else {
           const tokens = await fetchSessionFromMiniTool(request);
-          session = { ...tokens, cft: data.cft, is_claude: data.is_claude || !tokens.safety_identifier, timestamp: Date.now() };
+          session = { ...tokens, cft: data.cft, service_type: serviceType, is_claude: serviceType === 'claude', timestamp: Date.now() };
         }
 
         // Add to pool (in-memory + Upstash Redis)
@@ -722,8 +759,12 @@ export default {
         const body = await request.json();
         const model = (body.model || "").toLowerCase();
         const selectModel = MODEL_MAP[model] || model;
-        const isClaude = selectModel.includes("claude") || model.includes("claude");
         
+        let serviceType = 'gpt';
+        if (selectModel.includes("claude") || model.includes("claude")) serviceType = 'claude';
+        else if (selectModel.includes("grok") || model.includes("grok")) serviceType = 'grok';
+        else if (selectModel.startsWith("GLM") || selectModel.startsWith("glm") || model.includes("glm")) serviceType = 'glm';
+
         if (!model.includes("minitool") && !MODEL_MAP[model]) {
           return new Response(JSON.stringify({ error: "Not a MiniToolAI model" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
         }
@@ -734,10 +775,10 @@ export default {
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            let session = await getValidSession(env, isClaude);
+            let session = await getValidSession(env, serviceType);
             if (!session && env && env.MYBROWSER) {
-              console.log(`[JIT Edge Harvest] Attempt ${attempt}: Triggering on-demand Edge Puppeteer harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
-              session = await harvestTokenViaBrowser(env, isClaude);
+              console.log(`[JIT Edge Harvest] Attempt ${attempt}: Triggering on-demand Edge Puppeteer harvest for ${serviceType}...`);
+              session = await harvestTokenViaBrowser(env, serviceType);
             }
             if (!session) {
               throw new Error("No session available in Redis or Edge Browser harvest");

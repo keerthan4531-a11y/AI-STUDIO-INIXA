@@ -3,11 +3,13 @@ const fetch = require('node-fetch');
 
 const WORKER_URL = 'https://ultimate-ai-worker.haruyhari930.workers.dev';
 
-async function harvestToken(isClaude = false) {
+async function harvestToken(serviceType = 'gpt') {
   let browser = null;
   try {
-    console.log(`[CloudHarvester] Harvesting Turnstile token for ${isClaude ? 'Claude' : 'GPT'}...`);
+    console.log(`[CloudHarvester] Harvesting Turnstile token for ${serviceType}...`);
+    const chromePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
     browser = await puppeteer.launch({
+      executablePath: chromePath,
       headless: "new",
       args: [
         '--no-sandbox',
@@ -24,7 +26,11 @@ async function harvestToken(isClaude = false) {
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     await page.setViewport({ width: 1280, height: 800 });
 
-    const targetUrl = isClaude ? "https://minitoolai.com/Claude/" : "https://minitoolai.com/gpt-ai/";
+    let targetUrl = "https://minitoolai.com/gpt-ai/";
+    if (serviceType === 'claude') targetUrl = "https://minitoolai.com/Claude/";
+    else if (serviceType === 'grok') targetUrl = "https://minitoolai.com/grok/";
+    else if (serviceType === 'glm') targetUrl = "https://minitoolai.com/zai-glm/";
+
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
     let result = null;
@@ -51,7 +57,7 @@ async function harvestToken(isClaude = false) {
     browser = null;
 
     if (sessCookie && result.ut && result.cft && result.cft.length > 20) {
-      console.log(`[CloudHarvester] Successfully harvested! PHPSESSID=${sessCookie.substring(0,8)}..., cft_len=${result.cft.length}`);
+      console.log(`[CloudHarvester] Successfully harvested ${serviceType}! PHPSESSID=${sessCookie.substring(0,8)}..., cft_len=${result.cft.length}`);
       const activateRes = await fetch(`${WORKER_URL}/minitool/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,17 +66,18 @@ async function harvestToken(isClaude = false) {
           utoken: result.ut,
           safety_identifier: result.si,
           cft: result.cft,
-          is_claude: isClaude
+          service_type: serviceType,
+          is_claude: serviceType === 'claude'
         })
       });
       const actData = await activateRes.json();
-      console.log(`[CloudHarvester] Activated in Redis:`, actData);
+      console.log(`[CloudHarvester] Activated ${serviceType} in Redis:`, actData);
       return true;
     } else {
-      console.warn(`[CloudHarvester] Incomplete harvest:`, { sessCookie: !!sessCookie, ut: !!result.ut, cftLen: result?.cft?.length });
+      console.warn(`[CloudHarvester] Incomplete harvest for ${serviceType}:`, { sessCookie: !!sessCookie, ut: !!result.ut, cftLen: result?.cft?.length });
     }
   } catch (err) {
-    console.error(`[CloudHarvester] Error:`, err.message);
+    console.error(`[CloudHarvester] Error for ${serviceType}:`, err.message);
     if (browser) {
       try { await browser.close(); } catch(_) {}
     }
@@ -79,17 +86,14 @@ async function harvestToken(isClaude = false) {
 }
 
 async function run() {
-  console.log("🚀 Running Cloud Turnstile Harvester (Enterprise 50+ Pool)...");
-  // Harvest 8 sessions for GPT and 8 sessions for Claude
-  for (let i = 0; i < 8; i++) {
-    console.log(`[Batch ${i + 1}/8] Harvesting GPT...`);
-    await harvestToken(false);
-    await new Promise(r => setTimeout(r, 500));
-  }
-  for (let i = 0; i < 8; i++) {
-    console.log(`[Batch ${i + 1}/8] Harvesting Claude...`);
-    await harvestToken(true);
-    await new Promise(r => setTimeout(r, 500));
+  console.log("🚀 Running Cloud Turnstile Harvester (GPT, Claude, Grok, GLM Pools)...");
+  const services = ['gpt', 'claude', 'grok', 'glm'];
+  for (const s of services) {
+    for (let i = 0; i < 4; i++) {
+      console.log(`[Batch ${i + 1}/4] Harvesting ${s}...`);
+      await harvestToken(s);
+      await new Promise(r => setTimeout(r, 400));
+    }
   }
   console.log("Enterprise batch harvesting finished successfully.");
 }
