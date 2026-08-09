@@ -1078,7 +1078,7 @@ export const aiChat = async (
         provider = 'deepinfra';
       } else if (modelStr.startsWith('qwen_worker/')) {
         directModelStr = modelStr.replace('qwen_worker/', '');
-        directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('minitool/')) {
         directModelStr = modelStr;
@@ -1087,9 +1087,13 @@ export const aiChat = async (
       } else if (modelStr.startsWith('updf')) {
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
+      } else if (modelStr.startsWith('g4f/')) {
+        directModelStr = modelStr.replace('g4f/', '');
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        provider = 'g4f';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
-        directEndpoint = 'https://qwen.g4f-dev.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'g4f';
       }
 
@@ -1115,7 +1119,11 @@ export const aiChat = async (
           if (directRes.ok) {
             console.log(`[Frontend Fetch] Success from User IP!`);
             if (onChunk && directRes.body) {
-              return await handleSSEStream(directRes, onChunk);
+              const resText = await handleSSEStream(directRes, onChunk);
+              if (resText && resText !== 'No response received from the AI model.') {
+                return resText;
+              }
+              console.warn(`[Frontend Fetch] Direct endpoint returned empty stream (0 bytes). Falling back to Backend Proxy Pool...`);
             } else {
               const data = await directRes.json();
               const content = data.choices?.[0]?.message?.content || data.reply || '';
@@ -1124,7 +1132,7 @@ export const aiChat = async (
               if (reasoning) {
                 reply = `<think>\n${reasoning}\n</think>\n${content}`;
               }
-              return reply || '';
+              if (reply) return reply;
             }
           } else {
             console.warn(`[Frontend Fetch] Failed with status ${directRes.status}. Falling back to Backend Proxy Pool...`);
