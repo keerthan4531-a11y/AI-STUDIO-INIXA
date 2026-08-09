@@ -949,63 +949,9 @@ export const aiChat = async (
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
-        const rawModel = modelStr.replace('overchat/', '').toLowerCase();
-        const overchatConfigMap: Record<string, { model: string; personaId: string }> = {
-          'gpt-5.2': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
-          'gpt-5.1': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
-          'gpt-5-nano': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
-          'gpt-4o': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
-
-          'claude-opus-4.6': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
-          'claude-haiku-4.5': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
-          'claude-sonnet-4.6': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
-
-          'gemini-3-flash': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
-          'gemini-3-pro': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
-          'qwen-3': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
-          'llama-4': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
-
-          'deepseek-v3.2': { model: 'deepseek/deepseek-non-thinking-v3.2-exp', personaId: 'deepseek-v-3-2-landing' },
-          'kimi-k2.5': { model: 'deepseek/deepseek-non-thinking-v3.2-exp', personaId: 'deepseek-v-3-2-landing' }
-        };
-
-        const cfg = overchatConfigMap[rawModel] || { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' };
-        const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-
-        directEndpoint = 'https://api.overchat.ai/v1/chat/completions';
+        directModelStr = modelStr;
+        directEndpoint = ''; // Skip direct fetch to avoid browser CORS; let /api/chat/g4f handle server fetch
         provider = 'overchat';
-        customDirectBody = JSON.stringify({
-          chatId: uuid,
-          model: cfg.model,
-          messages: conversationHistory.map((m: any) => ({
-            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-              var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-              return v.toString(16);
-            }),
-            role: m.role || 'user',
-            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-          })),
-          personaId: cfg.personaId,
-          frequency_penalty: 0,
-          max_tokens: 4000,
-          presence_penalty: 0,
-          stream: true,
-          temperature: 0.5,
-          top_p: 0.95
-        });
-        customDirectHeaders = {
-          'accept': '*/*',
-          'content-type': 'application/json',
-          'origin': 'https://overchat.ai',
-          'referer': 'https://overchat.ai/',
-          'x-device-language': 'en-US',
-          'x-device-platform': 'web',
-          'x-device-uuid': uuid,
-          'x-device-version': '1.0.44'
-        };
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';

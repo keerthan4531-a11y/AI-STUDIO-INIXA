@@ -358,14 +358,104 @@ export async function POST(req: Request) {
       return NextResponse.json(await backendRes.json());
     }
 
-    // 2. G4F / DeepInfra / Qwen / MiniTool / Claude / OverChat Model Routing
+    // 2. Direct OverChat Server Handler (Avoids CORS & CF Worker 403)
+    if (model.startsWith("overchat/")) {
+      const rawModel = model.replace("overchat/", "").toLowerCase();
+      const overchatConfigMap: Record<string, { model: string; personaId: string }> = {
+        "gpt-5.2": { model: "openai/gpt-4o", personaId: "gpt-4o-landing" },
+        "gpt-5.1": { model: "openai/gpt-4o", personaId: "gpt-4o-landing" },
+        "gpt-5-nano": { model: "openai/gpt-4o", personaId: "gpt-4o-landing" },
+        "gpt-4o": { model: "openai/gpt-4o", personaId: "gpt-4o-landing" },
+
+        "claude-opus-4.6": { model: "claude-haiku-4-5-20251001", personaId: "claude-haiku-4-5-landing" },
+        "claude-haiku-4.5": { model: "claude-haiku-4-5-20251001", personaId: "claude-haiku-4-5-landing" },
+        "claude-sonnet-4.6": { model: "claude-haiku-4-5-20251001", personaId: "claude-haiku-4-5-landing" },
+
+        "gemini-3-flash": { model: "alibaba/qwen3-next-80b-a3b-instruct", personaId: "qwen-3-landing" },
+        "gemini-3-pro": { model: "alibaba/qwen3-next-80b-a3b-instruct", personaId: "qwen-3-landing" },
+        "qwen-3": { model: "alibaba/qwen3-next-80b-a3b-instruct", personaId: "qwen-3-landing" },
+        "llama-4": { model: "alibaba/qwen3-next-80b-a3b-instruct", personaId: "qwen-3-landing" },
+
+        "deepseek-v3.2": { model: "deepseek/deepseek-non-thinking-v3.2-exp", personaId: "deepseek-v-3-2-landing" },
+        "kimi-k2.5": { model: "deepseek/deepseek-non-thinking-v3.2-exp", personaId: "deepseek-v-3-2-landing" }
+      };
+
+      const cfg = overchatConfigMap[rawModel] || { model: "openai/gpt-4o", personaId: "gpt-4o-landing" };
+      const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+
+      const overchatPayload = {
+        chatId: generateUUID(),
+        model: cfg.model,
+        messages: (body.messages || []).map((m: any) => ({
+          id: generateUUID(),
+          role: m.role || 'user',
+          content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+        })),
+        personaId: cfg.personaId,
+        frequency_penalty: 0,
+        max_tokens: 4000,
+        presence_penalty: 0,
+        stream: true,
+        temperature: 0.5,
+        top_p: 0.95
+      };
+
+      const overchatRes = await nodeFetch("https://api.overchat.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "accept": "*/*",
+          "content-type": "application/json",
+          "origin": "https://overchat.ai",
+          "referer": "https://overchat.ai/",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+          "x-device-language": "en-US",
+          "x-device-platform": "web",
+          "x-device-uuid": generateUUID(),
+          "x-device-version": "1.0.44"
+        },
+        body: JSON.stringify(overchatPayload)
+      });
+
+      if (!overchatRes.ok) {
+        throw new Error(`OverChat returned status ${overchatRes.status}`);
+      }
+
+      if (stream) {
+        const bodyStream = new ReadableStream({
+          start(controller) {
+            (overchatRes.body as any).on("data", (chunk: Buffer) =>
+              controller.enqueue(chunk),
+            );
+            (overchatRes.body as any).on("end", () => controller.close());
+            (overchatRes.body as any).on("error", (err: Error) =>
+              controller.error(err),
+            );
+          },
+          cancel() {
+            (overchatRes.body as any).destroy();
+          },
+        });
+        return new Response(bodyStream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
+      }
+      return NextResponse.json(await overchatRes.json());
+    }
+
+    // 3. G4F / DeepInfra / Qwen / MiniTool / Claude Model Routing
     if (
       model.startsWith("g4f/") ||
       model.startsWith("qwen_worker/") ||
       model.startsWith("minitool/") ||
       model.startsWith("claude/") ||
-      model.startsWith("updf") ||
-      model.startsWith("overchat/")
+      model.startsWith("updf")
     ) {
       let g4fModel = model;
       let targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
