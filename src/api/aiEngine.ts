@@ -176,123 +176,63 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#a855f7',
     description: 'Claude Opus 4.8 via MiniToolAI Worker'
   },
-
   // ════════════════════════════════════════════════════════════════
-  // ⚡ GROK (MiniToolAI)
+  // 🟣 OVERCHAT.AI (via Cloudflare Worker — No Auth Needed)
   // ════════════════════════════════════════════════════════════════
   {
-    id: 'minitool-grok-4.5',
-    label: 'Grok 4.5 (MiniTool)',
+    id: 'overchat-gpt-5.2',
+    label: 'GPT-5.2 (OverChat)',
     engine: 'g4f',
-    modelStr: 'minitool/grok-4.5',
-    badge: 'GROK 4.5',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'xAI Grok 4.5 via MiniToolAI'
+    modelStr: 'overchat/gpt-5.2',
+    badge: 'GPT-5.2',
+    badgeColor: 'green',
+    icon: 'Brain',
+    iconColor: '#10b981',
+    description: 'GPT-5.2 via OverChat.ai — Free, No Auth'
   },
   {
-    id: 'minitool-grok-4.3',
-    label: 'Grok 4.3 (MiniTool)',
+    id: 'overchat-gpt-4o',
+    label: 'GPT-4o (OverChat)',
     engine: 'g4f',
-    modelStr: 'minitool/grok-4.3',
-    badge: 'GROK 4.3',
-    badgeColor: 'cyan',
+    modelStr: 'overchat/gpt-4o',
+    badge: '4o',
+    badgeColor: 'blue',
     icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'xAI Grok 4.3 via MiniToolAI'
+    iconColor: '#3b82f6',
+    description: 'GPT-4o via OverChat.ai — Free, No Auth'
   },
   {
-    id: 'minitool-grok-build-0.1',
-    label: 'Grok Build 0.1 (MiniTool)',
+    id: 'overchat-claude-opus-4.6',
+    label: 'Claude Opus 4.6 (OverChat)',
     engine: 'g4f',
-    modelStr: 'minitool/grok-build-0.1',
-    badge: 'BUILD',
+    modelStr: 'overchat/claude-opus-4.6',
+    badge: 'OPUS',
     badgeColor: 'violet',
     icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'xAI Grok Build 0.1 via MiniToolAI'
+    iconColor: '#a855f7',
+    description: 'Claude Opus 4.6 via OverChat.ai — Free, No Auth'
   },
-
-  // ════════════════════════════════════════════════════════════════
-  // 🌐 ZAI GLM (MiniToolAI)
-  // ════════════════════════════════════════════════════════════════
   {
-    id: 'minitool-glm-4.7-flash',
-    label: 'GLM 4.7 Flash (MiniTool)',
+    id: 'overchat-claude-haiku-4.5',
+    label: 'Claude Haiku 4.5 (OverChat)',
     engine: 'g4f',
-    modelStr: 'minitool/glm-4.7-flash',
-    badge: '4.7 FLASH',
-    badgeColor: 'green',
+    modelStr: 'overchat/claude-haiku-4.5',
+    badge: 'HAIKU',
+    badgeColor: 'cyan',
     icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'Zhipu GLM 4.7 Flash via MiniToolAI'
+    iconColor: '#06b6d4',
+    description: 'Claude Haiku 4.5 via OverChat.ai — Free, No Auth'
   },
   {
-    id: 'minitool-glm-5.2',
-    label: 'GLM 5.2 (MiniTool)',
+    id: 'overchat-qwen-3',
+    label: 'Qwen 3 (OverChat)',
     engine: 'g4f',
-    modelStr: 'minitool/glm-5.2',
-    badge: 'GLM 5.2',
-    badgeColor: 'violet',
+    modelStr: 'overchat/qwen-3',
+    badge: 'QWEN',
+    badgeColor: 'orange',
     icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Zhipu GLM 5.2 via MiniToolAI'
-  },
-  {
-    id: 'minitool-glm-5',
-    label: 'GLM 5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-5',
-    badge: 'GLM 5',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Zhipu GLM 5 via MiniToolAI'
-  },
-  {
-    id: 'minitool-glm-4.5-flash',
-    label: 'GLM 4.5 Flash (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4.5-flash',
-    badge: 'FLASH',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'Zhipu GLM 4.5 Flash via MiniToolAI'
-  },
-  {
-    id: 'minitool-glm-4.5-air',
-    label: 'GLM 4.5 Air (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4.5-air',
-    badge: 'AIR',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'Zhipu GLM 4.5 Air via MiniToolAI'
-  },
-  {
-    id: 'minitool-glm-4-32b',
-    label: 'GLM 4 32B (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4-32b',
-    badge: '32B',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Zhipu GLM 4 32B via MiniToolAI'
-  },
-  {
-    id: 'minitool-glm-4.6v-flashx',
-    label: 'GLM 4.6V FlashX (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/glm-4.6v-flashx',
-    badge: 'VISION',
-    badgeColor: 'violet',
-    icon: 'Image',
-    iconColor: '#8b5cf6',
-    description: 'Zhipu GLM 4.6V FlashX Vision via MiniToolAI'
+    iconColor: '#f97316',
+    description: 'Qwen 3 via OverChat.ai — Free, No Auth'
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -798,56 +738,14 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
       const line = buffer.slice(0, boundary).trim();
       buffer = buffer.slice(boundary + 1);
 
-      if (line.startsWith('data:')) {
-        const dataStr = line.replace(/^data:\s*/, '').trim();
+      if (line.startsWith('data: ')) {
+        const dataStr = line.slice(6).trim();
         if (dataStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(dataStr);
           if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
-          
-          let content = '';
-          let reasoning = '';
-
-          // Format 1: OpenAI choices array (Grok, GLM, etc.)
-          if (parsed.choices && Array.isArray(parsed.choices) && parsed.choices.length > 0) {
-            const choice = parsed.choices[0];
-            if (choice.delta) {
-              if (typeof choice.delta === 'string') content = choice.delta;
-              else if (typeof choice.delta === 'object') {
-                if (choice.delta.content !== undefined && choice.delta.content !== null) content = choice.delta.content;
-                else if (choice.delta.text !== undefined && choice.delta.text !== null) content = choice.delta.text;
-                if (choice.delta.reasoning_content) reasoning = choice.delta.reasoning_content;
-                else if (choice.delta.reasoning) reasoning = choice.delta.reasoning;
-              }
-            } else if (choice.text !== undefined) {
-              content = choice.text;
-            } else if (choice.message?.content !== undefined) {
-              content = choice.message.content;
-            }
-          }
-
-          // Format 2: Claude content_block_delta or nested delta object
-          if (!content && parsed.delta) {
-            if (typeof parsed.delta === 'string') content = parsed.delta;
-            else if (typeof parsed.delta === 'object') {
-              if (parsed.delta.text !== undefined && parsed.delta.text !== null) content = parsed.delta.text;
-              else if (parsed.delta.content !== undefined && parsed.delta.content !== null) content = parsed.delta.content;
-            }
-          }
-
-          // Format 3: Direct text/content/message/reply properties
-          if (!content) {
-            if (typeof parsed.text === 'string') content = parsed.text;
-            else if (typeof parsed.content === 'string') content = parsed.content;
-            else if (typeof parsed.message === 'string') content = parsed.message;
-            else if (typeof parsed.reply === 'string') content = parsed.reply;
-          }
-
-          // Format 4: Reasoning content
-          if (!reasoning) {
-            if (typeof parsed.reasoning === 'string') reasoning = parsed.reasoning;
-            else if (typeof parsed.reasoning_content === 'string') reasoning = parsed.reasoning_content;
-          }
+          const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
+          const reasoning = parsed.choices?.[0]?.delta?.reasoning_content || parsed.choices?.[0]?.delta?.reasoning || '';
 
           if (reasoning) {
             if (!fullReply.includes('<think>')) {
@@ -963,10 +861,16 @@ export const aiChat = async (
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('minitool/')) {
-        directEndpoint = ''; // Skip direct fetch for MiniTool models; use /api/chat/g4f proxy
+        directModelStr = modelStr;
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        provider = 'minitool';
       } else if (modelStr.startsWith('updf')) {
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
+      } else if (modelStr.startsWith('overchat/')) {
+        directModelStr = modelStr;
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        provider = 'overchat';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';

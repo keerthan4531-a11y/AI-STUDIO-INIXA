@@ -358,13 +358,14 @@ export async function POST(req: Request) {
       return NextResponse.json(await backendRes.json());
     }
 
-    // 2. G4F / DeepInfra / Qwen / MiniTool / Claude Model Routing
+    // 2. G4F / DeepInfra / Qwen / MiniTool / Claude / OverChat Model Routing
     if (
       model.startsWith("g4f/") ||
       model.startsWith("qwen_worker/") ||
       model.startsWith("minitool/") ||
       model.startsWith("claude/") ||
-      model.startsWith("updf")
+      model.startsWith("updf") ||
+      model.startsWith("overchat/")
     ) {
       let g4fModel = model;
       let targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
@@ -372,6 +373,9 @@ export async function POST(req: Request) {
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
+      } else if (model.startsWith("overchat/")) {
+        // OverChat models go directly to our Cloudflare Worker
+        targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
         // Send all minitool/claude models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
@@ -486,43 +490,112 @@ export async function POST(req: Request) {
 
         clearTimeout(directTimeout);
 
-        if (directRes.ok) {
+        if (directRes.status === 402) {
+          is402Error = true;
+          console.warn(`[Primary] Endpoint returned 402 Payment Required for ${g4fModel}. Skipping proxy race...`);
+        } else if (directRes.ok) {
           const contentType = directRes.headers.get("content-type") || "";
           if (!contentType.includes("text/html")) {
-            console.log(`[Primary] Direct fetch to ${targetEndpoint} succeeded!`);
+            console.log(`[Primary] Direct fetch succeeded!`);
             return await handleStreamingResponse(directRes);
+          } else {
+            console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
+          }
+        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
+          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
+          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
+          return await handleStreamingResponse(directRes);
+        } else {
+          console.warn(
+            `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,
+          );
+        }
+      } catch (err: any) {
+        console.warn(
+          `[Primary] Direct fetch failed: ${err.message || err}. Falling back to proxies...`,
+        );
+      }
+
+      // ── Step 2B: Proxy Pool Race (Only if not 402 Payment Required) ──
+      if (!is402Error) {
+        await refreshProxyPool();
+
+        if (proxyPool.length > 0) {
+          console.log(`[ProxyPool] Racing proxies for model: ${g4fModel}`);
+
+          const numToRace = Math.min(10, proxyPool.length);
+          const proxiesToTry = [];
+
+          if (cachedWorkingProxy) {
+            proxiesToTry.push(cachedWorkingProxy);
+          }
+
+          for (let i = 0; i < numToRace; i++) {
+            proxiesToTry.push(getNextProxy());
+          }
+
+          const racePromises = proxiesToTry.map((proxyUrl, index) => {
+            return new Promise(async (resolve, reject) => {
+              if (!proxyUrl) return reject(new Error("Empty proxy"));
+
+              let agent: any;
+              if (proxyUrl.startsWith("socks")) {
+                agent = new SocksProxyAgent(proxyUrl);
+              } else {
+                agent = proxyUrl.startsWith("https")
+                  ? new HttpsProxyAgent(proxyUrl)
+                  : new HttpProxyAgent(proxyUrl);
+              }
+
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+              try {
+                const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+                const proxyHeaders = {
+                  ...baseHeaders,
+                  "X-Forwarded-For": proxyFakeIP,
+                };
+
+                const g4fRes = await nodeFetch(targetEndpoint, {
+                  method: "POST",
+                  headers: proxyHeaders,
+                  body: JSON.stringify(requestBody),
+                  agent: agent as any,
+                  signal: controller.signal as any,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (g4fRes.ok) {
+                  const contentType = g4fRes.headers.get("content-type") || "";
+                  if (contentType.includes("text/html")) {
+                    return reject(new Error("Proxy returned HTML instead of valid API response"));
+                  }
+                  console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
+                  cachedWorkingProxy = proxyUrl;
+                  resolve(g4fRes);
+                } else {
+                  reject(`Status ${g4fRes.status}`);
+                }
+              } catch (err: any) {
+                clearTimeout(timeoutId);
+                reject(err.message || err);
+              }
+            });
+          });
+
+          try {
+            const winningRes: any = await Promise.any(racePromises);
+            return await handleStreamingResponse(winningRes);
+          } catch (aggregateError: any) {
+            console.error(`[Proxy-Race Failed] All proxies failed.`);
+            cachedWorkingProxy = null;
           }
         }
-        console.warn(`[Primary] Direct fetch to ${targetEndpoint} returned ${directRes.status}. Falling back to Ultimate Worker...`);
-      } catch (err: any) {
-        console.warn(`[Primary] Direct fetch failed: ${err.message || err}. Falling back to Ultimate Worker...`);
       }
 
-      // ── Fallback: Ultimate AI Worker ──
-      console.log(`[Fallback] Routing ${g4fModel} through Ultimate AI Worker...`);
-      try {
-        let fallbackModel = "minitool/gpt-5.6-luna";
-        if (g4fModel.includes("claude") || g4fModel.includes("opus")) {
-          fallbackModel = "minitool/claude-opus-4.8";
-        } else if (g4fModel.includes("ernie") || g4fModel.includes("baidu")) {
-          fallbackModel = "ernie-5.1";
-        } else if (g4fModel.includes("meta") || g4fModel.includes("llama")) {
-          fallbackModel = "meta-ai";
-        }
-
-        const workerRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
-          method: "POST",
-          headers: baseHeaders,
-          body: JSON.stringify({ ...requestBody, model: fallbackModel }),
-        });
-
-        if (workerRes.ok) {
-          return await handleStreamingResponse(workerRes);
-        }
-      } catch (wErr: any) {
-        console.warn(`[Fallback] Ultimate Worker fallback failed: ${wErr.message}`);
-      }
-
+      // Fallbacks disabled per user requirement: return exact error if direct/proxy fetch fails
       return NextResponse.json(
         { ok: false, engine: "proxy", error: `Model '${g4fModel}' failed to respond from target endpoint (${targetEndpoint}).` },
         { status: 502 },
