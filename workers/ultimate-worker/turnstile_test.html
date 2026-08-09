@@ -1,0 +1,18 @@
+﻿<!DOCTYPE html>
+<html><head>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head><body>
+<div id="widget"></div>
+<script>
+window.onload = function() {
+  turnstile.render("#widget", {
+    sitekey: "0x4AAAAAABjI2cBIeVpBYEFi",
+    callback: function(token) {
+      document.title = "TOKEN:" + token.substring(0, 50);
+    },
+    "error-callback": function(code) {
+      document.title = "ERROR:" + code;
+    }
+  });
+};
+</script></body></html>

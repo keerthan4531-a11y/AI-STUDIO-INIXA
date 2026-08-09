@@ -358,17 +358,23 @@ export async function POST(req: Request) {
       return NextResponse.json(await backendRes.json());
     }
 
-    // 2. G4F / DeepInfra / Qwen Model Routing
+    // 2. G4F / DeepInfra / Qwen / MiniTool / Claude Model Routing
     if (
       model.startsWith("g4f/") ||
-      model.startsWith("qwen_worker/")
+      model.startsWith("qwen_worker/") ||
+      model.startsWith("minitool/") ||
+      model.startsWith("claude/") ||
+      model.startsWith("updf")
     ) {
       let g4fModel = model;
-      let targetEndpoint = "https://g4f.space/v1/chat/completions";
+      let targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
 
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
+      } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
+        // Send all minitool/claude models directly to Cloudflare Worker
+        targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else {
         g4fModel = model.replace("g4f/", "");
       }
@@ -426,8 +432,43 @@ export async function POST(req: Request) {
         return NextResponse.json(data);
       };
 
+      // ── Special Route: Gemini models via Google AI Studio API ──
+      if (g4fModel.toLowerCase().includes("gemini")) {
+        console.log(`[Gemini Route] Direct routing to Google AI Studio for model: ${g4fModel}`);
+        const geminiApiKey = process.env.GEMINI_API_KEY;
+        const geminiHeaders: any = { "Content-Type": "application/json" };
+        if (geminiApiKey) geminiHeaders["Authorization"] = `Bearer ${geminiApiKey}`;
+
+        try {
+          const geminiRes = await nodeFetch(
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            {
+              method: "POST",
+              headers: geminiHeaders,
+              body: JSON.stringify({
+                model: "gemini-2.5-flash",
+                messages: body.messages || [{ role: "user", content: body.message || "" }],
+                stream: stream === true,
+                max_tokens: 8192,
+                temperature: 0.7,
+              }),
+            }
+          );
+
+          if (geminiRes.ok) {
+            console.log(`[Gemini Route] Direct Google AI Studio API succeeded!`);
+            return await handleStreamingResponse(geminiRes);
+          } else {
+            console.warn(`[Gemini Route] Google AI Studio API returned ${geminiRes.status}`);
+          }
+        } catch (gemErr: any) {
+          console.warn(`[Gemini Route] Google API failed: ${gemErr.message || gemErr}`);
+        }
+      }
+
       // ── Step 2A: Direct Fetch (Super Fast) ──
       console.log(`[Primary] Trying direct fetch without proxies first...`);
+      let is402Error = false;
       try {
         const directController = new AbortController();
         const directTimeout = setTimeout(() => directController.abort(), 30000); // 30s timeout for slow models
@@ -441,7 +482,10 @@ export async function POST(req: Request) {
 
         clearTimeout(directTimeout);
 
-        if (directRes.ok) {
+        if (directRes.status === 402) {
+          is402Error = true;
+          console.warn(`[Primary] Endpoint returned 402 Payment Required for ${g4fModel}. Skipping proxy race...`);
+        } else if (directRes.ok) {
           const contentType = directRes.headers.get("content-type") || "";
           if (!contentType.includes("text/html")) {
             console.log(`[Primary] Direct fetch succeeded!`);
@@ -449,6 +493,10 @@ export async function POST(req: Request) {
           } else {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
+        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
+          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
+          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
+          return await handleStreamingResponse(directRes);
         } else {
           console.warn(
             `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,
@@ -460,260 +508,88 @@ export async function POST(req: Request) {
         );
       }
 
-      // ── Step 2B: Proxy Pool Race (If Direct Fetch Fails) ──
-      await refreshProxyPool();
+      // ── Step 2B: Proxy Pool Race (Only if not 402 Payment Required) ──
+      if (!is402Error) {
+        await refreshProxyPool();
 
-      if (proxyPool.length > 0) {
-        console.log(`[ProxyPool] Racing proxies for model: ${g4fModel}`);
+        if (proxyPool.length > 0) {
+          console.log(`[ProxyPool] Racing proxies for model: ${g4fModel}`);
 
-        const numToRace = Math.min(10, proxyPool.length);
-        const proxiesToTry = [];
+          const numToRace = Math.min(10, proxyPool.length);
+          const proxiesToTry = [];
 
-        if (cachedWorkingProxy) {
-          proxiesToTry.push(cachedWorkingProxy);
-        }
+          if (cachedWorkingProxy) {
+            proxiesToTry.push(cachedWorkingProxy);
+          }
 
-        for (let i = 0; i < numToRace; i++) {
-          proxiesToTry.push(getNextProxy());
-        }
+          for (let i = 0; i < numToRace; i++) {
+            proxiesToTry.push(getNextProxy());
+          }
 
-        const racePromises = proxiesToTry.map((proxyUrl, index) => {
-          return new Promise(async (resolve, reject) => {
-            if (!proxyUrl) return reject(new Error("Empty proxy"));
+          const racePromises = proxiesToTry.map((proxyUrl, index) => {
+            return new Promise(async (resolve, reject) => {
+              if (!proxyUrl) return reject(new Error("Empty proxy"));
 
-            let agent: any;
-            if (proxyUrl.startsWith("socks")) {
-              agent = new SocksProxyAgent(proxyUrl);
-            } else {
-              agent = proxyUrl.startsWith("https")
-                ? new HttpsProxyAgent(proxyUrl)
-                : new HttpProxyAgent(proxyUrl);
-            }
-
-            const controller = new AbortController();
-            // Fast failure timeout: 15 seconds (some models are slow)
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-            try {
-              const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-              const proxyHeaders = {
-                ...baseHeaders,
-                "X-Forwarded-For": proxyFakeIP,
-              };
-
-              const g4fRes = await nodeFetch(targetEndpoint, {
-                method: "POST",
-                headers: proxyHeaders,
-                body: JSON.stringify(requestBody),
-                agent: agent as any,
-                signal: controller.signal as any,
-              });
-
-              clearTimeout(timeoutId);
-
-              if (g4fRes.ok) {
-                const contentType = g4fRes.headers.get("content-type") || "";
-                if (contentType.includes("text/html")) {
-                  return reject(new Error("Proxy returned HTML instead of valid API response"));
-                }
-                console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
-                cachedWorkingProxy = proxyUrl; // Cache the winner
-                resolve(g4fRes);
+              let agent: any;
+              if (proxyUrl.startsWith("socks")) {
+                agent = new SocksProxyAgent(proxyUrl);
               } else {
-                reject(`Status ${g4fRes.status}`);
+                agent = proxyUrl.startsWith("https")
+                  ? new HttpsProxyAgent(proxyUrl)
+                  : new HttpProxyAgent(proxyUrl);
               }
-            } catch (err: any) {
-              clearTimeout(timeoutId);
-              reject(err.message || err);
-            }
-          });
-        });
 
-        try {
-          const winningRes: any = await Promise.any(racePromises);
-          return await handleStreamingResponse(winningRes);
-        } catch (aggregateError: any) {
-          console.error(`[Proxy-Race Failed] All proxies failed.`);
-          cachedWorkingProxy = null; // Clear cached proxy on failure
-        }
-      }
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // ── DeepSeek Fallback: DuckDuckGo AI Chat ──
-      // g4f.space blocks DeepSeek with "Not authenticated", so we fallback to DDG
-      if (g4fModel.toLowerCase().includes("deepseek")) {
-        console.log(
-          `[DeepSeek-Fallback] g4f.space failed for DeepSeek. Trying DuckDuckGo AI Chat...`,
-        );
-        try {
-          // Step 1: Get VQD token from DDG
-          const statusRes = await nodeFetch(
-            "https://duckduckgo.com/duckchat/v1/status",
-            {
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                Accept: "*/*",
-                "x-vqd-accept": "1",
-                Referer: "https://duckduckgo.com/",
-                Origin: "https://duckduckgo.com",
-              },
-            },
-          );
-          const vqd = statusRes.headers.get("x-vqd-4");
-          if (!vqd)
-            throw new Error(
-              `VQD token fetch failed (HTTP ${statusRes.status})`,
-            );
-
-          // Step 2: Send chat to DDG with deepseek-r1
-          const ddgMessages = (
-            body.messages || [{ role: "user", content: body.message || "" }]
-          )
-            .filter((m: any) => m.role !== "system")
-            .map((m: any) => ({
-              role: m.role,
-              content:
-                typeof m.content === "string" ? m.content : String(m.content),
-            }));
-
-          const chatRes = await nodeFetch(
-            "https://duckduckgo.com/duckchat/v1/chat",
-            {
-              method: "POST",
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                Accept: "text/event-stream",
-                "Content-Type": "application/json",
-                Referer: "https://duckduckgo.com/",
-                Origin: "https://duckduckgo.com",
-                "x-vqd-4": vqd,
-              },
-              body: JSON.stringify({
-                model: "deepseek-r1",
-                messages: ddgMessages,
-              }),
-            },
-          );
-
-          if (!chatRes.ok)
-            throw new Error(`DDG chat error: HTTP ${chatRes.status}`);
-
-          if (stream && chatRes.body) {
-            console.log(`[DeepSeek-Fallback] DDG streaming response started`);
-            // Convert DDG SSE stream → OpenAI-compatible SSE stream
-            const encoder = new TextEncoder();
-            let buffer = "";
-            const transformedStream = new ReadableStream({
-              start(controller) {
-                (chatRes.body as any).on("data", (chunk: Buffer) => {
-                  buffer += chunk.toString();
-                  const lines = buffer.split("\n");
-                  buffer = lines.pop() || ""; // keep incomplete line in buffer
-                  for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                      const dataStr = line.slice(6).trim();
-                      if (dataStr === "[DONE]") {
-                        const finalChunk = {
-                          id: `chatcmpl-ddg-${Date.now()}`,
-                          object: "chat.completion.chunk",
-                          created: Math.floor(Date.now() / 1000),
-                          model: "deepseek-r1",
-                          choices: [
-                            { index: 0, delta: {}, finish_reason: "stop" },
-                          ],
-                        };
-                        controller.enqueue(
-                          encoder.encode(
-                            `data: ${JSON.stringify(finalChunk)}\n\n`,
-                          ),
-                        );
-                        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                        return;
-                      }
-                      try {
-                        const parsed = JSON.parse(dataStr);
-                        if (parsed.message != null) {
-                          const openaiChunk = {
-                            id: `chatcmpl-ddg-${Date.now()}`,
-                            object: "chat.completion.chunk",
-                            created: Math.floor(Date.now() / 1000),
-                            model: "deepseek-r1",
-                            choices: [
-                              {
-                                index: 0,
-                                delta: { content: parsed.message },
-                                finish_reason: null,
-                              },
-                            ],
-                          };
-                          controller.enqueue(
-                            encoder.encode(
-                              `data: ${JSON.stringify(openaiChunk)}\n\n`,
-                            ),
-                          );
-                        }
-                      } catch {}
-                    }
-                  }
-                });
-                (chatRes.body as any).on("end", () => controller.close());
-                (chatRes.body as any).on("error", (err: Error) =>
-                  controller.error(err),
-                );
-              },
-              cancel() {
-                (chatRes.body as any).destroy();
-              },
-            });
-            return new Response(transformedStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-              },
-            });
-          }
-
-          // Non-streaming: collect full response
-          const sseTxt = await chatRes.text();
-          let content = "";
-          for (const line of sseTxt.split("\n")) {
-            if (line.startsWith("data: ") && !line.includes("[DONE]")) {
               try {
-                const parsed = JSON.parse(line.slice(6));
-                if (parsed.message) content += parsed.message;
-              } catch {}
-            }
-          }
-          if (content) {
-            console.log(
-              `[DeepSeek-Fallback] DDG success! Response length: ${content.length}`,
-            );
-            return NextResponse.json({
-              id: `chatcmpl-ddg-${Date.now()}`,
-              object: "chat.completion",
-              created: Math.floor(Date.now() / 1000),
-              model: "deepseek-r1",
-              choices: [
-                {
-                  index: 0,
-                  message: { role: "assistant", content },
-                  finish_reason: "stop",
-                },
-              ],
+                const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+                const proxyHeaders = {
+                  ...baseHeaders,
+                  "X-Forwarded-For": proxyFakeIP,
+                };
+
+                const g4fRes = await nodeFetch(targetEndpoint, {
+                  method: "POST",
+                  headers: proxyHeaders,
+                  body: JSON.stringify(requestBody),
+                  agent: agent as any,
+                  signal: controller.signal as any,
+                });
+
+                clearTimeout(timeoutId);
+
+                if (g4fRes.ok) {
+                  const contentType = g4fRes.headers.get("content-type") || "";
+                  if (contentType.includes("text/html")) {
+                    return reject(new Error("Proxy returned HTML instead of valid API response"));
+                  }
+                  console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
+                  cachedWorkingProxy = proxyUrl;
+                  resolve(g4fRes);
+                } else {
+                  reject(`Status ${g4fRes.status}`);
+                }
+              } catch (err: any) {
+                clearTimeout(timeoutId);
+                reject(err.message || err);
+              }
             });
+          });
+
+          try {
+            const winningRes: any = await Promise.any(racePromises);
+            return await handleStreamingResponse(winningRes);
+          } catch (aggregateError: any) {
+            console.error(`[Proxy-Race Failed] All proxies failed.`);
+            cachedWorkingProxy = null;
           }
-          throw new Error("Empty DDG response");
-        } catch (ddgErr: any) {
-          console.error(
-            `[DeepSeek-Fallback] DDG also failed: ${ddgErr.message || ddgErr}`,
-          );
         }
       }
 
+      // Fallbacks disabled per user requirement: return exact error if direct/proxy fetch fails
       return NextResponse.json(
-        { ok: false, engine: "proxy", error: `All raced proxies failed.` },
+        { ok: false, engine: "proxy", error: `Model '${g4fModel}' failed to respond from target endpoint (${targetEndpoint}).` },
         { status: 502 },
       );
     } // Closes if (model.startsWith('g4f/'))

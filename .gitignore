@@ -52,3 +52,11 @@ inixa-app.apk
 cloudflare-worker.js
 .firebase/
 .vercel
+workers/ultimate-worker/.wrangler/
+workers/ultimate-worker/node_modules/
+*.log
+dump-meta*
+meta-*
+write-dump.js
+run_test*.js
+build_test*.js

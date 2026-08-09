@@ -9,6 +9,7 @@ import surfsenseWorker from './surfsense.js';
 import grokWorker from './grok.js';
 import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
+import minitoolaiWorker, { harvestTokenViaBrowser } from './minitoolai.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,14 @@ const CORS_HEADERS = {
 };
 
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil((async () => {
+      console.log("[Cron Trigger] Edge harvesting Turnstile tokens for GPT & Claude...");
+      await harvestTokenViaBrowser(env, false);
+      await harvestTokenViaBrowser(env, true);
+    })());
+  },
+
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
@@ -27,13 +36,18 @@ export default {
       const url = new URL(request.url);
       const pathname = url.pathname;
       
+      // Route /minitool/* paths to minitoolai worker
+      if (pathname.startsWith("/minitool/")) {
+        return await minitoolaiWorker.fetch(request, env, ctx);
+      }
+
       // Health check and root
       if (pathname === "/" || pathname === "/health") {
         return new Response(JSON.stringify({
           status: "ok",
           service: "Ultimate Serverless AI API",
-          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot"],
-          endpoints: ["/v1/chat/completions", "/v1/models"]
+          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai"],
+          endpoints: ["/v1/chat/completions", "/v1/models", "/minitool/init"]
         }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
@@ -80,8 +94,13 @@ export default {
           return await perplexityCopilotWorker.fetch(subRequest, env, ctx);
         }
         
+        // Route to MiniToolAI
+        if (model.includes("minitool")) {
+          return await minitoolaiWorker.fetch(subRequest, env, ctx);
+        }
+
         // Route to UPDF
-        if (model.includes("updf") || model.includes("gpt-5.6") || model.includes("gpt5.6")) {
+        if (model.includes("updf")) {
           return await updfWorker.fetch(subRequest, env, ctx);
         }
 
@@ -109,38 +128,40 @@ export default {
         return await pollinationsWorker.fetch(subRequest, env, ctx);
       }
       
-      // For /v1/models, let's combine models from all three
+      // For /v1/models, combine models from all providers
       if (pathname.endsWith("/models") && request.method === "GET") {
-        // Get models from all workers
-        const [pollRes, perpRes, qwenRes, baiduRes, metaRes] = await Promise.all([
-          pollinationsWorker.fetch(new Request(request.url), env, ctx).catch(() => null),
-          perplexityWorker.fetch(new Request(request.url), env, ctx).catch(() => null),
-          qwenWorker.fetch(new Request(request.url), env, ctx).catch(() => null),
-          baiduErnieWorker.fetch(new Request(request.url), env, ctx).catch(() => null),
-          metaAIWorker.fetch(new Request(request.url), env, ctx).catch(() => null)
+        const modelReq = new Request(request.url);
+        const results = await Promise.allSettled([
+          pollinationsWorker.fetch(modelReq, env, ctx),
+          perplexityWorker.fetch(modelReq, env, ctx),
+          qwenWorker.fetch(modelReq, env, ctx),
+          baiduErnieWorker.fetch(modelReq, env, ctx),
+          metaAIWorker.fetch(modelReq, env, ctx),
+          surfsenseWorker.fetch(modelReq, env, ctx),
+          grokWorker.fetch(modelReq, env, ctx),
+          nadanadaWorker.fetch(modelReq, env, ctx),
+          minitoolaiWorker.fetch(modelReq, env, ctx),
         ]);
+        
+        const providerNames = [
+          'pollinations', 'perplexity', 'qwen', 'baidu-ernie', 'meta-ai',
+          'surfsense', 'grok', 'nadanada', 'minitoolai'
+        ];
         
         let allModels = [];
         
-        if (pollRes && pollRes.ok) {
-          const data = await pollRes.json();
-          if (data.data) allModels = allModels.concat(data.data.map(m => ({...m, provider: 'pollinations'})));
-        }
-        if (perpRes && perpRes.ok) {
-          const data = await perpRes.json();
-          if (data.data) allModels = allModels.concat(data.data.map(m => ({...m, provider: 'perplexity'})));
-        }
-        if (qwenRes && qwenRes.ok) {
-          const data = await qwenRes.json();
-          if (data.data) allModels = allModels.concat(data.data.map(m => ({...m, provider: 'qwen'})));
-        }
-        if (baiduRes && baiduRes.ok) {
-          const data = await baiduRes.json();
-          if (data.data) allModels = allModels.concat(data.data.map(m => ({...m, provider: 'baidu-ernie'})));
-        }
-        if (metaRes && metaRes.ok) {
-          const data = await metaRes.json();
-          if (data.data) allModels = allModels.concat(data.data.map(m => ({...m, provider: 'meta-ai'})));
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          if (result.status === 'fulfilled' && result.value && result.value.ok) {
+            try {
+              const data = await result.value.json();
+              if (data.data) {
+                allModels = allModels.concat(data.data.map(m => ({...m, provider: providerNames[i]})));
+              }
+            } catch (e) {
+              // Skip unparseable responses
+            }
+          }
         }
         
         return new Response(JSON.stringify({

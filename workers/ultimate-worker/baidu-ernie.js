@@ -181,20 +181,29 @@ function md5(string) {
   return md5str(string);
 }
 
-// ─── Session Fetcher ─────────────────────────────────────────────
-async function fetchSession() {
-  const now = Date.now();
-  if (cachedSession && (now - cachedSessionTime) < SESSION_TTL) {
-    return cachedSession;
-  }
+// ─── Session Fetcher (with retry + fallback) ────────────────────
+const BAIDU_SESSION_URLS = [
+  BAIDU_SESSION_URL,
+  `${BAIDU_BASE}/search?wd=hello&enter_type=sidebar_dialog`,
+  `${BAIDU_BASE}/`,
+];
+const SESSION_MAX_RETRIES = 3;
+const SESSION_RETRY_DELAYS = [1000, 2000, 4000]; // exponential backoff
 
-  console.log("[BaiduWorker] Fetching fresh session from Baidu HTML...");
-
-  const response = await fetch(BAIDU_SESSION_URL, {
+async function fetchSessionOnce(sessionUrl) {
+  const response = await fetch(sessionUrl, {
     headers: {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9"
+      "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Upgrade-Insecure-Requests": "1"
     }
   });
 
@@ -232,17 +241,49 @@ async function fetchSession() {
     }
   }
 
-  cachedSession = {
+  return {
     token: data.token,
     lid: data.lid,
     cookies: cookieStr,
     chatParams: data.chatParams || {},
     usableModel: data.usableModel || []
   };
-  cachedSessionTime = now;
+}
 
-  console.log(`[BaiduWorker] Got session: token=${data.token}, lid=${data.lid}`);
-  return cachedSession;
+async function fetchSession() {
+  const now = Date.now();
+  if (cachedSession && (now - cachedSessionTime) < SESSION_TTL) {
+    return cachedSession;
+  }
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt < SESSION_MAX_RETRIES; attempt++) {
+    // Try each fallback URL on different attempts
+    const urlIndex = attempt % BAIDU_SESSION_URLS.length;
+    const sessionUrl = BAIDU_SESSION_URLS[urlIndex];
+
+    console.log(`[BaiduWorker] Fetching session (attempt ${attempt + 1}/${SESSION_MAX_RETRIES}) from: ${sessionUrl}`);
+
+    try {
+      const session = await fetchSessionOnce(sessionUrl);
+      cachedSession = session;
+      cachedSessionTime = Date.now();
+      console.log(`[BaiduWorker] Got session: token=${session.token.substring(0, 8)}, lid=${session.lid}`);
+      return cachedSession;
+    } catch (e) {
+      lastError = e;
+      console.error(`[BaiduWorker] Session fetch attempt ${attempt + 1} failed:`, e.message);
+
+      // Wait before retry (but not after the last attempt)
+      if (attempt < SESSION_MAX_RETRIES - 1) {
+        const delay = SESSION_RETRY_DELAYS[attempt] || 4000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error("Failed to fetch Baidu session after all retries");
 }
 
 // ─── Chat Token Builder ─────────────────────────────────────────
