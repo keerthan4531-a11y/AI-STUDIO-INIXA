@@ -373,12 +373,8 @@ export async function POST(req: Request) {
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
-      } else if (model.startsWith("overchat/")) {
-        // OverChat models go directly to OverChat API to bypass Worker IP blocks
-        targetEndpoint = "https://api.overchat.ai/v1/chat/completions";
-        g4fModel = model.replace("overchat/", "");
-      } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
-        // Send all minitool/claude models directly to Cloudflare Worker
+      } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {
+        // Send all minitool/claude/overchat models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
         g4fModel = model.replace("g4f/", "");
@@ -389,73 +385,21 @@ export async function POST(req: Request) {
       }
 
       const fakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-      let requestBody: any = { ...body, model: g4fModel, max_tokens: 8192 };
-      
-      // Transform body for OverChat
-      if (model.startsWith("overchat/")) {
-        const OVERCHAT_MAP: Record<string, string> = {
-          "gpt-5.2": "gpt-5-2-landing",
-          "gpt-4o": "gpt-4o-landing",
-          "claude-opus-4.6": "claude-opus-4-6-landing",
-          "claude-haiku-4.5": "claude-haiku-4-5-landing",
-          "qwen-3": "qwen-3-landing"
-        };
-        const mappedPersona = OVERCHAT_MAP[g4fModel] || g4fModel;
-        
-        requestBody = {
-          chatId: crypto.randomUUID(),
-          model: g4fModel === "claude-haiku-4.5" ? "claude-haiku-4-5-20251001" : g4fModel === "claude-opus-4.6" ? "claude-opus-4-6" : g4fModel,
-          messages: (body.messages || []).map((m: any) => ({
-            id: crypto.randomUUID(),
-            role: m.role,
-            content: m.content || ""
-          })),
-          personaId: mappedPersona,
-          frequency_penalty: body.frequency_penalty || 0,
-          max_tokens: body.max_tokens || 4000,
-          presence_penalty: body.presence_penalty || 0,
-          stream: stream,
-          temperature: body.temperature || 0.5,
-          top_p: body.top_p || 0.95
-        };
-      } else {
-        if (body.provider) requestBody.provider = body.provider;
-      }
+      const requestBody: any = { ...body, model: g4fModel, max_tokens: 8192 };
+      if (body.provider) requestBody.provider = body.provider;
 
-      let baseHeaders: any = {
+      const baseHeaders: any = {
         "Content-Type": "application/json",
         Accept: stream ? "text/event-stream" : "application/json",
-        Origin: targetEndpoint.includes("overchat")
-            ? "https://overchat.ai"
-            : targetEndpoint.includes("minitool")
+        Origin: targetEndpoint.includes("minitool")
             ? "https://ultimate-ai-worker.haruyhari930.workers.dev"
             : "https://g4f.space",
-        Referer: targetEndpoint.includes("overchat")
-            ? "https://overchat.ai/"
-            : targetEndpoint.includes("minitool")
+        Referer: targetEndpoint.includes("minitool")
             ? "https://ultimate-ai-worker.haruyhari930.workers.dev/"
             : "https://g4f.space/",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "X-Forwarded-For": fakeIP,
       };
-
-      if (model.startsWith("overchat/")) {
-        baseHeaders = {
-          ...baseHeaders,
-          "accept": "*/*",
-          "accept-language": "en-US,en;q=0.9",
-          "sec-ch-ua": '"Not=A?Brand";v="99", "Chromium";v="151", "Microsoft Edge";v="151"',
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-platform": '"Windows"',
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "same-site",
-          "x-device-language": "en-US",
-          "x-device-platform": "web",
-          "x-device-uuid": crypto.randomUUID(),
-          "x-device-version": "1.0.44"
-        };
-      }
 
       if (userApiKey) {
         baseHeaders["Authorization"] = `Bearer ${userApiKey}`;
@@ -554,9 +498,9 @@ export async function POST(req: Request) {
           } else {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
-        } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("overchat/")) {
-          // Dedicated endpoints for minitool/claude/overchat. Return response directly to prevent model fallback.
-          console.warn(`[Primary] OverChat/MiniTool API returned ${directRes.status}. Returning response directly.`);
+        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
+          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
+          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
           return await handleStreamingResponse(directRes);
         } else {
           console.warn(

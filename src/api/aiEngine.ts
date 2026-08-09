@@ -31,6 +31,142 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'overchat-gpt-5.2',
+    label: 'GPT-5.2 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/gpt-5.2',
+    badge: '5.2',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'GPT-5.2 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-gpt-5.1',
+    label: 'GPT-5.1 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/gpt-5.1',
+    badge: '5.1',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'GPT-5.1 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-gpt-5-nano',
+    label: 'GPT-5 Nano (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/gpt-5-nano',
+    badge: 'NANO',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'GPT-5 Nano via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-gpt-4o',
+    label: 'GPT-4o (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/gpt-4o',
+    badge: '4O',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'GPT-4o via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-claude-opus-4.6',
+    label: 'Claude Opus 4.6 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/claude-opus-4.6',
+    badge: 'OPUS',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Claude Opus 4.6 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-claude-haiku-4.5',
+    label: 'Claude Haiku 4.5 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/claude-haiku-4.5',
+    badge: 'HAIKU',
+    badgeColor: 'orange',
+    icon: 'Zap',
+    iconColor: '#f97316',
+    description: 'Claude Haiku 4.5 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-claude-sonnet-4.6',
+    label: 'Claude Sonnet 4.6 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/claude-sonnet-4.6',
+    badge: 'SONNET',
+    badgeColor: 'orange',
+    icon: 'Brain',
+    iconColor: '#f97316',
+    description: 'Claude Sonnet 4.6 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-gemini-3-flash',
+    label: 'Gemini 3 Flash (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/gemini-3-flash',
+    badge: 'FLASH',
+    badgeColor: 'blue',
+    icon: 'Zap',
+    iconColor: '#3b82f6',
+    description: 'Gemini 3 Flash via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-deepseek-v3.2',
+    label: 'DeepSeek V3.2 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/deepseek-v3.2',
+    badge: 'V3.2',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V3.2 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-kimi-k2.5',
+    label: 'Kimi K2.5 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/kimi-k2.5',
+    badge: 'K2.5',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#8b5cf6',
+    description: 'Kimi K2.5 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-qwen-3',
+    label: 'Qwen 3 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/qwen-3',
+    badge: 'QWEN',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Qwen 3 via OverChat AI Gateway'
+  },
+  {
+    id: 'overchat-llama-4',
+    label: 'Llama 4 (OverChat)',
+    engine: 'g4f',
+    modelStr: 'overchat/llama-4',
+    badge: 'LLAMA',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Meta Llama 4 via OverChat AI Gateway'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🟢 MINITOOLAI (via Cloudflare Worker)
   // ════════════════════════════════════════════════════════════════
   {
@@ -175,64 +311,6 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Sparkles',
     iconColor: '#a855f7',
     description: 'Claude Opus 4.8 via MiniToolAI Worker'
-  },
-  // ════════════════════════════════════════════════════════════════
-  // 🟣 OVERCHAT.AI (via Cloudflare Worker — No Auth Needed)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'overchat-gpt-5.2',
-    label: 'GPT-5.2 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-5.2',
-    badge: 'GPT-5.2',
-    badgeColor: 'green',
-    icon: 'Brain',
-    iconColor: '#10b981',
-    description: 'GPT-5.2 via OverChat.ai — Free, No Auth'
-  },
-  {
-    id: 'overchat-gpt-4o',
-    label: 'GPT-4o (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-4o',
-    badge: '4o',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'GPT-4o via OverChat.ai — Free, No Auth'
-  },
-  {
-    id: 'overchat-claude-opus-4.6',
-    label: 'Claude Opus 4.6 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/claude-opus-4.6',
-    badge: 'OPUS',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#a855f7',
-    description: 'Claude Opus 4.6 via OverChat.ai — Free, No Auth'
-  },
-  {
-    id: 'overchat-claude-haiku-4.5',
-    label: 'Claude Haiku 4.5 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/claude-haiku-4.5',
-    badge: 'HAIKU',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Claude Haiku 4.5 via OverChat.ai — Free, No Auth'
-  },
-  {
-    id: 'overchat-qwen-3',
-    label: 'Qwen 3 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/qwen-3',
-    badge: 'QWEN',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Qwen 3 via OverChat.ai — Free, No Auth'
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -851,7 +929,9 @@ export const aiChat = async (
       let directEndpoint = '';
       let directModelStr = '';
 
-      let provider = 'g4f';
+      let customDirectHeaders: Record<string, string> | null = null;
+      let customDirectBody: string | null = null;
+
       if (modelStr.startsWith('deepinfra/')) {
         directModelStr = modelStr.replace('deepinfra/', '');
         directEndpoint = 'https://api.deepinfra.com/v1/openai/chat/completions';
@@ -868,9 +948,63 @@ export const aiChat = async (
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
-        // OverChat must go directly to Vercel backend /api/chat/g4f (Vercel IP bypasses OverChat WAF, whereas Cloudflare Worker IP gets 403)
-        directEndpoint = '';
+        const rawModel = modelStr.replace('overchat/', '').toLowerCase();
+        const overchatConfigMap: Record<string, { model: string; personaId: string }> = {
+          'gpt-5.2': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
+          'gpt-5.1': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
+          'gpt-5-nano': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
+          'gpt-4o': { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' },
+
+          'claude-opus-4.6': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
+          'claude-haiku-4.5': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
+          'claude-sonnet-4.6': { model: 'claude-haiku-4-5-20251001', personaId: 'claude-haiku-4-5-landing' },
+
+          'gemini-3-flash': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
+          'gemini-3-pro': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
+          'qwen-3': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
+          'llama-4': { model: 'alibaba/qwen3-next-80b-a3b-instruct', personaId: 'qwen-3-landing' },
+
+          'deepseek-v3.2': { model: 'deepseek/deepseek-non-thinking-v3.2-exp', personaId: 'deepseek-v-3-2-landing' },
+          'kimi-k2.5': { model: 'deepseek/deepseek-non-thinking-v3.2-exp', personaId: 'deepseek-v-3-2-landing' }
+        };
+
+        const cfg = overchatConfigMap[rawModel] || { model: 'openai/gpt-4o', personaId: 'gpt-4o-landing' };
+        const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+
+        directEndpoint = 'https://api.overchat.ai/v1/chat/completions';
         provider = 'overchat';
+        customDirectBody = JSON.stringify({
+          chatId: uuid,
+          model: cfg.model,
+          messages: conversationHistory.map((m: any) => ({
+            id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            }),
+            role: m.role || 'user',
+            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+          })),
+          personaId: cfg.personaId,
+          frequency_penalty: 0,
+          max_tokens: 4000,
+          presence_penalty: 0,
+          stream: true,
+          temperature: 0.5,
+          top_p: 0.95
+        });
+        customDirectHeaders = {
+          'accept': '*/*',
+          'content-type': 'application/json',
+          'origin': 'https://overchat.ai',
+          'referer': 'https://overchat.ai/',
+          'x-device-language': 'en-US',
+          'x-device-platform': 'web',
+          'x-device-uuid': uuid,
+          'x-device-version': '1.0.44'
+        };
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
@@ -881,20 +1015,18 @@ export const aiChat = async (
         provider = 'g4f';
       }
 
-      if (!directEndpoint) {
-        console.log(`[Frontend Fetch] Skipping direct fetch for ${modelStr}, routing straight to backend...`);
-      } else if (checkProviderLimit(provider)) {
+      if (checkProviderLimit(provider)) {
         console.log(`[Frontend Fetch] User IP rate limited for ${provider}. Skipping direct fetch for 2 minutes.`);
       } else {
         console.log(`[Frontend Fetch] Attempting to hit ${directEndpoint} from User IP...`);
         try {
           const directRes = await fetch(directEndpoint, {
             method: 'POST',
-            headers: {
+            headers: customDirectHeaders || {
               'Content-Type': 'application/json',
               'Accept': onChunk ? 'text/event-stream' : 'application/json'
             },
-            body: JSON.stringify({
+            body: customDirectBody || JSON.stringify({
               messages: conversationHistory,
               model: directModelStr,
               stream: !!onChunk,

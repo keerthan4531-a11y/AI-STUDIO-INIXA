@@ -9,6 +9,7 @@ import surfsenseWorker from './surfsense.js';
 import grokWorker from './grok.js';
 import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
+import overchatWorker from './overchat.js';
 import minitoolaiWorker, { harvestTokenViaBrowser } from './minitoolai.js';
 
 const CORS_HEADERS = {
@@ -69,6 +70,11 @@ export default {
           body: bodyText
         });
 
+        // Route to OverChat AI
+        if (model.includes("overchat")) {
+          return await overchatWorker.fetch(subRequest, env, ctx);
+        }
+
         // Route to Microsoft Copilot
         if (model.includes("ms-copilot") || model.includes("microsoft") || model.includes("copilot-pro") || model.includes("copilot-think") || model.includes("copilot-gpt5")) {
           return await copilotWorker.fetch(subRequest, env, ctx);
@@ -94,31 +100,9 @@ export default {
           return await perplexityCopilotWorker.fetch(subRequest, env, ctx);
         }
         
-        // Route to MiniToolAI with Automatic Provider Fallback
+        // Route to MiniToolAI
         if (model.includes("minitool")) {
-          const mtRes = await minitoolaiWorker.fetch(subRequest, env, ctx);
-          if (mtRes.ok) {
-            return mtRes;
-          }
-          console.warn(`[Index Router] MiniToolAI failed with status ${mtRes.status}. Falling back to Surfsense/Pollinations...`);
-          const isClaudeModel = model.includes("claude");
-          const fallbackModel = isClaudeModel ? "surfsense/claude-sonnet-4-no-login" : "surfsense/gpt-5.4-mini-no-login";
-          const fallbackBody = { ...body, model: fallbackModel };
-          const fallbackReq = new Request(request.url, {
-            method: request.method,
-            headers: request.headers,
-            body: JSON.stringify(fallbackBody)
-          });
-          const ssRes = await surfsenseWorker.fetch(fallbackReq, env, ctx);
-          if (ssRes.ok) return ssRes;
-
-          // Final fallback to Pollinations / Baidu
-          const finalModel = isClaudeModel ? "ernie-5.1" : "openai-fast";
-          return await pollinationsWorker.fetch(new Request(request.url, {
-            method: request.method,
-            headers: request.headers,
-            body: JSON.stringify({ ...body, model: finalModel })
-          }), env, ctx);
+          return await minitoolaiWorker.fetch(subRequest, env, ctx);
         }
 
         // Route to UPDF
@@ -136,8 +120,13 @@ export default {
           return await grokWorker.fetch(subRequest, env, ctx);
         }
 
+        // Route to DeepSeek via Pollinations
+        if (model.includes("deepseek")) {
+          return await pollinationsWorker.fetch(subRequest, env, ctx);
+        }
+
         // Route to Nadanada
-        if (model.includes("nadanada") || model.includes("glm-5") || model.includes("minimax") || model.includes("gemini-3.1") || model.includes("deepseek-v3.2")) {
+        if (model.includes("nadanada") || model.includes("glm-5") || model.includes("minimax") || model.includes("gemini-3.1")) {
           return await nadanadaWorker.fetch(subRequest, env, ctx);
         }
 
