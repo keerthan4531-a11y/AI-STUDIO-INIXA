@@ -371,15 +371,16 @@ export async function POST(req: Request) {
 
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
-        targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
+        targetEndpoint = "https://g4f.space/v1/chat/completions";
       } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf")) {
         // Send all minitool/claude models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
         g4fModel = model.replace("g4f/", "");
-        targetEndpoint = "https://qwen.g4f-dev.workers.dev/v1/chat/completions";
+        targetEndpoint = "https://g4f.space/v1/chat/completions";
       } else {
         g4fModel = model.replace("g4f/", "");
+        targetEndpoint = "https://g4f.space/v1/chat/completions";
       }
 
       const fakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
@@ -389,12 +390,12 @@ export async function POST(req: Request) {
       const baseHeaders: any = {
         "Content-Type": "application/json",
         Accept: stream ? "text/event-stream" : "application/json",
-        Origin: targetEndpoint.includes("qwen")
-            ? "https://qwen.g4f-dev.workers.dev"
-            : "https://g4f.dev",
-        Referer: targetEndpoint.includes("qwen")
-            ? "https://qwen.g4f-dev.workers.dev/"
-            : "https://g4f.dev/",
+        Origin: targetEndpoint.includes("minitool")
+            ? "https://ultimate-ai-worker.haruyhari930.workers.dev"
+            : "https://g4f.space",
+        Referer: targetEndpoint.includes("minitool")
+            ? "https://ultimate-ai-worker.haruyhari930.workers.dev/"
+            : "https://g4f.space/",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "X-Forwarded-For": fakeIP,
       };

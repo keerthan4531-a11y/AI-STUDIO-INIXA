@@ -1089,11 +1089,11 @@ export const aiChat = async (
         provider = 'updf';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://g4f.space/v1/chat/completions';
         provider = 'g4f';
       } else {
         directModelStr = modelStr.replace('g4f/', '');
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://g4f.space/v1/chat/completions';
         provider = 'g4f';
       }
 
