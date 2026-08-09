@@ -94,9 +94,31 @@ export default {
           return await perplexityCopilotWorker.fetch(subRequest, env, ctx);
         }
         
-        // Route to MiniToolAI
+        // Route to MiniToolAI with Automatic Provider Fallback
         if (model.includes("minitool")) {
-          return await minitoolaiWorker.fetch(subRequest, env, ctx);
+          const mtRes = await minitoolaiWorker.fetch(subRequest, env, ctx);
+          if (mtRes.ok) {
+            return mtRes;
+          }
+          console.warn(`[Index Router] MiniToolAI failed with status ${mtRes.status}. Falling back to Surfsense/Pollinations...`);
+          const isClaudeModel = model.includes("claude");
+          const fallbackModel = isClaudeModel ? "surfsense/claude-sonnet-4-no-login" : "surfsense/gpt-5.4-mini-no-login";
+          const fallbackBody = { ...body, model: fallbackModel };
+          const fallbackReq = new Request(request.url, {
+            method: request.method,
+            headers: request.headers,
+            body: JSON.stringify(fallbackBody)
+          });
+          const ssRes = await surfsenseWorker.fetch(fallbackReq, env, ctx);
+          if (ssRes.ok) return ssRes;
+
+          // Final fallback to Pollinations / Baidu
+          const finalModel = isClaudeModel ? "ernie-5.1" : "openai-fast";
+          return await pollinationsWorker.fetch(new Request(request.url, {
+            method: request.method,
+            headers: request.headers,
+            body: JSON.stringify({ ...body, model: finalModel })
+          }), env, ctx);
         }
 
         // Route to UPDF

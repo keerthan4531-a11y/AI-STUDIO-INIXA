@@ -625,35 +625,53 @@ export default {
           return new Response(JSON.stringify({ error: "Not a MiniToolAI model" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
-        const session = await getValidSession(env, isClaude);
-        if (!session) {
-          // Fallback to Python Docker proxy if configured
-          if (PYTHON_PROXY_URL) {
-            try {
-              const pyRes = await fetch(`${PYTHON_PROXY_URL}/v1/chat/completions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-              });
-              if (pyRes.ok) {
-                return new Response(pyRes.body, {
-                  headers: { ...CORS, "Content-Type": pyRes.headers.get("Content-Type") || "text/event-stream", "Cache-Control": "no-cache" },
-                });
-              }
-            } catch(e) {
-              console.error("Python proxy fallback failed:", e);
+        let sseRes = null;
+        let resolvedModel = selectModel;
+        let session = null;
+
+        // Layer 1: Try up to 3 session tokens from Redis pool
+        for (let attempt = 0; attempt < 3; attempt++) {
+          session = await getValidSession(env, isClaude);
+          if (!session) break;
+
+          try {
+            const res = await proxyChat(session, model, body.messages || [], body.temperature, request);
+            if (res && res.sseRes && res.sseRes.ok) {
+              sseRes = res.sseRes;
+              resolvedModel = res.selectModel;
+              break;
             }
+          } catch (e) {
+            console.warn(`[MiniTool Retry] Session attempt ${attempt + 1} failed: ${e.message}`);
           }
-          return new Response(JSON.stringify({
-            error: "No active session. Visit /minitool/init to set up, or call /minitool/session then /minitool/activate.",
-            init_url: `${url.origin}/minitool/init`,
-          }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
-        const { sseRes, selectModel: resolvedModel } = await proxyChat(session, model, body.messages || [], body.temperature, request);
+        // Layer 2: On-Demand Edge Browser Harvest if Redis sessions failed or pool was empty
+        if (!sseRes && env && env.MYBROWSER) {
+          console.log(`[MiniTool Self-Healing] Redis sessions exhausted/empty. Triggering on-demand edge harvest for ${isClaude ? 'Claude' : 'GPT'}...`);
+          try {
+            session = await harvestTokenViaBrowser(env, isClaude);
+            if (session) {
+              const res = await proxyChat(session, model, body.messages || [], body.temperature, request);
+              if (res && res.sseRes && res.sseRes.ok) {
+                sseRes = res.sseRes;
+                resolvedModel = res.selectModel;
+              }
+            }
+          } catch (e) {
+            console.error(`[MiniTool Self-Healing] On-demand edge harvest failed: ${e.message}`);
+          }
+        }
 
-        if (!sseRes.ok) {
-          throw new Error(`Upstream error: ${sseRes.status}`);
+        // Layer 3: Trigger background harvest to keep Redis pool filled for future requests
+        if (env && env.MYBROWSER && ctx && ctx.waitUntil) {
+          ctx.waitUntil(harvestTokenViaBrowser(env, isClaude));
+        }
+
+        if (!sseRes || !sseRes.ok) {
+          return new Response(JSON.stringify({
+            error: "No active MiniTool session available after retries.",
+          }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
         if (body.stream !== false && sseRes.body) {

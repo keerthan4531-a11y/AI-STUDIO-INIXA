@@ -494,9 +494,34 @@ export async function POST(req: Request) {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
         } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
-          // Worker endpoint for minitool/claude returned non-200. Return its response directly.
-          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
-          return await handleStreamingResponse(directRes);
+          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Falling back to Google Gemini AI...`);
+          const geminiApiKey = process.env.GEMINI_API_KEY;
+          const geminiHeaders: any = { "Content-Type": "application/json" };
+          if (geminiApiKey) geminiHeaders["Authorization"] = `Bearer ${geminiApiKey}`;
+
+          try {
+            const geminiRes = await nodeFetch(
+              "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+              {
+                method: "POST",
+                headers: geminiHeaders,
+                body: JSON.stringify({
+                  model: "gemini-2.5-flash",
+                  messages: body.messages || [{ role: "user", content: body.message || "" }],
+                  stream: stream === true,
+                  max_tokens: 8192,
+                  temperature: 0.7,
+                }),
+              }
+            );
+
+            if (geminiRes.ok) {
+              console.log(`[Gemini Fallback] Google AI Studio Gemini API succeeded!`);
+              return await handleStreamingResponse(geminiRes);
+            }
+          } catch (gemErr) {
+            console.error(`[Gemini Fallback] Gemini API fallback failed:`, gemErr);
+          }
         } else {
           console.warn(
             `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,
