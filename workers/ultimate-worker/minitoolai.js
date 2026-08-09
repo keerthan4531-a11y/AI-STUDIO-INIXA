@@ -72,7 +72,7 @@ const SESSION_TTL = 250_000; // ~4.2 minutes
 
 async function pushSessionToRedis(session) {
   try {
-    const isClaude = session.is_claude || !session.safety_identifier;
+    const isClaude = session.is_claude === true;
     const redisKey = isClaude ? 'minitool_claude_sessions' : 'minitool_gpt_sessions';
     
     await fetch(`${UPSTASH_URL}/lpush/${redisKey}/${encodeURIComponent(JSON.stringify(session))}`, {
@@ -144,7 +144,7 @@ async function harvestTokenViaBrowser(env, isClaude = false) {
 async function getValidSession(env = null, isClaude = false) {
   // 1. Clean expired local sessions
   sessionPool = sessionPool.filter(s => (Date.now() - s.timestamp) < SESSION_TTL);
-  const matchingIndex = sessionPool.findIndex(s => isClaude ? (!s.safety_identifier || s.is_claude) : !!s.safety_identifier);
+  const matchingIndex = sessionPool.findIndex(s => isClaude ? (s.is_claude === true) : (s.is_claude === false));
   if (matchingIndex !== -1) {
     return sessionPool.splice(matchingIndex, 1)[0];
   }
