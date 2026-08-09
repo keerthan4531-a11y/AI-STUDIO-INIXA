@@ -59,6 +59,28 @@ const MODEL_MAP = {
   "claude-haiku-4.5":          "claude-haiku-4-5",
   "claude-sonnet-5":           "claude-sonnet-5",
   "claude-opus-4.8":            "claude-opus-4-8",
+  // Grok models
+  "minitool/grok-4.5":          "grok-4.5",
+  "minitool/grok-4.3":          "grok-4.3",
+  "minitool/grok-build-0.1":    "grok-build-0.1",
+  "grok-4.5":                   "grok-4.5",
+  "grok-4.3":                   "grok-4.3",
+  "grok-build-0.1":             "grok-build-0.1",
+  // GLM models
+  "minitool/glm-4.7-flash":    "GLM-4.7-Flash",
+  "minitool/glm-5.2":          "GLM-5.2",
+  "minitool/glm-5":            "GLM-5",
+  "minitool/glm-4.5-flash":    "GLM-4.5-Flash",
+  "minitool/glm-4.5-air":      "GLM-4.5-Air",
+  "minitool/glm-4-32b":        "GLM-4-32B-0414-128K",
+  "minitool/glm-4.6v-flashx":   "GLM-4.6V-FlashX",
+  "glm-4.7-flash":             "GLM-4.7-Flash",
+  "glm-5.2":                   "GLM-5.2",
+  "glm-5":                     "GLM-5",
+  "glm-4.5-flash":             "GLM-4.5-Flash",
+  "glm-4.5-air":               "GLM-4.5-Air",
+  "glm-4-32b":                 "GLM-4-32B-0414-128K",
+  "glm-4.6v-flashx":            "GLM-4.6V-FlashX",
 };
 
 const REASONING_MODELS = ["gpt-5.6-terra", "gpt-5-mini", "gpt-5-nano", "gpt-5.4-mini"];
@@ -259,11 +281,53 @@ async function proxyChat(session, model, messages, temperature, request) {
   ];
 
   const isClaude = selectModel.startsWith("claude");
-  const baseUrl = isClaude ? "https://minitoolai.com/Claude" : "https://minitoolai.com/gpt-ai";
-  const streamPhp = isClaude ? "claude_stream_v1.php" : "chatgpt_stream.php";
+  const isGrok = selectModel.startsWith("grok");
+  const isGlm = selectModel.startsWith("GLM-") || selectModel.startsWith("glm-");
+
+  let baseUrl = "https://minitoolai.com/gpt-ai";
+  let streamPhp = "chatgpt_stream.php";
+  let initPhp = "";
+
+  if (isClaude) {
+    baseUrl = "https://minitoolai.com/Claude";
+    streamPhp = "claude_stream_v1.php";
+  } else if (isGrok) {
+    baseUrl = "https://minitoolai.com/grok";
+    streamPhp = "grok_stream_v1.php";
+    initPhp = "createnewchat1.php";
+  } else if (isGlm) {
+    baseUrl = "https://minitoolai.com/zai-glm";
+    streamPhp = "glm_stream.php";
+    initPhp = "createnewchat.php";
+  }
 
   let form;
   if (isClaude) {
+    form = new URLSearchParams({
+      temperature: String(temperature || 0.7),
+      select_model: selectModel,
+      reasoning_effort: "disabled",
+      utoken: session.utoken,
+      message: lastMsg,
+      umes1a: prev[0].u,
+      bres1a: prev[0].b,
+      umes2a: prev[1].u,
+      bres2a: prev[1].b,
+      cft: session.cft,
+    });
+  } else if (isGrok) {
+    form = new URLSearchParams({
+      select_model: selectModel,
+      temperature: String(temperature || 0.7),
+      utoken: session.utoken,
+      message: lastMsg,
+      umes1a: prev[0].u,
+      bres1a: prev[0].b,
+      umes2a: prev[1].u,
+      bres2a: prev[1].b,
+      cft: session.cft,
+    });
+  } else if (isGlm) {
     form = new URLSearchParams({
       temperature: String(temperature || 0.7),
       select_model: selectModel,
@@ -308,12 +372,40 @@ async function proxyChat(session, model, messages, temperature, request) {
     headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36");
   }
 
-  // POST to get stream token
+  if (initPhp) {
+    const convoId = `${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}`;
+    const initParams = new URLSearchParams({
+      conversation_id: convoId,
+      chatHistoryPath: "chat_history/temporarychat.json",
+      utoken: session.utoken,
+    });
+    await fetch(`${baseUrl}/${initPhp}`, {
+      method: "POST",
+      headers: headers,
+      body: initParams.toString(),
+    }).catch(() => {});
+  }
+
+  // POST to initialize stream
   const postRes = await fetch(`${baseUrl}/${streamPhp}`, {
     method: "POST",
     headers: headers,
     body: form.toString(),
   });
+
+  if (isGrok || isGlm) {
+    const getHeaders = new Headers(headers);
+    getHeaders.set("Accept", "text/event-stream");
+    getHeaders.set("Cache-Control", "no-cache");
+    getHeaders.set("Pragma", "no-cache");
+    getHeaders.delete("Content-Type");
+    getHeaders.delete("X-Requested-With");
+
+    const sseRes = await fetch(`${baseUrl}/${streamPhp}`, {
+      headers: getHeaders,
+    });
+    return { sseRes, selectModel };
+  }
 
   const streamToken = await postRes.text();
   

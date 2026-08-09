@@ -178,6 +178,124 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ GROK (MiniToolAI)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'minitool-grok-4.5',
+    label: 'Grok 4.5 (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/grok-4.5',
+    badge: 'GROK 4.5',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'xAI Grok 4.5 via MiniToolAI'
+  },
+  {
+    id: 'minitool-grok-4.3',
+    label: 'Grok 4.3 (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/grok-4.3',
+    badge: 'GROK 4.3',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'xAI Grok 4.3 via MiniToolAI'
+  },
+  {
+    id: 'minitool-grok-build-0.1',
+    label: 'Grok Build 0.1 (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/grok-build-0.1',
+    badge: 'BUILD',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#8b5cf6',
+    description: 'xAI Grok Build 0.1 via MiniToolAI'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🌐 ZAI GLM (MiniToolAI)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'minitool-glm-4.7-flash',
+    label: 'GLM 4.7 Flash (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-4.7-flash',
+    badge: '4.7 FLASH',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Zhipu GLM 4.7 Flash via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-5.2',
+    label: 'GLM 5.2 (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-5.2',
+    badge: 'GLM 5.2',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Zhipu GLM 5.2 via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-5',
+    label: 'GLM 5 (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-5',
+    badge: 'GLM 5',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Zhipu GLM 5 via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-4.5-flash',
+    label: 'GLM 4.5 Flash (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-4.5-flash',
+    badge: 'FLASH',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Zhipu GLM 4.5 Flash via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-4.5-air',
+    label: 'GLM 4.5 Air (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-4.5-air',
+    badge: 'AIR',
+    badgeColor: 'blue',
+    icon: 'Zap',
+    iconColor: '#3b82f6',
+    description: 'Zhipu GLM 4.5 Air via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-4-32b',
+    label: 'GLM 4 32B (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-4-32b',
+    badge: '32B',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Zhipu GLM 4 32B via MiniToolAI'
+  },
+  {
+    id: 'minitool-glm-4.6v-flashx',
+    label: 'GLM 4.6V FlashX (MiniTool)',
+    engine: 'g4f',
+    modelStr: 'minitool/glm-4.6v-flashx',
+    badge: 'VISION',
+    badgeColor: 'violet',
+    icon: 'Image',
+    iconColor: '#8b5cf6',
+    description: 'Zhipu GLM 4.6V FlashX Vision via MiniToolAI'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🟢 SURFSENSE
   // ════════════════════════════════════════════════════════════════
   {
@@ -191,50 +309,7 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#14b8a6',
     description: 'Surfsense Anonymous Chat API'
   },
-  {
-    id: 'surfsense-claude-sonnet-4',
-    label: 'Claude Sonnet 4 (SurfSense)',
-    engine: 'custom',
-    modelStr: 'surfsense/claude-sonnet-4-no-login',
-    badge: 'SONNET',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 4 via SurfSense'
-  },
-  {
-    id: 'surfsense-gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash (SurfSense)',
-    engine: 'custom',
-    modelStr: 'surfsense/gemini-2.5-flash-no-login',
-    badge: 'FLASH',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Gemini 2.5 Flash via SurfSense'
-  },
-  {
-    id: 'surfsense-llama-4-maverick',
-    label: 'Llama 4 Maverick (SurfSense)',
-    engine: 'custom',
-    modelStr: 'surfsense/llama-4-maverick-no-login',
-    badge: 'MAVERICK',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Llama 4 Maverick via SurfSense'
-  },
-  {
-    id: 'surfsense-grok-3-mini',
-    label: 'Grok 3 Mini (SurfSense)',
-    engine: 'custom',
-    modelStr: 'surfsense/grok-3-mini-no-login',
-    badge: 'GROK',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Grok 3 Mini via SurfSense'
-  },
+
   {
     id: 'surfsense-gpt-5.4',
     label: 'GPT 5.4 (SurfSense)',
@@ -522,241 +597,6 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Zap',
     iconColor: '#8b5cf6',
     description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
-  }, {
-    id: 'g4f-qwen3-32b',
-    label: 'Qwen 3 32B (Groq)',
-    engine: 'g4f',
-    modelStr: 'g4f/qwen/qwen3-32b',
-    badge: 'GROQ',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Qwen 3 32B via Groq — ultra fast 262ms'
-  },
-
-  {
-    id: 'g4f-qwen3-6-35b-a3b-uncensored-hauhaucs-aggressive-q4-k-m-gguf',
-    label: 'Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
-    engine: 'g4f',
-    modelStr: 'g4f/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf',
-
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Code',
-    iconColor: '#06b6d4',
-    description: 'Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf via G4F Proxy'
-  },
-  {
-    id: 'g4f-qwen3-coder-next',
-    label: 'Qwen 3 Coder Next',
-    engine: 'g4f',
-    modelStr: 'g4f/qwen3-coder-next',
-    badge: 'CODE',
-    badgeColor: 'blue',
-    icon: 'Code',
-    iconColor: '#3b82f6',
-    description: 'Qwen 3 Coder Next via Ollama — 7 req'
-  },
-  {
-    id: 'g4f-qwen3.6-27b',
-    label: 'Qwen 3.6 27B (Groq)',
-    engine: 'g4f',
-    modelStr: 'g4f/qwen/qwen3.6-27b',
-    badge: 'GROQ',
-    badgeColor: 'orange',
-    icon: 'Zap',
-    iconColor: '#f97316',
-    description: 'Qwen 3.6 27B via Groq — ultra fast 314ms'
-  },
-  {
-    id: 'qw-qwen3.6-plus',
-    label: 'Qwen 3.6 Plus (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.6-plus',
-    icon: 'Star',
-    iconColor: '#f59e0b',
-    description: 'Alibaba Qwen 3.6 Plus — dedicated worker'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // 🦙 LLAMA MODELS
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'g4f-llama-3.1-70b',
-    label: 'Llama 3.1 70B',
-    engine: 'g4f',
-    modelStr: 'g4f/meta/llama-3.1-70b-instruct',
-    badge: '70B',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Meta Llama 3.1 70B via Nvidia — 29 req'
-  },
-
-  {
-    id: 'g4f-llama-3.3-70b',
-    label: 'Llama 3.3 70B',
-    engine: 'g4f',
-    modelStr: 'g4f/llama-3.3-70b-versatile',
-    badge: '70B',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Meta Llama 3.3 70B via Groq — 70 req, 680ms'
-  },
-
-  {
-    id: 'g4f-nemotron-3-nano-30b-ollama',
-    label: 'Nemotron 3 Nano 30B (Ollama)',
-    engine: 'g4f',
-    modelStr: 'g4f/nemotron-3-nano:30b',
-    badge: '30B',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'Nemotron 3 Nano 30B via Ollama — 959ms'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // 🌪️ MISTRAL & MIXTRAL
-  // ════════════════════════════════════════════════════════════════
-
-
-  // ════════════════════════════════════════════════════════════════
-  // 🟡 NVIDIA NEMOTRON
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'g4f-nemotron-3-nano-30b',
-    label: 'Nemotron 3 Nano 30B',
-    engine: 'g4f',
-    modelStr: 'g4f/nvidia/nemotron-3-nano-30b-a3b',
-    badge: '30B',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'Nvidia Nemotron 3 Nano 30B — 392 req, 720ms'
-  },
-  {
-    id: 'g4f-nemotron-3-super',
-    label: 'Nemotron 3 Super',
-    engine: 'g4f',
-    modelStr: 'g4f/nemotron-3-super',
-    badge: 'TOP',
-    badgeColor: 'green',
-    icon: 'Brain',
-    iconColor: '#10b981',
-    description: 'Nvidia Nemotron 3 Super — 489 req, 2763ms'
-  },
-  {
-    id: 'g4f-nemotron-3-super-120b',
-    label: 'Nemotron 3 Super 120B',
-    engine: 'g4f',
-    modelStr: 'g4f/nvidia/nemotron-3-super-120b-a12b',
-    badge: '120B',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Nvidia Nemotron 3 Super 120B — 145 req'
-  },
-  {
-    id: 'g4f-nemotron-3-super-120b-free',
-    label: 'Nemotron 3 Super 120B Free',
-    engine: 'g4f',
-    modelStr: 'g4f/nvidia/nemotron-3-super-120b-a12b:free',
-    badge: 'FREE',
-    badgeColor: 'green',
-    icon: 'Brain',
-    iconColor: '#10b981',
-    description: 'Nemotron 3 Super 120B Free via OpenRouter — 327 req'
-  },
-  {
-    id: 'g4f-nemotron-3-ultra',
-    label: 'nemotron-3-ultra',
-    engine: 'g4f',
-    modelStr: 'g4f/nemotron-3-ultra',
-    provider: 'ollama.pro',
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'nemotron-3-ultra via G4F Proxy'
-  },
-  {
-    id: 'g4f-nvidia-nemotron-3-ultra-550b-a55b',
-    label: 'nvidia/nemotron-3-ultra-550b-a55b',
-    engine: 'g4f',
-    modelStr: 'g4f/nvidia/nemotron-3-ultra-550b-a55b',
-    provider: 'nvidia',
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'nvidia/nemotron-3-ultra-550b-a55b via G4F Proxy'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // 🚀 GROQ MODELS
-  // ════════════════════════════════════════════════════════════════
-
-
-  {
-    id: 'g4f-glm-4.6',
-    label: 'GLM 4.6',
-    engine: 'g4f',
-    modelStr: 'g4f/glm-4.6',
-    badge: 'GLM',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'GLM 4.6 via CrowLLM — 37 req'
-  },
-  {
-    id: 'g4f-glm-4.7',
-    label: 'GLM 4.7 (Cerebras)',
-    engine: 'g4f',
-    modelStr: 'g4f/zai-glm-4.7',
-    badge: 'FAST',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GLM 4.7 via Cerebras — 20 req, 851ms'
-  },
-
-
-  {
-    id: 'g4f-glm-5.2-modelscope',
-    label: 'GLM 5.2 (Modelscope)',
-    engine: 'g4f',
-    modelStr: 'g4f/zai-org/GLM-5.2',
-    badge: 'ALT',
-    badgeColor: 'cyan',
-    icon: 'Brain',
-    iconColor: '#06b6d4',
-    description: 'GLM 5.2 via HuggingFace — 21 req'
-  },
-  {
-    id: 'g4f-glm-5v-turbo',
-    label: 'GLM 5V Turbo',
-    engine: 'g4f',
-    modelStr: 'g4f/glm-5v-turbo',
-    badge: 'VISION',
-    badgeColor: 'violet',
-    icon: 'Image',
-    iconColor: '#8b5cf6',
-    description: 'GLM 5V Turbo (Vision) via CrowLLM — 20 req'
-  },
-
-
-  {
-    id: 'g4f-minimax-m3',
-    label: 'MiniMax M3',
-    engine: 'g4f',
-    modelStr: 'g4f/minimaxai/minimax-m3',
-    badge: 'M3',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'MiniMax M3 via Nvidia — 37 req'
   },
 
 
