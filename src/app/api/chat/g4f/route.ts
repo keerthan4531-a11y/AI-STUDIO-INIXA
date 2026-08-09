@@ -420,46 +420,44 @@ export async function POST(req: Request) {
           body: JSON.stringify(overchatPayload)
         });
 
-        if (overchatRes.ok) {
-          if (stream) {
-            const bodyStream = new ReadableStream({
-              start(controller) {
-                (overchatRes.body as any).on("data", (chunk: Buffer) =>
-                  controller.enqueue(chunk),
-                );
-                (overchatRes.body as any).on("end", () => controller.close());
-                (overchatRes.body as any).on("error", (err: Error) =>
-                  controller.error(err),
-                );
-              },
-              cancel() {
-                (overchatRes.body as any).destroy();
-              },
-            });
-            return new Response(bodyStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-              },
-            });
-          }
-          return NextResponse.json(await overchatRes.json());
+        if (!overchatRes.ok) {
+          const errText = await overchatRes.text();
+          return NextResponse.json(
+            { error: `OverChat Error (${overchatRes.status}): ${errText}` },
+            { status: overchatRes.status }
+          );
         }
-      } catch (err) {
-        console.warn("[OverChat Fetch Warning] OverChat primary failed, falling back to REAL high-grade engine:", err);
+
+        if (stream) {
+          const bodyStream = new ReadableStream({
+            start(controller) {
+              (overchatRes.body as any).on("data", (chunk: Buffer) =>
+                controller.enqueue(chunk),
+              );
+              (overchatRes.body as any).on("end", () => controller.close());
+              (overchatRes.body as any).on("error", (err: Error) =>
+                controller.error(err),
+              );
+            },
+            cancel() {
+              (overchatRes.body as any).destroy();
+            },
+          });
+          return new Response(bodyStream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+            },
+          });
+        }
+        return NextResponse.json(await overchatRes.json());
+      } catch (err: any) {
+        return NextResponse.json(
+          { error: `OverChat Request Failed: ${err.message || err}` },
+          { status: 500 }
+        );
       }
-
-      // Smart Fallback to REAL high-grade engines if OverChat fails:
-      let fallbackModel = "minitool/gpt-5.6-luna";
-      if (rawModel.includes("opus")) fallbackModel = "minitool/claude-opus-4.8";
-      else if (rawModel.includes("sonnet")) fallbackModel = "minitool/claude-sonnet-3.5";
-      else if (rawModel.includes("gemini")) fallbackModel = "g4f/models/gemini-3.5-flash";
-      else if (rawModel.includes("deepseek")) fallbackModel = "g4f/deepseek-ai/deepseek-v4-flash";
-      else if (rawModel.includes("qwen")) fallbackModel = "qwen_worker/qwen3.7-max";
-
-      console.log(`[OverChat Fallback] Using REAL model: ${fallbackModel}`);
-      model = fallbackModel;
     }
 
     // 3. G4F / DeepInfra / Qwen / MiniTool / Claude Model Routing
