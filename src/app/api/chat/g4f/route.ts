@@ -484,6 +484,8 @@ export async function POST(req: Request) {
           signal: directController.signal as any,
         });
 
+        clearTimeout(directTimeout);
+
         if (directRes.ok) {
           const contentType = directRes.headers.get("content-type") || "";
           if (!contentType.includes("text/html")) {
@@ -491,115 +493,36 @@ export async function POST(req: Request) {
             return await handleStreamingResponse(directRes);
           }
         }
+        console.warn(`[Primary] Direct fetch to ${targetEndpoint} returned ${directRes.status}. Falling back to Ultimate Worker...`);
+      } catch (err: any) {
+        console.warn(`[Primary] Direct fetch failed: ${err.message || err}. Falling back to Ultimate Worker...`);
+      }
 
-        console.warn(`[Primary] Endpoint returned ${directRes.status} for model ${g4fModel}. Attempting ultimate-worker fallback...`);
-        const fallbackModel = (g4fModel.includes("claude") || g4fModel.includes("opus")) ? "minitool/claude-opus-4.8" : "minitool/gpt-5.6-luna";
-        const workerFallbackRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
+      // ── Fallback: Ultimate AI Worker ──
+      console.log(`[Fallback] Routing ${g4fModel} through Ultimate AI Worker...`);
+      try {
+        let fallbackModel = "minitool/gpt-5.6-luna";
+        if (g4fModel.includes("claude") || g4fModel.includes("opus")) {
+          fallbackModel = "minitool/claude-opus-4.8";
+        } else if (g4fModel.includes("ernie") || g4fModel.includes("baidu")) {
+          fallbackModel = "ernie-5.1";
+        } else if (g4fModel.includes("meta") || g4fModel.includes("llama")) {
+          fallbackModel = "meta-ai";
+        }
+
+        const workerRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: stream ? "text/event-stream" : "application/json" },
-          body: JSON.stringify({ ...body, model: fallbackModel, max_tokens: 8192 })
+          headers: baseHeaders,
+          body: JSON.stringify({ ...requestBody, model: fallbackModel }),
         });
 
-        if (workerFallbackRes.ok) {
-          console.log(`[Primary] Ultimate worker fallback succeeded for ${g4fModel}!`);
-          return await handleStreamingResponse(workerFallbackRes);
+        if (workerRes.ok) {
+          return await handleStreamingResponse(workerRes);
         }
-      } catch (err: any) {
-        console.warn(`[Primary] Direct fetch failed: ${err.message || err}. Attempting ultimate-worker fallback...`);
-        try {
-          const fallbackModel = (g4fModel.includes("claude") || g4fModel.includes("opus")) ? "minitool/claude-opus-4.8" : "minitool/gpt-5.6-luna";
-          const workerFallbackRes = await nodeFetch("https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: stream ? "text/event-stream" : "application/json" },
-            body: JSON.stringify({ ...body, model: fallbackModel, max_tokens: 8192 })
-          });
-          if (workerFallbackRes.ok) {
-            console.log(`[Primary] Ultimate worker fallback succeeded for ${g4fModel}!`);
-            return await handleStreamingResponse(workerFallbackRes);
-          }
-        } catch (_) {}
+      } catch (wErr: any) {
+        console.warn(`[Fallback] Ultimate Worker fallback failed: ${wErr.message}`);
       }
 
-      // ── Step 2B: Proxy Pool Race (Only if not 402 Payment Required) ──
-      if (!is402Error) {
-        await refreshProxyPool();
-
-        if (proxyPool.length > 0) {
-          console.log(`[ProxyPool] Racing proxies for model: ${g4fModel}`);
-
-          const numToRace = Math.min(10, proxyPool.length);
-          const proxiesToTry = [];
-
-          if (cachedWorkingProxy) {
-            proxiesToTry.push(cachedWorkingProxy);
-          }
-
-          for (let i = 0; i < numToRace; i++) {
-            proxiesToTry.push(getNextProxy());
-          }
-
-          const racePromises = proxiesToTry.map((proxyUrl, index) => {
-            return new Promise(async (resolve, reject) => {
-              if (!proxyUrl) return reject(new Error("Empty proxy"));
-
-              let agent: any;
-              if (proxyUrl.startsWith("socks")) {
-                agent = new SocksProxyAgent(proxyUrl);
-              } else {
-                agent = proxyUrl.startsWith("https")
-                  ? new HttpsProxyAgent(proxyUrl)
-                  : new HttpProxyAgent(proxyUrl);
-              }
-
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-              try {
-                const proxyFakeIP = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-                const proxyHeaders = {
-                  ...baseHeaders,
-                  "X-Forwarded-For": proxyFakeIP,
-                };
-
-                const g4fRes = await nodeFetch(targetEndpoint, {
-                  method: "POST",
-                  headers: proxyHeaders,
-                  body: JSON.stringify(requestBody),
-                  agent: agent as any,
-                  signal: controller.signal as any,
-                });
-
-                clearTimeout(timeoutId);
-
-                if (g4fRes.ok) {
-                  const contentType = g4fRes.headers.get("content-type") || "";
-                  if (contentType.includes("text/html")) {
-                    return reject(new Error("Proxy returned HTML instead of valid API response"));
-                  }
-                  console.log(`[Proxy-Race] 🏆 Winner found! Proxy: ${proxyUrl}`);
-                  cachedWorkingProxy = proxyUrl;
-                  resolve(g4fRes);
-                } else {
-                  reject(`Status ${g4fRes.status}`);
-                }
-              } catch (err: any) {
-                clearTimeout(timeoutId);
-                reject(err.message || err);
-              }
-            });
-          });
-
-          try {
-            const winningRes: any = await Promise.any(racePromises);
-            return await handleStreamingResponse(winningRes);
-          } catch (aggregateError: any) {
-            console.error(`[Proxy-Race Failed] All proxies failed.`);
-            cachedWorkingProxy = null;
-          }
-        }
-      }
-
-      // Fallbacks disabled per user requirement: return exact error if direct/proxy fetch fails
       return NextResponse.json(
         { ok: false, engine: "proxy", error: `Model '${g4fModel}' failed to respond from target endpoint (${targetEndpoint}).` },
         { status: 502 },
