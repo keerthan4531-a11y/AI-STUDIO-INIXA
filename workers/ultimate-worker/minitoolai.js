@@ -112,6 +112,7 @@ async function pushSessionToRedis(session) {
 }
 
 async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
+  if (typeof serviceType === 'boolean') serviceType = serviceType ? 'claude' : 'gpt';
   if (!env || !env.MYBROWSER) return null;
   console.log(`[Cloudflare Browser] Launching edge browser for ${serviceType}...`);
   let browser = null;
@@ -127,12 +128,20 @@ async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
       'Sec-Ch-Ua-Platform': '"Windows"'
     });
     
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      try { delete Object.getPrototypeOf(navigator).webdriver; } catch (e) {}
+      window.chrome = { runtime: {}, loadTimes: function() {}, csi: function() {}, app: {} };
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    });
+
     let targetUrl = "https://minitoolai.com/gpt-ai/";
     if (serviceType === 'claude') targetUrl = "https://minitoolai.com/Claude/";
     else if (serviceType === 'grok') targetUrl = "https://minitoolai.com/grok/";
     else if (serviceType === 'glm') targetUrl = "https://minitoolai.com/zai-glm/";
 
-    await page.goto(targetUrl, { waitUntil: "networkidle2", timeout: HARVEST_TIMEOUT });
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: HARVEST_TIMEOUT });
     
     const htmlContent = await page.content();
     const utMatch = htmlContent.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
@@ -780,8 +789,8 @@ export default {
 
       // ── Trigger Edge Harvest ──
       if (path === "/minitool/harvest") {
-        const sGpt = await harvestTokenViaBrowser(env, false);
-        const sClaude = await harvestTokenViaBrowser(env, true);
+        const sGpt = await harvestTokenViaBrowser(env, 'gpt');
+        const sClaude = await harvestTokenViaBrowser(env, 'claude');
         return new Response(JSON.stringify({ ok: true, gpt: !!sGpt, claude: !!sClaude }), { headers: { ...CORS, "Content-Type": "application/json" } });
       }
 
