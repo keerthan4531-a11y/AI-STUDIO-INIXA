@@ -600,9 +600,52 @@ export async function POST(req: Request) {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
         } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
-          // Fallbacks disabled per user requirement: Return MiniTool worker response directly
-          console.warn(`[Primary] MiniTool Worker returned ${directRes.status}. Returning response directly.`);
-          return await handleStreamingResponse(directRes);
+          // MiniTool 401/500: Retry with delay to allow token pool to replenish
+          const mtStatus = directRes.status;
+          console.warn(`[Primary] MiniTool Worker returned ${mtStatus}. Starting retry loop...`);
+          
+          let mtSuccess = false;
+          for (let mtRetry = 1; mtRetry <= 3; mtRetry++) {
+            const retryDelay = mtRetry * 2000; // 2s, 4s, 6s
+            console.log(`[MiniTool Retry] Attempt ${mtRetry}/3: Waiting ${retryDelay/1000}s for token replenishment...`);
+            await new Promise(r => setTimeout(r, retryDelay));
+            
+            try {
+              const retryController = new AbortController();
+              const retryTimeout = setTimeout(() => retryController.abort(), 30000);
+              
+              const retryRes = await nodeFetch(targetEndpoint, {
+                method: "POST",
+                headers: baseHeaders,
+                body: JSON.stringify(requestBody),
+                signal: retryController.signal as any,
+              });
+              
+              clearTimeout(retryTimeout);
+              
+              if (retryRes.ok) {
+                const retryContentType = retryRes.headers.get("content-type") || "";
+                if (!retryContentType.includes("text/html")) {
+                  console.log(`[MiniTool Retry] Attempt ${mtRetry}/3 succeeded!`);
+                  return await handleStreamingResponse(retryRes);
+                }
+              } else {
+                console.warn(`[MiniTool Retry] Attempt ${mtRetry}/3 returned ${retryRes.status}`);
+              }
+            } catch (retryErr: any) {
+              console.warn(`[MiniTool Retry] Attempt ${mtRetry}/3 error: ${retryErr.message || retryErr}`);
+            }
+          }
+          
+          // All retries failed — return the original error with retry hint
+          console.warn(`[MiniTool Retry] All 3 retries failed. Returning 503.`);
+          return new Response(JSON.stringify({
+            error: "MiniTool AI is temporarily unavailable. Tokens are being replenished. Please retry in a few seconds.",
+            choices: [{ index: 0, message: { role: "assistant", content: "⏳ MiniTool AI is refreshing its connection. Please send your message again in a few seconds." }, finish_reason: "stop" }]
+          }), {
+            status: 200, // Return 200 so frontend doesn't show raw error
+            headers: { "Content-Type": "application/json" }
+          });
         } else {
           console.warn(
             `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,

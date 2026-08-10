@@ -90,7 +90,9 @@ const UPSTASH_TOKEN = 'gQAAAAAAATVCAAIgcDIzMDYyM2ZhYzBiMjE0Y2FhYmQyNzAwNmVkNjk2M
 
 // ─── Session Pool (In-Memory + Upstash Redis) ─────────────────────
 let sessionPool = [];
-const SESSION_TTL = 600_000; // 10 Minutes: Turnstile token validity window
+const SESSION_TTL = 570_000; // 9.5 Minutes: Max token validity for USE
+const RECYCLE_TTL = 480_000; // 8 Minutes: Max age to RECYCLE a token back to pool
+const HARVEST_TIMEOUT = 25000; // 25s timeout for browser harvest
 
 async function pushSessionToRedis(session) {
   try {
@@ -116,14 +118,14 @@ async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
   try {
     browser = await puppeteer.launch(env.MYBROWSER);
     const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
     
     let targetUrl = "https://minitoolai.com/gpt-ai/";
     if (serviceType === 'claude') targetUrl = "https://minitoolai.com/Claude/";
     else if (serviceType === 'grok') targetUrl = "https://minitoolai.com/grok/";
     else if (serviceType === 'glm') targetUrl = "https://minitoolai.com/zai-glm/";
 
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: HARVEST_TIMEOUT });
     
     const htmlContent = await page.content();
     const utMatch = htmlContent.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
@@ -137,8 +139,8 @@ async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
       let ut = window.utoken || exUt;
       let si = window.safety_identifier || exSi;
       let attempts = 0;
-      while ((!cft || cft.length < 10 || cft === "error" || cft === "expired") && attempts < 50) {
-        await new Promise(r => setTimeout(r, 200));
+      while ((!cft || cft.length < 10 || cft === "error" || cft === "expired") && attempts < 60) {
+        await new Promise(r => setTimeout(r, 250));
         cft = getCft();
         ut = window.utoken || ut || exUt;
         si = window.safety_identifier || si || exSi;
@@ -166,14 +168,34 @@ async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
       };
       await pushSessionToRedis(session);
       return session;
+    } else {
+      console.warn(`[Cloudflare Browser] Harvest incomplete for ${serviceType}: sess=${!!sessCookie}, ut=${!!result.ut}, cft_len=${result.cft?.length || 0}`);
     }
   } catch (e) {
-    console.error(`[Cloudflare Browser] Error harvesting token for ${serviceType} on edge:`, e);
+    console.error(`[Cloudflare Browser] Error harvesting token for ${serviceType} on edge:`, e.message || e);
     if (browser) {
       try { await browser.close(); } catch(_) {}
     }
   }
   return null;
+}
+
+// ─── Parallel Multi-Service Harvest ──────────────────────────────
+async function harvestMultipleTokens(env) {
+  if (!env || !env.MYBROWSER) return { harvested: 0 };
+  const serviceTypes = ['gpt', 'claude', 'grok', 'glm'];
+  let harvested = 0;
+  // Run sequentially to avoid overwhelming the browser binding
+  for (const st of serviceTypes) {
+    try {
+      const s = await harvestTokenViaBrowser(env, st);
+      if (s) harvested++;
+    } catch (e) {
+      console.warn(`[Multi-Harvest] Failed for ${st}:`, e.message || e);
+    }
+  }
+  console.log(`[Multi-Harvest] Completed: ${harvested}/${serviceTypes.length} tokens harvested`);
+  return { harvested, total: serviceTypes.length };
 }
 
 async function getValidSession(env = null, serviceType = 'gpt') {
@@ -189,10 +211,10 @@ async function getValidSession(env = null, serviceType = 'gpt') {
     return sessionPool.splice(matchingIndex, 1)[0];
   }
   
-  // 2. Fetch from Upstash Redis specific model pool (try up to 10 popped sessions)
+  // 2. Fetch from Upstash Redis specific model pool (try up to 50 popped sessions to drain stale ones)
   const redisKey = `minitool_${serviceType}_sessions`;
   try {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 50; i++) {
       const res = await fetch(`${UPSTASH_URL}/lpop/${redisKey}`, {
         headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
       });
@@ -210,9 +232,9 @@ async function getValidSession(env = null, serviceType = 'gpt') {
     console.error("Upstash pop error:", e);
   }
 
-  // 3. Fallback to generic pool (try up to 10 popped sessions)
+  // 3. Fallback to generic pool (try up to 50 popped sessions)
   try {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 50; i++) {
       const res = await fetch(`${UPSTASH_URL}/lpop/minitool_sessions`, {
         headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
       });
@@ -230,14 +252,22 @@ async function getValidSession(env = null, serviceType = 'gpt') {
     console.error("Upstash generic pop error:", e);
   }
 
-  // 4. JIT Edge Browser harvest fallback if available
+  // 4. JIT Edge Browser harvest with 3 attempts
   if (env && env.MYBROWSER) {
-    try {
-      console.log(`[JIT Harvest] Pool empty. Triggering JIT Edge harvest for ${serviceType}...`);
-      const s = await harvestTokenViaBrowser(env, serviceType);
-      if (s) return s;
-    } catch (e) {
-      console.error("[JIT Harvest Error]:", e);
+    for (let jitAttempt = 1; jitAttempt <= 3; jitAttempt++) {
+      try {
+        console.log(`[JIT Harvest] Attempt ${jitAttempt}/3: Triggering Edge harvest for ${serviceType}...`);
+        const s = await harvestTokenViaBrowser(env, serviceType);
+        if (s) return s;
+        // If harvest returned null, try 'gpt' as universal fallback on 2nd+ attempt
+        if (jitAttempt >= 2 && serviceType !== 'gpt') {
+          console.log(`[JIT Harvest] Trying 'gpt' as fallback service type...`);
+          const fallbackS = await harvestTokenViaBrowser(env, 'gpt');
+          if (fallbackS) return fallbackS;
+        }
+      } catch (e) {
+        console.error(`[JIT Harvest Error] Attempt ${jitAttempt}:`, e.message || e);
+      }
     }
   }
 
@@ -801,8 +831,9 @@ export default {
               sseRes = res.sseRes;
               resolvedModel = res.selectModel;
 
-              // Re-push valid session to Redis if age < 4 minutes (token recycling)
-              if (ctx && (Date.now() - session.timestamp) < (SESSION_TTL - 30000)) {
+              // Aggressive token recycling: re-push if age < RECYCLE_TTL (8 min)
+              if (ctx && (Date.now() - session.timestamp) < RECYCLE_TTL) {
+                console.log(`[Token Recycled] Session ${session.phpsessid.substring(0,8)}... recycled back to pool (age: ${Math.floor((Date.now() - session.timestamp)/1000)}s)`);
                 ctx.waitUntil(pushSessionToRedis(session));
               }
               break;
@@ -812,14 +843,21 @@ export default {
           } catch (err) {
             console.warn(`[MiniTool Completion Attempt ${attempt}/3 Failed]: ${err.message}`);
             lastErr = err;
+            // Small delay between retries to allow JIT harvest to complete
+            if (attempt < 3) await new Promise(r => setTimeout(r, 800 * attempt));
           }
         }
 
         if (!sseRes || !sseRes.ok) {
+          // Trigger background harvest for next request
+          if (ctx && env && env.MYBROWSER) {
+            ctx.waitUntil(harvestMultipleTokens(env));
+          }
           return new Response(JSON.stringify({
-            error: `All session attempts failed: ${lastErr ? lastErr.message : 'Unknown error'}. Visit /minitool/init to activate.`,
+            error: `All session attempts failed: ${lastErr ? lastErr.message : 'Unknown error'}. Tokens are being replenished, retry in 5 seconds.`,
+            retry_after: 5,
             init_url: `${url.origin}/minitool/init`,
-          }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
+          }), { status: 401, headers: { ...CORS, "Content-Type": "application/json", "Retry-After": "5" } });
         }
 
         if (body.stream !== false && sseRes.body) {
@@ -853,6 +891,83 @@ export default {
         }
       }
 
+      // ── Inject Token from Client-Side Iframe Solver ──
+      if (path === "/minitool/inject-token" && request.method === "POST") {
+        try {
+          const data = await request.json();
+          if (!data.cft || data.cft.length < 10) {
+            return new Response(JSON.stringify({ ok: false, error: "Invalid cft token" }), { headers: { ...CORS, "Content-Type": "application/json" } });
+          }
+          const serviceType = data.service_type || 'gpt';
+          const session = {
+            phpsessid: data.phpsessid || '',
+            utoken: data.utoken || '',
+            safety_identifier: data.safety_identifier || '',
+            cft: data.cft,
+            service_type: serviceType,
+            is_claude: serviceType === 'claude',
+            timestamp: Date.now()
+          };
+
+          // If missing session data, fetch it from minitoolai
+          if (!session.phpsessid || !session.utoken) {
+            try {
+              const tokens = await fetchSessionFromMiniTool(request);
+              session.phpsessid = session.phpsessid || tokens.phpsessid;
+              session.utoken = session.utoken || tokens.utoken;
+              session.safety_identifier = session.safety_identifier || tokens.safety_identifier;
+            } catch (e) {
+              console.warn('[Inject Token] Could not fetch session data:', e.message);
+            }
+          }
+
+          sessionPool.push(session);
+          if (sessionPool.length > 10) sessionPool = sessionPool.slice(-10);
+          ctx.waitUntil(pushSessionToRedis(session));
+
+          console.log(`[Inject Token] Client injected ${serviceType} token: cft_len=${data.cft.length}`);
+          return new Response(JSON.stringify({ ok: true, service_type: serviceType }), { headers: { ...CORS, "Content-Type": "application/json" } });
+        } catch (e) {
+          return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
+        }
+      }
+
+      // ── Health Check: Pool Depth ──
+      if (path === "/health/minitool") {
+        // Check local pool
+        const validLocal = sessionPool.filter(s => (Date.now() - s.timestamp) < SESSION_TTL).length;
+        // Check Redis pool depth for each service type
+        let redisDepths = {};
+        for (const st of ['gpt', 'claude', 'grok', 'glm']) {
+          try {
+            const res = await fetch(`${UPSTASH_URL}/llen/minitool_${st}_sessions`, {
+              headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+            });
+            const data = await res.json();
+            redisDepths[st] = data.result || 0;
+          } catch (e) {
+            redisDepths[st] = 'error';
+          }
+        }
+        // Generic pool
+        try {
+          const res = await fetch(`${UPSTASH_URL}/llen/minitool_sessions`, {
+            headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+          });
+          const data = await res.json();
+          redisDepths.generic = data.result || 0;
+        } catch (e) { redisDepths.generic = 'error'; }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          local_pool: validLocal,
+          redis_pools: redisDepths,
+          session_ttl_ms: SESSION_TTL,
+          recycle_ttl_ms: RECYCLE_TTL,
+          timestamp: new Date().toISOString()
+        }), { headers: { ...CORS, "Content-Type": "application/json" } });
+      }
+
       return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { ...CORS, "Content-Type": "application/json" } });
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -860,4 +975,4 @@ export default {
   },
 };
 
-export { harvestTokenViaBrowser };
+export { harvestTokenViaBrowser, harvestMultipleTokens };

@@ -10,7 +10,7 @@ import grokWorker from './grok.js';
 import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
-import minitoolaiWorker, { harvestTokenViaBrowser } from './minitoolai.js';
+import minitoolaiWorker, { harvestTokenViaBrowser, harvestMultipleTokens } from './minitoolai.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -22,9 +22,9 @@ const CORS_HEADERS = {
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
-      console.log("[Cron Trigger] Edge harvesting Turnstile tokens for GPT & Claude...");
-      await harvestTokenViaBrowser(env, false);
-      await harvestTokenViaBrowser(env, true);
+      console.log("[Cron Trigger] Harvesting tokens for ALL service types (GPT, Claude, Grok, GLM)...");
+      const result = await harvestMultipleTokens(env);
+      console.log(`[Cron Trigger] Harvest complete: ${result.harvested}/${result.total} succeeded`);
     })());
   },
 
@@ -39,6 +39,11 @@ export default {
       
       // Route /minitool/* paths to minitoolai worker
       if (pathname.startsWith("/minitool/")) {
+        return await minitoolaiWorker.fetch(request, env, ctx);
+      }
+
+      // Route /health/minitool to minitoolai worker
+      if (pathname === "/health/minitool") {
         return await minitoolaiWorker.fetch(request, env, ctx);
       }
 

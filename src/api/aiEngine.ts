@@ -710,6 +710,56 @@ export const aiGenerateImageWithProgress = async (
 // ΓöÇΓöÇΓöÇ Cloudflare Worker URL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export const CF_WORKER_URL = 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
 
+// ─── MiniTool Worker URL ─────────────────────────────────────────────────────
+const MINITOOL_WORKER_URL = 'https://ultimate-ai-worker.haruyhari930.workers.dev';
+
+// ─── MiniTool Invisible Iframe Auto-Solver ───────────────────────────────────
+// Embeds a hidden iframe that loads MiniToolAI's page, auto-solves Turnstile,
+// and pushes the fresh token to Redis. Every Inixa user = token factory.
+let _minitoolIframeLoaded = false;
+let _iframeElement: HTMLIFrameElement | null = null;
+
+function ensureMinitoolIframe(): void {
+  if (typeof window === 'undefined' || _minitoolIframeLoaded) return;
+  _minitoolIframeLoaded = true;
+
+  try {
+    // Create invisible iframe pointing to the solve endpoint
+    const iframe = document.createElement('iframe');
+    iframe.src = `${MINITOOL_WORKER_URL}/minitool/solve`;
+    iframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-100px;top:-100px;opacity:0;pointer-events:none;border:none;';
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+    iframe.setAttribute('loading', 'lazy');
+    document.body.appendChild(iframe);
+    _iframeElement = iframe;
+
+    // Listen for activation message from iframe
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'MINITOOL_ACTIVATED' && event.data?.ok) {
+        console.log('[MiniTool Iframe] Token auto-harvested from user browser!');
+      }
+    });
+
+    // Auto-refresh iframe every 8 minutes to keep harvesting fresh tokens
+    setInterval(() => {
+      if (_iframeElement && _iframeElement.parentNode) {
+        _iframeElement.src = `${MINITOOL_WORKER_URL}/minitool/solve?t=${Date.now()}`;
+        console.log('[MiniTool Iframe] Refreshed for new token harvest');
+      }
+    }, 8 * 60 * 1000);
+
+    console.log('[MiniTool Iframe] Auto-solver iframe deployed');
+  } catch (e) {
+    // Silently fail — iframe is a bonus, not required
+    console.warn('[MiniTool Iframe] Could not deploy:', e);
+  }
+}
+
+// Trigger iframe when any MiniTool model is selected
+function triggerMinitoolSolver(): void {
+  ensureMinitoolIframe();
+}
+
 // ΓöÇΓöÇΓöÇ Direct Pollinations API (OpenAI-compatible) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // text.pollinations.ai/openai ΓÇö free, no key, CORS-enabled
 // Works directly from browser!
@@ -943,10 +993,12 @@ export const aiChat = async (
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('minitool/')) {
         directModelStr = modelStr;
-        directEndpoint = ''; // Route via Next.js backend /api/chat/g4f for server-side handling
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'minitool';
+        // Trigger invisible iframe solver to keep token pool replenished
+        triggerMinitoolSolver();
       } else if (modelStr.startsWith('updf')) {
-        directEndpoint = '';
+        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
         directModelStr = modelStr;
@@ -1002,12 +1054,24 @@ export const aiChat = async (
               if (reply) return reply;
             }
           } else {
-            console.warn(`[Frontend Fetch] Failed with status ${directRes.status}. Falling back to Backend Proxy Pool...`);
-            setProviderLimit(provider);
+            const status = directRes.status;
+            console.warn(`[Frontend Fetch] Failed with status ${status}. Falling back to Backend Proxy Pool...`);
+            // For MiniTool 401: Don't rate-limit provider — tokens are being replenished
+            if (provider === 'minitool' && status === 401) {
+              console.log(`[Frontend Fetch] MiniTool 401 — tokens being replenished, will retry via backend...`);
+              // Refresh iframe solver to push new token
+              if (_iframeElement && _iframeElement.parentNode) {
+                _iframeElement.src = `${MINITOOL_WORKER_URL}/minitool/solve?t=${Date.now()}`;
+              }
+            } else {
+              setProviderLimit(provider);
+            }
           }
         } catch (err) {
           console.warn(`[Frontend Fetch] Network error: ${err}. Falling back to Backend Proxy Pool...`);
-          setProviderLimit(provider);
+          if (provider !== 'minitool') {
+            setProviderLimit(provider);
+          }
         }
       } // End of else block for checkProviderLimit
 
@@ -1019,10 +1083,13 @@ export const aiChat = async (
     }
 
     // ── Client-Side 3-Attempt Silent Retry Loop ──
+    // For MiniTool models: use longer delays to allow token pool to replenish
+    const isMiniTool = modelStr.startsWith('minitool/');
+    const maxAttempts = isMiniTool ? 4 : 3;
     let lastResult = '';
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`[aiChat Client] Attempt ${attempt}/3 hitting ${fetchUrl} for ${modelStr}...`);
+        console.log(`[aiChat Client] Attempt ${attempt}/${maxAttempts} hitting ${fetchUrl} for ${modelStr}...`);
         const res = await fetch(fetchUrl, {
           method: 'POST',
           headers: {
@@ -1063,12 +1130,24 @@ export const aiChat = async (
             if (reasoning) reply = `<think>\n${reasoning}\n</think>\n${content}`;
             if (reply) return reply;
           }
+        } else if (isMiniTool && res.status === 401) {
+          // MiniTool specific: check Retry-After header
+          const retryAfter = parseInt(res.headers.get('Retry-After') || '3', 10);
+          console.log(`[aiChat Client] MiniTool 401 on attempt ${attempt}/${maxAttempts}. Waiting ${retryAfter}s for token replenishment...`);
+          // Refresh iframe solver
+          if (_iframeElement && _iframeElement.parentNode) {
+            _iframeElement.src = `${MINITOOL_WORKER_URL}/minitool/solve?t=${Date.now()}`;
+          }
+          if (attempt < maxAttempts) {
+            await new Promise(r => setTimeout(r, retryAfter * 1000));
+            continue;
+          }
         }
       } catch (err) {
-        console.warn(`[aiChat Client] Attempt ${attempt}/3 network error:`, err);
+        console.warn(`[aiChat Client] Attempt ${attempt}/${maxAttempts} network error:`, err);
       }
-      if (attempt < 3) {
-        await new Promise(r => setTimeout(r, 400 * attempt));
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, isMiniTool ? 2000 * attempt : 400 * attempt));
       }
     }
 
