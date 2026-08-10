@@ -682,37 +682,26 @@ export default {
             var sIdent = "${sIdent}";
             var isClaude = ${isClaude};
 
-            function tryRenderTurnstile() {
-              if (window.turnstile && typeof window.turnstile.render === "function") {
-                try {
-                  window.turnstile.render("#turnstile-widget", {
-                    sitekey: "0x4AAAAAABjI2cBIeVpBYEFi",
-                    callback: function(token) { window.cft = token; },
-                    "error-callback": function() { window.cft = "error"; },
-                    "expired-callback": function() { window.cft = "expired"; }
-                  });
-                } catch(e) {}
-              }
-            }
-
-            tryRenderTurnstile();
-            var t1 = setInterval(tryRenderTurnstile, 500);
-
             var timer = setInterval(function() {
-              var cftToken = window.cft || (document.querySelector('[name="cf-turnstile-response"]') && document.querySelector('[name="cf-turnstile-response"]').value);
-              if (cftToken && cftToken.length > 20 && !window.__autoActivated) {
-                window.__autoActivated = true;
-                clearInterval(timer);
-                clearInterval(t1);
-                fetch("https://ultimate-ai-worker.haruyhari930.workers.dev/minitool/activate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ cft: cftToken, phpsessid: phpSess, utoken: uToken, safety_identifier: sIdent, is_claude: isClaude })
-                }).then(function(r) { return r.json(); }).then(function(data) {
-                  try { window.parent.postMessage({ type: "MINITOOL_ACTIVATED", ok: true, isClaude: isClaude }, "*"); } catch(e) {}
-                });
-              }
-            }, 300);
+              try {
+                var cftToken = window.cft || (document.querySelector('[name="cf-turnstile-response"]') && document.querySelector('[name="cf-turnstile-response"]').value);
+                if (cftToken && cftToken.length > 20 && cftToken !== "error" && cftToken !== "expired" && !window.__autoActivated) {
+                  window.__autoActivated = true;
+                  clearInterval(timer);
+                  console.log("[MiniTool Solver] Captcha solved! Token len: " + cftToken.length);
+                  fetch("https://ultimate-ai-worker.haruyhari930.workers.dev/minitool/activate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cft: cftToken, phpsessid: phpSess, utoken: uToken, safety_identifier: sIdent, is_claude: isClaude })
+                  }).then(function(r) { return r.json(); }).then(function(data) {
+                    console.log("[MiniTool Solver] Activation result:", data);
+                    try { window.parent.postMessage({ type: "MINITOOL_ACTIVATED", ok: true, isClaude: isClaude }, "*"); } catch(e) {}
+                  }).catch(function(err) {
+                    console.error("[MiniTool Solver] Activate error:", err);
+                  });
+                }
+              } catch(e) {}
+            }, 250);
           })();
         </script>
         </body>`;
