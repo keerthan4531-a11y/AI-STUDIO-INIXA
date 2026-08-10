@@ -1,4 +1,5 @@
 import puppeteer from "@cloudflare/puppeteer";
+import surfsenseWorker from "./surfsense.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // MiniToolAI Reverse Proxy Worker — Advanced Architecture
@@ -118,14 +119,21 @@ async function harvestTokenViaBrowser(env, serviceType = 'gpt') {
   try {
     browser = await puppeteer.launch(env.MYBROWSER);
     const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
+    await page.setViewport({ width: 1366, height: 768 });
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"Windows"'
+    });
     
     let targetUrl = "https://minitoolai.com/gpt-ai/";
     if (serviceType === 'claude') targetUrl = "https://minitoolai.com/Claude/";
     else if (serviceType === 'grok') targetUrl = "https://minitoolai.com/grok/";
     else if (serviceType === 'glm') targetUrl = "https://minitoolai.com/zai-glm/";
 
-    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: HARVEST_TIMEOUT });
+    await page.goto(targetUrl, { waitUntil: "networkidle2", timeout: HARVEST_TIMEOUT });
     
     const htmlContent = await page.content();
     const utMatch = htmlContent.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
@@ -838,10 +846,33 @@ export default {
         }
 
         if (!sseRes || !sseRes.ok) {
-          // Trigger background harvest for next request
+          // Trigger background harvest to replenish Redis
           if (ctx && env && env.MYBROWSER) {
             ctx.waitUntil(harvestMultipleTokens(env));
           }
+          console.log(`[MiniTool Worker] Session pool dry (${lastErr ? lastErr.message : 'No session'}). Executing instant sub-second proxy fetch...`);
+          
+          // Seamless Worker-side fetch to Surfsense/Copilot
+          try {
+            const fallbackBody = JSON.stringify({
+              model: "gpt-5.4-mini-no-login",
+              messages: body.messages,
+              stream: body.stream !== false
+            });
+            const fallbackReq = new Request(request.url, {
+              method: "POST",
+              headers: request.headers,
+              body: fallbackBody
+            });
+            const surfsenseRes = await surfsenseWorker.fetch(fallbackReq, env, ctx);
+            if (surfsenseRes.ok) {
+              console.log("[MiniTool Worker] Instant proxy fetch succeeded!");
+              return surfsenseRes;
+            }
+          } catch (fbErr) {
+            console.warn("[MiniTool Worker] Instant proxy fetch failed:", fbErr.message);
+          }
+
           return new Response(JSON.stringify({
             error: `All session attempts failed: ${lastErr ? lastErr.message : 'Unknown error'}. Tokens are being replenished, retry in 5 seconds.`,
             retry_after: 5,
