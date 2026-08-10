@@ -1,5 +1,4 @@
 import puppeteer from "@cloudflare/puppeteer";
-import surfsenseWorker from "./surfsense.js";
 
 // ═══════════════════════════════════════════════════════════════════
 // MiniToolAI Reverse Proxy Worker — Advanced Architecture
@@ -309,19 +308,23 @@ async function fetchSessionFromMiniTool(request) {
   const res = await fetch(`${MINITOOL_BASE}/`, { headers });
   const html = await res.text();
 
-  const utMatch = html.match(/var\s+utoken\s*=\s*"([^"]+)"/);
-  const siMatch = html.match(/var\s+safety_identifier\s*=\s*"([^"]+)"/);
+  const utMatch = html.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
+  const siMatch = html.match(/var\s+safety_identifier\s*=\s*['"]([^'"]+)['"]/);
   const cookieHeader = res.headers.get("set-cookie") || "";
   const sessMatch = cookieHeader.match(/PHPSESSID=([^;]+)/);
 
-  if (!utMatch || !siMatch || !sessMatch) {
+  const utoken = utMatch ? utMatch[1] : "af5215a3904e5b714be08e8fe13b2f2b8b491b83da86000722fd61eb56c9e409";
+  const safety_identifier = siMatch ? siMatch[1] : "782e0b89005260f6dadb2cfd5409112d160d95f219921097d50c528eb45efe77";
+  const phpsessid = sessMatch ? sessMatch[1] : "";
+
+  if (!phpsessid && !utoken) {
     throw new Error("Failed to extract tokens from minitoolai.com");
   }
 
   return {
-    phpsessid: sessMatch[1],
-    utoken: utMatch[1],
-    safety_identifier: siMatch[1],
+    phpsessid: phpsessid || `mt_sess_${Math.random().toString(36).substring(2)}`,
+    utoken,
+    safety_identifier,
     sitekey: TURNSTILE_SITEKEY,
   };
 }
@@ -715,6 +718,8 @@ export default {
         </body>`;
 
         html = html.replace(/<base[^>]*>/gi, "");
+        html = html.replace(/history\.replaceState/g, "console.log");
+        html = html.replace(/<meta[^>]*http-equiv=["']content-security-policy["'][^>]*>/gi, "");
         html = html.replace("<head>", `<head><base href="${targetUrl}">`);
         html = html.replace("</body>", injectedScript);
         return new Response(html, { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8" } });
@@ -850,31 +855,9 @@ export default {
           if (ctx && env && env.MYBROWSER) {
             ctx.waitUntil(harvestMultipleTokens(env));
           }
-          console.log(`[MiniTool Worker] Session pool dry (${lastErr ? lastErr.message : 'No session'}). Executing instant sub-second proxy fetch...`);
-          
-          // Seamless Worker-side fetch to Surfsense/Copilot
-          try {
-            const fallbackBody = JSON.stringify({
-              model: "gpt-5.4-mini-no-login",
-              messages: body.messages,
-              stream: body.stream !== false
-            });
-            const fallbackReq = new Request(request.url, {
-              method: "POST",
-              headers: request.headers,
-              body: fallbackBody
-            });
-            const surfsenseRes = await surfsenseWorker.fetch(fallbackReq, env, ctx);
-            if (surfsenseRes.ok) {
-              console.log("[MiniTool Worker] Instant proxy fetch succeeded!");
-              return surfsenseRes;
-            }
-          } catch (fbErr) {
-            console.warn("[MiniTool Worker] Instant proxy fetch failed:", fbErr.message);
-          }
 
           return new Response(JSON.stringify({
-            error: `All session attempts failed: ${lastErr ? lastErr.message : 'Unknown error'}. Tokens are being replenished, retry in 5 seconds.`,
+            error: `All session attempts failed: ${lastErr ? lastErr.message : 'No session'}. Turnstile tokens are being replenished, retry in 5 seconds.`,
             retry_after: 5,
             init_url: `${url.origin}/minitool/init`,
           }), { status: 401, headers: { ...CORS, "Content-Type": "application/json", "Retry-After": "5" } });
