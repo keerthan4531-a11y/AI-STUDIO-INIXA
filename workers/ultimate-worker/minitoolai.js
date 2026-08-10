@@ -665,64 +665,72 @@ export default {
         return new Response(getInitPage(url.origin), { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8" } });
       }
 
-      // ── Invisible Iframe Turnstile Auto-Solver ──
+      // ── Standalone Turnstile Auto-Solver Page ──
       if (path === "/minitool/solve") {
         const isClaude = url.searchParams.get("type") === "claude";
-        const targetUrl = isClaude ? "https://minitoolai.com/Claude/" : "https://minitoolai.com/gpt-ai/";
-        const res = await fetch(targetUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Cookie": "uDevice=notapple"
-          }
-        });
-        let html = await res.text();
-        const cookieHeader = res.headers.get("set-cookie") || "";
-        const sessMatch = cookieHeader.match(/PHPSESSID=([^;]+)/);
-        const phpSess = sessMatch ? sessMatch[1] : "";
+        const cleanSolverHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MiniTool Solver</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body style="margin:0;padding:0;background:transparent;">
+  <div id="turnstile-widget"></div>
+  <script>
+    (function() {
+      var workerOrigin = "${url.origin}";
+      var isClaude = ${isClaude};
+      var defaultUt = "af5215a3904e5b714be08e8fe13b2f2b8b491b83da86000722fd61eb56c9e409";
+      var defaultSi = "782e0b89005260f6dadb2cfd5409112d160d95f219921097d50c528eb45efe77";
 
-        const utMatch = html.match(/var\s+utoken\s*=\s*['"]([^'"]+)['"]/);
-        const siMatch = html.match(/var\s+safety_identifier\s*=\s*['"]([^'"]+)['"]/);
-        const uToken = utMatch ? utMatch[1] : "";
-        const sIdent = siMatch ? siMatch[1] : "";
+      function generateSessId() {
+        var s = "";
+        for (var i = 0; i < 32; i++) s += Math.floor(Math.random() * 16).toString(16);
+        return s;
+      }
 
-        const injectedScript = `
-        <script>
-          (function() {
-            var phpSess = "${phpSess}";
-            var uToken = "${uToken}";
-            var sIdent = "${sIdent}";
-            var isClaude = ${isClaude};
+      function initTurnstile() {
+        if (window.turnstile && typeof window.turnstile.render === "function") {
+          try {
+            window.turnstile.render('#turnstile-widget', {
+              sitekey: '0x4AAAAAABjI2cBIeVpBYEFi',
+              callback: function(token) {
+                console.log('[MiniTool Clean Solver] Turnstile solved! Token len:', token.length);
+                fetch(workerOrigin + '/minitool/activate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    cft: token,
+                    phpsessid: generateSessId(),
+                    utoken: defaultUt,
+                    safety_identifier: defaultSi,
+                    is_claude: isClaude
+                  })
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                  console.log('[MiniTool Clean Solver] Activated session:', data);
+                  try { window.parent.postMessage({ type: 'MINITOOL_ACTIVATED', ok: true, isClaude: isClaude }, '*'); } catch(e) {}
+                }).catch(function(err) {
+                  console.error('[MiniTool Clean Solver] Activate error:', err);
+                });
+              }
+            });
+          } catch(e) { console.error('[MiniTool Clean Solver] Render error:', e); }
+        } else {
+          setTimeout(initTurnstile, 250);
+        }
+      }
 
-            var timer = setInterval(function() {
-              try {
-                var cftToken = window.cft || (document.querySelector('[name="cf-turnstile-response"]') && document.querySelector('[name="cf-turnstile-response"]').value);
-                if (cftToken && cftToken.length > 20 && cftToken !== "error" && cftToken !== "expired" && !window.__autoActivated) {
-                  window.__autoActivated = true;
-                  clearInterval(timer);
-                  console.log("[MiniTool Solver] Captcha solved! Token len: " + cftToken.length);
-                  fetch("https://ultimate-ai-worker.haruyhari930.workers.dev/minitool/activate", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cft: cftToken, phpsessid: phpSess, utoken: uToken, safety_identifier: sIdent, is_claude: isClaude })
-                  }).then(function(r) { return r.json(); }).then(function(data) {
-                    console.log("[MiniTool Solver] Activation result:", data);
-                    try { window.parent.postMessage({ type: "MINITOOL_ACTIVATED", ok: true, isClaude: isClaude }, "*"); } catch(e) {}
-                  }).catch(function(err) {
-                    console.error("[MiniTool Solver] Activate error:", err);
-                  });
-                }
-              } catch(e) {}
-            }, 250);
-          })();
-        </script>
-        </body>`;
-
-        html = html.replace(/<base[^>]*>/gi, "");
-        html = html.replace(/history\.replaceState/g, "console.log");
-        html = html.replace(/<meta[^>]*http-equiv=["']content-security-policy["'][^>]*>/gi, "");
-        html = html.replace("<head>", `<head><base href="${targetUrl}">`);
-        html = html.replace("</body>", injectedScript);
-        return new Response(html, { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8" } });
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initTurnstile);
+      } else {
+        initTurnstile();
+      }
+    })();
+  </script>
+</body>
+</html>`;
+        return new Response(cleanSolverHtml, { headers: { ...CORS, "Content-Type": "text/html; charset=utf-8" } });
       }
 
       // ── Get Session Tokens (Step 1) ──
