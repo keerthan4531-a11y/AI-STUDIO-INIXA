@@ -451,7 +451,28 @@ export async function POST(req: Request) {
             },
           });
         }
-        return NextResponse.json(await overchatRes.json());
+        // For non-streaming requests, parse the SSE lines from OverChat
+        const text = await overchatRes.text();
+        let fullContent = '';
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(dataStr);
+              const content = parsed?.choices?.[0]?.delta?.content || '';
+              if (content) fullContent += content;
+            } catch {}
+          }
+        }
+        return NextResponse.json({
+          id: `chatcmpl-overchat-${Date.now()}`,
+          object: 'chat.completion',
+          created: Math.floor(Date.now() / 1000),
+          model: rawModel,
+          choices: [{ index: 0, message: { role: 'assistant', content: fullContent }, finish_reason: 'stop' }],
+        });
       } catch (err: any) {
         return NextResponse.json(
           { error: `OverChat Request Failed: ${err.message || err}` },

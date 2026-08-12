@@ -21,6 +21,8 @@ import { DeepResearchAgent } from './components/DeepResearchAgent';
 import { NoteIXLayout } from './components/note-ix/NoteIXLayout';
 import { DualLLMChat } from './components/chat/DualLLMChat';
 
+import { ClaudeCodeSetupScreen } from './components/ClaudeCodeSetupScreen';
+
 export interface ChatSession {
   id: string;
   title: string;
@@ -270,6 +272,7 @@ export default function App() {
                 {activeTab === 'auto-pilot' && <AutoPilotAgent />}
                 {activeTab === 'deep-research' && <DeepResearchAgent currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
                 {activeTab === 'arena' && <DualLLMChat currentModel={currentModel} setShowModelSelector={setShowModelSelector} />}
+                {activeTab === 'claude-code' && <ClaudeCodeSetupScreen />}
               </motion.div>
             </AnimatePresence>
           )}

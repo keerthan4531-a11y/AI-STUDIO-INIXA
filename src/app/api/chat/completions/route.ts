@@ -157,9 +157,10 @@ export async function POST(req: Request) {
       "127.0.0.1",
       "ai-studio-inixa.vercel.app",
       "inixa.vercel.app",
+      "vercel.app",
     ];
 
-    const isOriginAllowed = allowedOrigins.some((allowed) => origin.includes(allowed));
+    const isOriginAllowed = !origin || allowedOrigins.some((allowed) => origin.includes(allowed));
     let authHeader = req.headers.get("authorization");
     const SERVER_SECRET = process.env.INIXA_PROXY_SECRET;
 
@@ -579,8 +580,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Route: G4F / Qwen (Local forward to /api/chat/g4f) ──
-    if (selectedModel.startsWith('g4f/') || selectedModel.startsWith('qwen_worker/')) {
+    // ── Route: G4F / Qwen / OverChat (Local forward to /api/chat/g4f) ──
+    if (selectedModel.startsWith('g4f/') || selectedModel.startsWith('overchat/') || selectedModel.startsWith('qwen_worker/')) {
        console.log(`[Route] Forwarding to /api/chat/g4f for model: ${selectedModel}`);
        
        const protocol = req.headers.get('x-forwarded-proto') || 'http';
