@@ -14,7 +14,7 @@ export async function handleAnthropicGet() {
   return NextResponse.json(
     {
       status: 'online',
-      service: 'Inixa Anthropic Adapter for Claude Code (Smart Tool Enabled)',
+      service: 'Inixa Anthropic Adapter for Claude Code (Base64 File Writer Enabled)',
       endpoints: ['/v1/messages', '/api/v1/messages', '/messages'],
     },
     { headers: corsHeaders }
@@ -63,73 +63,67 @@ function formatAnthropicContent(content: any): string {
   return String(content);
 }
 
+function createBase64WriteCommand(filePath: string, fileContent: string): string {
+  let cleanPath = filePath.trim().replace(/\\/g, '/');
+  if (cleanPath.startsWith('/mnt/e/')) cleanPath = cleanPath.replace('/mnt/e/', 'E:/');
+  if (cleanPath.startsWith('/mnt/c/')) cleanPath = cleanPath.replace('/mnt/c/', 'C:/');
+  if (cleanPath.includes('/tmp/')) cleanPath = 'E:/testf/index.html';
+
+  const dirPath = cleanPath.includes('/') ? cleanPath.substring(0, cleanPath.lastIndexOf('/')) : '';
+  const base64Content = Buffer.from(fileContent, 'utf-8').toString('base64');
+
+  if (dirPath) {
+    return `node -e "const fs=require('fs'); fs.mkdirSync('${dirPath}', {recursive: true}); fs.writeFileSync('${cleanPath}', Buffer.from('${base64Content}', 'base64')); console.log('✅ File created: ${cleanPath}');"`;
+  }
+  return `node -e "const fs=require('fs'); fs.writeFileSync('${cleanPath}', Buffer.from('${base64Content}', 'base64')); console.log('✅ File created: ${cleanPath}');"`;
+}
+
 function parseAndCleanCommands(text: string, tools: any[]): { name: string; input: any } | null {
   if (!text) return null;
 
-  const hasWriteTool = Array.isArray(tools) && tools.some((t: any) => t.name === 'Write' || t.name === 'FileWrite' || t.name === 'write_file');
   const hasBashTool = Array.isArray(tools) && tools.some((t: any) => t.name === 'Bash');
+  const commands: string[] = [];
 
   // Pattern 1: Cat heredoc pattern: cat > "filepath" << 'EOF' ... EOF
-  const catRegex = /cat\s*>\s*["']?([^"'\s]+)["']?\s*<<\s*['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\2/i;
-  const catMatch = catRegex.exec(text);
+  const catRegex = /cat\s*>\s*["']?([^"'\s]+)["']?\s*<<\s*['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\2/gi;
+  let catMatch;
 
-  if (catMatch && (hasWriteTool || hasBashTool)) {
-    let filePath = catMatch[1].trim();
+  while ((catMatch = catRegex.exec(text)) !== null) {
+    const filePath = catMatch[1].trim();
     const fileContent = catMatch[3];
+    commands.push(createBase64WriteCommand(filePath, fileContent));
+  }
 
-    // Clean up Linux /mnt/e/ or /tmp/ paths for Windows
-    if (filePath.startsWith('/mnt/e/')) filePath = filePath.replace('/mnt/e/', 'E:/');
-    if (filePath.startsWith('/mnt/c/')) filePath = filePath.replace('/mnt/c/', 'C:/');
-    if (filePath.includes('/tmp/')) filePath = 'E:/testf/index.html';
-
-    if (hasWriteTool) {
-      const writeToolName = tools.find((t: any) => t.name === 'Write' || t.name === 'FileWrite' || t.name === 'write_file')?.name || 'Write';
-      return {
-        name: writeToolName,
-        input: {
-          file_path: filePath,
-          path: filePath,
-          content: fileContent,
-        },
-      };
-    }
-
-    if (hasBashTool) {
-      const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : '';
-      const safeJsContent = JSON.stringify(fileContent);
-      const safeCmd = `node -e "const fs=require('fs'); if('${dirPath}') fs.mkdirSync('${dirPath}', {recursive: true}); fs.writeFileSync('${filePath}', ${safeJsContent}); console.log('✅ File written to ${filePath}');"`;
-      return {
-        name: 'Bash',
-        input: { command: safeCmd },
-      };
+  // Pattern 2: Extract HTML code blocks if user asked to create a file
+  if (commands.length === 0) {
+    const htmlBlockRegex = /```html\s*\n([\s\S]*?)\n```/i;
+    const htmlMatch = htmlBlockRegex.exec(text);
+    if (htmlMatch) {
+      commands.push(createBase64WriteCommand('E:/testf/index.html', htmlMatch[1]));
     }
   }
 
-  // Pattern 2: General shell script extraction with cleaned Windows paths
-  let cleanText = text
-    .replace(/\/mnt\/e\//g, 'E:/')
-    .replace(/\/mnt\/c\//g, 'C:/')
-    .replace(/\/tmp\/[a-zA-Z0-9_-]+\.html/g, 'E:/testf/index.html');
+  // Pattern 3: General shell commands (mkdir, npm, git, etc.)
+  if (commands.length === 0) {
+    let cleanText = text
+      .replace(/\/mnt\/e\//g, 'E:/')
+      .replace(/\/mnt\/c\//g, 'C:/')
+      .replace(/\/tmp\/[a-zA-Z0-9_-]+\.html/g, 'E:/testf/index.html');
 
-  const codeBlockRegex = /```(?:bash|sh|shell|cmd|powershell)?\s*\n([\s\S]*?)\n```/gi;
-  let match;
-  const foundCommands: string[] = [];
-
-  while ((match = codeBlockRegex.exec(cleanText)) !== null) {
-    const code = match[1].trim();
-    if (code && (code.includes('mkdir') || code.includes('cat ') || code.includes('touch') || code.includes('echo') || code.includes('npm') || code.includes('git') || code.includes('cd '))) {
-      foundCommands.push(code);
+    const codeBlockRegex = /```(?:bash|sh|shell|cmd|powershell)?\s*\n([\s\S]*?)\n```/gi;
+    let match;
+    while ((match = codeBlockRegex.exec(cleanText)) !== null) {
+      const code = match[1].trim();
+      if (code && (code.includes('mkdir') || code.includes('cat ') || code.includes('touch') || code.includes('echo') || code.includes('npm') || code.includes('git') || code.includes('cd '))) {
+        commands.push(code);
+      }
     }
   }
 
-  const finalCmd = foundCommands.length > 0 ? foundCommands.join('\n\n') : (
-    cleanText.includes('mkdir') || cleanText.includes('cat ') ? cleanText.trim() : null
-  );
-
-  if (finalCmd && hasBashTool) {
+  if (commands.length > 0 && hasBashTool) {
     return {
       name: 'Bash',
-      input: { command: finalCmd },
+      input: { command: commands.join(' && ') },
     };
   }
 
