@@ -14,7 +14,7 @@ export async function handleAnthropicGet() {
   return NextResponse.json(
     {
       status: 'online',
-      service: 'Inixa Anthropic Adapter for Claude Code (Tool Enabled)',
+      service: 'Inixa Anthropic Adapter for Claude Code (Smart Tool Enabled)',
       endpoints: ['/v1/messages', '/api/v1/messages', '/messages'],
     },
     { headers: corsHeaders }
@@ -63,31 +63,74 @@ function formatAnthropicContent(content: any): string {
   return String(content);
 }
 
-function extractShellCommandsFromOutput(text: string): string | null {
+function parseAndCleanCommands(text: string, tools: any[]): { name: string; input: any } | null {
   if (!text) return null;
 
-  // 1. Look for ```bash or ```sh or ```shell code blocks
+  const hasWriteTool = Array.isArray(tools) && tools.some((t: any) => t.name === 'Write' || t.name === 'FileWrite' || t.name === 'write_file');
+  const hasBashTool = Array.isArray(tools) && tools.some((t: any) => t.name === 'Bash');
+
+  // Pattern 1: Cat heredoc pattern: cat > "filepath" << 'EOF' ... EOF
+  const catRegex = /cat\s*>\s*["']?([^"'\s]+)["']?\s*<<\s*['"]?(\w+)['"]?\s*\n([\s\S]*?)\n\2/i;
+  const catMatch = catRegex.exec(text);
+
+  if (catMatch && (hasWriteTool || hasBashTool)) {
+    let filePath = catMatch[1].trim();
+    const fileContent = catMatch[3];
+
+    // Clean up Linux /mnt/e/ or /tmp/ paths for Windows
+    if (filePath.startsWith('/mnt/e/')) filePath = filePath.replace('/mnt/e/', 'E:/');
+    if (filePath.startsWith('/mnt/c/')) filePath = filePath.replace('/mnt/c/', 'C:/');
+    if (filePath.includes('/tmp/')) filePath = 'E:/testf/index.html';
+
+    if (hasWriteTool) {
+      const writeToolName = tools.find((t: any) => t.name === 'Write' || t.name === 'FileWrite' || t.name === 'write_file')?.name || 'Write';
+      return {
+        name: writeToolName,
+        input: {
+          file_path: filePath,
+          path: filePath,
+          content: fileContent,
+        },
+      };
+    }
+
+    if (hasBashTool) {
+      const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : '';
+      const safeJsContent = JSON.stringify(fileContent);
+      const safeCmd = `node -e "const fs=require('fs'); if('${dirPath}') fs.mkdirSync('${dirPath}', {recursive: true}); fs.writeFileSync('${filePath}', ${safeJsContent}); console.log('✅ File written to ${filePath}');"`;
+      return {
+        name: 'Bash',
+        input: { command: safeCmd },
+      };
+    }
+  }
+
+  // Pattern 2: General shell script extraction with cleaned Windows paths
+  let cleanText = text
+    .replace(/\/mnt\/e\//g, 'E:/')
+    .replace(/\/mnt\/c\//g, 'C:/')
+    .replace(/\/tmp\/[a-zA-Z0-9_-]+\.html/g, 'E:/testf/index.html');
+
   const codeBlockRegex = /```(?:bash|sh|shell|cmd|powershell)?\s*\n([\s\S]*?)\n```/gi;
   let match;
   const foundCommands: string[] = [];
 
-  while ((match = codeBlockRegex.exec(text)) !== null) {
+  while ((match = codeBlockRegex.exec(cleanText)) !== null) {
     const code = match[1].trim();
     if (code && (code.includes('mkdir') || code.includes('cat ') || code.includes('touch') || code.includes('echo') || code.includes('npm') || code.includes('git') || code.includes('cd '))) {
       foundCommands.push(code);
     }
   }
 
-  if (foundCommands.length > 0) {
-    return foundCommands.join('\n\n');
-  }
+  const finalCmd = foundCommands.length > 0 ? foundCommands.join('\n\n') : (
+    cleanText.includes('mkdir') || cleanText.includes('cat ') ? cleanText.trim() : null
+  );
 
-  // 2. Check for direct multi-line script containing mkdir / cat > / touch / echo
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const isScript = lines.some(l => l.startsWith('mkdir ') || l.startsWith('cat >') || l.startsWith('touch ') || l.startsWith('echo '));
-
-  if (isScript) {
-    return text.trim();
+  if (finalCmd && hasBashTool) {
+    return {
+      name: 'Bash',
+      input: { command: finalCmd },
+    };
   }
 
   return null;
@@ -98,16 +141,16 @@ export async function handleAnthropicMessages(request: Request) {
     const body = await request.json();
     const url = new URL(request.url);
 
-    // Check available tools from Claude Code
-    const hasTools = Array.isArray(body.tools) && body.tools.length > 0;
-    const hasBashTool = hasTools && body.tools.some((t: any) => t.name === 'Bash');
+    const tools = Array.isArray(body.tools) ? body.tools : [];
+    const hasTools = tools.length > 0;
+    const hasBashTool = hasTools && tools.some((t: any) => t.name === 'Bash');
 
     // Extract System Prompt and Messages
     let systemPrompt = extractSystemPrompt(body.system);
     const openAiMessages: Array<{ role: string; content: string }> = [];
 
     if (hasBashTool) {
-      systemPrompt = `${systemPrompt}\n\n[CRITICAL CLI INSTRUCTION]: You are powering Claude Code CLI. When the user requests to create files, folders, or execute actions, output executable bash shell commands inside a \`\`\`bash ... \`\`\` block so that the filesystem proxy can run them automatically on the user's computer.`;
+      systemPrompt = `${systemPrompt}\n\n[CRITICAL CLI INSTRUCTION]: You are powering Claude Code CLI on Windows. When creating files or folders (e.g. in E:\\testf), output clean file blocks or node/shell commands. Do NOT use /tmp or /mnt/e Linux paths.`;
     }
 
     if (systemPrompt) {
@@ -166,19 +209,19 @@ export async function handleAnthropicMessages(request: Request) {
     if (!isStream) {
       const jsonRes = await proxyRes.json();
       const textContent = jsonRes?.choices?.[0]?.message?.content || '';
-      const bashCmd = hasBashTool ? extractShellCommandsFromOutput(textContent) : null;
+      const toolAction = hasTools ? parseAndCleanCommands(textContent, tools) : null;
 
       const contentBlocks: any[] = [];
       if (textContent) {
         contentBlocks.push({ type: 'text', text: textContent });
       }
 
-      if (bashCmd) {
+      if (toolAction) {
         contentBlocks.push({
           type: 'tool_use',
           id: `toolu_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          name: 'Bash',
-          input: { command: bashCmd },
+          name: toolAction.name,
+          input: toolAction.input,
         });
       }
 
@@ -189,7 +232,7 @@ export async function handleAnthropicMessages(request: Request) {
           role: 'assistant',
           model: body.model || 'claude-3-5-sonnet-20241022',
           content: contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }],
-          stop_reason: bashCmd ? 'tool_use' : 'end_turn',
+          stop_reason: toolAction ? 'tool_use' : 'end_turn',
           stop_sequence: null,
           usage: {
             input_tokens: openAiMessages.reduce((acc, m) => acc + m.content.length / 4, 0),
@@ -286,20 +329,20 @@ export async function handleAnthropicMessages(request: Request) {
             )
           );
 
-          // Check if shell commands were outputted that should trigger Bash tool execution in Claude Code
-          const extractedCmd = hasBashTool ? extractShellCommandsFromOutput(fullAccumulatedText) : null;
+          // Check if tool execution commands were outputted
+          const toolAction = hasTools ? parseAndCleanCommands(fullAccumulatedText, tools) : null;
 
-          if (extractedCmd) {
+          if (toolAction) {
             const toolId = `toolu_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
             const toolStart = `event: content_block_start\ndata: ${JSON.stringify({
               type: 'content_block_start',
               index: 1,
-              content_block: { type: 'tool_use', id: toolId, name: 'Bash', input: {} },
+              content_block: { type: 'tool_use', id: toolId, name: toolAction.name, input: {} },
             })}\n\n`;
             const toolDelta = `event: content_block_delta\ndata: ${JSON.stringify({
               type: 'content_block_delta',
               index: 1,
-              delta: { type: 'input_json_delta', partial_json: JSON.stringify({ command: extractedCmd }) },
+              delta: { type: 'input_json_delta', partial_json: JSON.stringify(toolAction.input) },
             })}\n\n`;
             const toolStop = `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: 1 })}\n\n`;
 
