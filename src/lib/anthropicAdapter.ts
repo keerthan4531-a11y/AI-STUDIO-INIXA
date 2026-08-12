@@ -14,7 +14,7 @@ export async function handleAnthropicGet() {
   return NextResponse.json(
     {
       status: 'online',
-      service: 'Inixa Anthropic Adapter for Claude Code',
+      service: 'Inixa Anthropic Adapter for Claude Code (Tool Enabled)',
       endpoints: ['/v1/messages', '/api/v1/messages', '/messages'],
     },
     { headers: corsHeaders }
@@ -47,10 +47,12 @@ function formatAnthropicContent(content: any): string {
         if (block && typeof block === 'object') {
           if (block.type === 'text') return block.text || '';
           if (block.type === 'image') return '[Image]';
-          if (block.type === 'tool_use') return `[Tool Use: ${block.name}(${JSON.stringify(block.input || {})})]`;
+          if (block.type === 'tool_use') {
+            return `Tool Call [${block.name}]: ${JSON.stringify(block.input || {})}`;
+          }
           if (block.type === 'tool_result') {
-            const resText = typeof block.content === 'string' ? block.content : JSON.stringify(block.content);
-            return `[Tool Result: ${resText}]`;
+            const resText = typeof block.content === 'string' ? block.content : JSON.stringify(block.content || '');
+            return `Tool Output: ${resText}`;
           }
         }
         return '';
@@ -61,14 +63,52 @@ function formatAnthropicContent(content: any): string {
   return String(content);
 }
 
+function extractShellCommandsFromOutput(text: string): string | null {
+  if (!text) return null;
+
+  // 1. Look for ```bash or ```sh or ```shell code blocks
+  const codeBlockRegex = /```(?:bash|sh|shell|cmd|powershell)?\s*\n([\s\S]*?)\n```/gi;
+  let match;
+  const foundCommands: string[] = [];
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    const code = match[1].trim();
+    if (code && (code.includes('mkdir') || code.includes('cat ') || code.includes('touch') || code.includes('echo') || code.includes('npm') || code.includes('git') || code.includes('cd '))) {
+      foundCommands.push(code);
+    }
+  }
+
+  if (foundCommands.length > 0) {
+    return foundCommands.join('\n\n');
+  }
+
+  // 2. Check for direct multi-line script containing mkdir / cat > / touch / echo
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const isScript = lines.some(l => l.startsWith('mkdir ') || l.startsWith('cat >') || l.startsWith('touch ') || l.startsWith('echo '));
+
+  if (isScript) {
+    return text.trim();
+  }
+
+  return null;
+}
+
 export async function handleAnthropicMessages(request: Request) {
   try {
     const body = await request.json();
     const url = new URL(request.url);
 
+    // Check available tools from Claude Code
+    const hasTools = Array.isArray(body.tools) && body.tools.length > 0;
+    const hasBashTool = hasTools && body.tools.some((t: any) => t.name === 'Bash');
+
     // Extract System Prompt and Messages
-    const systemPrompt = extractSystemPrompt(body.system);
+    let systemPrompt = extractSystemPrompt(body.system);
     const openAiMessages: Array<{ role: string; content: string }> = [];
+
+    if (hasBashTool) {
+      systemPrompt = `${systemPrompt}\n\n[CRITICAL CLI INSTRUCTION]: You are powering Claude Code CLI. When the user requests to create files, folders, or execute actions, output executable bash shell commands inside a \`\`\`bash ... \`\`\` block so that the filesystem proxy can run them automatically on the user's computer.`;
+    }
 
     if (systemPrompt) {
       openAiMessages.push({ role: 'system', content: systemPrompt });
@@ -126,6 +166,21 @@ export async function handleAnthropicMessages(request: Request) {
     if (!isStream) {
       const jsonRes = await proxyRes.json();
       const textContent = jsonRes?.choices?.[0]?.message?.content || '';
+      const bashCmd = hasBashTool ? extractShellCommandsFromOutput(textContent) : null;
+
+      const contentBlocks: any[] = [];
+      if (textContent) {
+        contentBlocks.push({ type: 'text', text: textContent });
+      }
+
+      if (bashCmd) {
+        contentBlocks.push({
+          type: 'tool_use',
+          id: `toolu_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          name: 'Bash',
+          input: { command: bashCmd },
+        });
+      }
 
       return NextResponse.json(
         {
@@ -133,13 +188,8 @@ export async function handleAnthropicMessages(request: Request) {
           type: 'message',
           role: 'assistant',
           model: body.model || 'claude-3-5-sonnet-20241022',
-          content: [
-            {
-              type: 'text',
-              text: textContent,
-            },
-          ],
-          stop_reason: 'end_turn',
+          content: contentBlocks.length > 0 ? contentBlocks : [{ type: 'text', text: '' }],
+          stop_reason: bashCmd ? 'tool_use' : 'end_turn',
           stop_sequence: null,
           usage: {
             input_tokens: openAiMessages.reduce((acc, m) => acc + m.content.length / 4, 0),
@@ -157,7 +207,7 @@ export async function handleAnthropicMessages(request: Request) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        // 1. Initial event headers for Anthropic SSE
+        // Initial event headers for Anthropic SSE
         const startEvents = [
           `event: message_start\ndata: ${JSON.stringify({
             type: 'message_start',
@@ -190,6 +240,7 @@ export async function handleAnthropicMessages(request: Request) {
         }
 
         let buffer = '';
+        let fullAccumulatedText = '';
 
         try {
           while (true) {
@@ -203,10 +254,7 @@ export async function handleAnthropicMessages(request: Request) {
             for (const line of lines) {
               const trimmed = line.trim();
               if (!trimmed || trimmed.startsWith(':')) continue;
-
-              if (trimmed === 'data: [DONE]') {
-                continue;
-              }
+              if (trimmed === 'data: [DONE]') continue;
 
               if (trimmed.startsWith('data: ')) {
                 const dataStr = trimmed.slice(6);
@@ -215,6 +263,7 @@ export async function handleAnthropicMessages(request: Request) {
                   const deltaText = parsed?.choices?.[0]?.delta?.content || '';
 
                   if (deltaText) {
+                    fullAccumulatedText += deltaText;
                     const deltaEvt = `event: content_block_delta\ndata: ${JSON.stringify({
                       type: 'content_block_delta',
                       index: 0,
@@ -231,23 +280,49 @@ export async function handleAnthropicMessages(request: Request) {
         } catch (err) {
           console.error('[Anthropic Adapter] Stream processing error:', err);
         } finally {
-          // Final end events
-          const endEvents = [
-            `event: content_block_stop\ndata: ${JSON.stringify({
-              type: 'content_block_stop',
-              index: 0,
-            })}\n\n`,
-            `event: message_delta\ndata: ${JSON.stringify({
+          controller.enqueue(
+            encoder.encode(
+              `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: 0 })}\n\n`
+            )
+          );
+
+          // Check if shell commands were outputted that should trigger Bash tool execution in Claude Code
+          const extractedCmd = hasBashTool ? extractShellCommandsFromOutput(fullAccumulatedText) : null;
+
+          if (extractedCmd) {
+            const toolId = `toolu_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            const toolStart = `event: content_block_start\ndata: ${JSON.stringify({
+              type: 'content_block_start',
+              index: 1,
+              content_block: { type: 'tool_use', id: toolId, name: 'Bash', input: {} },
+            })}\n\n`;
+            const toolDelta = `event: content_block_delta\ndata: ${JSON.stringify({
+              type: 'content_block_delta',
+              index: 1,
+              delta: { type: 'input_json_delta', partial_json: JSON.stringify({ command: extractedCmd }) },
+            })}\n\n`;
+            const toolStop = `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: 1 })}\n\n`;
+
+            controller.enqueue(encoder.encode(toolStart));
+            controller.enqueue(encoder.encode(toolDelta));
+            controller.enqueue(encoder.encode(toolStop));
+
+            const msgDelta = `event: message_delta\ndata: ${JSON.stringify({
+              type: 'message_delta',
+              delta: { stop_reason: 'tool_use', stop_sequence: null },
+              usage: { output_tokens: 100 },
+            })}\n\n`;
+            controller.enqueue(encoder.encode(msgDelta));
+          } else {
+            const msgDelta = `event: message_delta\ndata: ${JSON.stringify({
               type: 'message_delta',
               delta: { stop_reason: 'end_turn', stop_sequence: null },
               usage: { output_tokens: 50 },
-            })}\n\n`,
-            `event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`,
-          ];
-
-          for (const evt of endEvents) {
-            controller.enqueue(encoder.encode(evt));
+            })}\n\n`;
+            controller.enqueue(encoder.encode(msgDelta));
           }
+
+          controller.enqueue(encoder.encode(`event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`));
           controller.close();
         }
       },
