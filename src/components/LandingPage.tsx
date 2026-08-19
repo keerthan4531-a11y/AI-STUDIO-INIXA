@@ -6,7 +6,7 @@ import {
   MessageSquare, FileText, ImageIcon, Video, Code, Search,
   Brain, Cpu, Shield, Sparkles, Mic, Globe, BookMarked, Code2,
   ArrowRight, ChevronDown, Zap, Star, Layers, Lock, Rocket,
-  Monitor, Smartphone, ExternalLink
+  Monitor, Smartphone, ExternalLink, Download, Music, Headphones, CheckCircle2, Volume2
 } from "lucide-react";
 import ShaderAnimation from "./ui/shader-animation";
 import { InteractiveShader } from "./ui/digital-aurora";
@@ -263,6 +263,10 @@ function LandingNav({ onLaunch }: { onLaunch: () => void }) {
 
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-white/40 hover:text-white text-sm font-medium transition-colors">Features</a>
+          <a href="#apps" className="text-white/40 hover:text-cyan-400 text-sm font-medium transition-colors flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            Author Apps
+          </a>
           <a href="#3d-demo" className="text-white/40 hover:text-white text-sm font-medium transition-colors">Demo</a>
           <a href="#stats" className="text-white/40 hover:text-white text-sm font-medium transition-colors">Stats</a>
         </div>
@@ -750,6 +754,130 @@ export default function LandingPage() {
                 </span>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== AUTHOR APPS & MOBILE DOWNLOADS SECTION ===== */}
+      <section id="apps" className="relative z-10 py-20 sm:py-28">
+        <div className="max-w-5xl mx-auto px-6 sm:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="text-center mb-14"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-400 mb-4">
+              <Sparkles className="w-3 h-3 text-cyan-400" />
+              Creator Ecosystem
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tighter text-white mt-2 mb-4">
+              Our <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Author Apps</span>
+            </h2>
+            <p className="text-white/40 text-base max-w-xl mx-auto">
+              Download our exclusive native Android applications directly to your phone. 100% free and open-source.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Echo Music App (Feature Card - 2 Columns) */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="lg:col-span-2 relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0b1020] via-[#070b14] to-[#03060c] border border-cyan-500/30 p-7 sm:p-8 hover:border-cyan-400/60 transition-all duration-500 shadow-[0_20px_50px_rgba(6,182,212,0.15)] group"
+            >
+              <div className="absolute -top-24 -right-24 w-60 h-60 bg-cyan-500/15 blur-[80px] rounded-full pointer-events-none" />
+
+              <div className="relative z-10 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg border border-cyan-400/30 shrink-0 bg-black/40 flex items-center justify-center">
+                      <img 
+                        src="/echo-music-icon.png" 
+                        alt="Echo Music Icon" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                      <Music className="w-8 h-8 text-cyan-400 absolute" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-2xl font-black text-white">Echo Music</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                          Free Music App
+                        </span>
+                      </div>
+                      <p className="text-white/50 text-xs sm:text-sm">Hi-Res Lossless Streamer & Offline Music Player</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 self-start sm:self-auto">
+                    📦 81.6 MB • ARM64
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <span className="text-cyan-400 font-bold block">🚫 100% Ad-Free</span>
+                    <span className="text-white/30 text-[10px]">Zero audio ads or fees</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <span className="text-cyan-400 font-bold block">🎵 Lossless Audio</span>
+                    <span className="text-white/30 text-[10px]">Studio quality sound</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                    <span className="text-cyan-400 font-bold block">📥 Offline Cache</span>
+                    <span className="text-white/30 text-[10px]">Save tracks locally</span>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <a
+                    href="/downloads/Echo-Music.apk"
+                    download="Echo-Music.apk"
+                    className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:via-indigo-500 hover:to-purple-500 border border-cyan-400/40 text-white font-black text-sm uppercase tracking-wider shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_50px_rgba(6,182,212,0.5)] transition-all cursor-pointer"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download Echo Music APK (81.6 MB)
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Inixa Mobile App (1 Column) */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0c0d1c] to-[#05060f] border border-indigo-500/20 p-7 sm:p-8 hover:border-indigo-500/40 transition-all flex flex-col justify-between group"
+            >
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-lg">
+                  <InixaLogo size={36} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-1">Inixa AI Android</h3>
+                  <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-2">Native APK • 4.1 MB</span>
+                  <p className="text-white/40 text-xs leading-relaxed">
+                    Full AI Studio interface optimized for Android with instant neural chat & voice features.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <a
+                  href="/downloads/Inixa-AI.apk"
+                  download="Inixa-AI.apk"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-white/[0.06] hover:bg-indigo-600/30 border border-white/10 hover:border-indigo-500/40 text-white text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  <Download className="w-4 h-4 text-indigo-400" />
+                  Download APK (4.1 MB)
+                </a>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>

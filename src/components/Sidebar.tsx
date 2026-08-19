@@ -67,7 +67,7 @@ const navItems = [
   { id: 'music', icon: Music, label: 'Neural Music', badge: 'PRO' },
   { id: 'voice', icon: Mic, label: 'Voice', badge: 'NEW' },
   { id: 'api', icon: Code2, label: 'API Service', badge: 'DEV' },
-  { id: 'about', icon: Info, label: 'About' },
+  { id: 'about', icon: Info, label: 'About & Apps', badge: 'APK' },
 ];
 
 /* ============================
