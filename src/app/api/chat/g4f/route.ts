@@ -496,7 +496,7 @@ export async function POST(req: Request) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
       } else if (model.startsWith("minitool/")) {
-        const pyBridge = process.env.PYTHON_BRIDGE_URL || "http://localhost:8000";
+        const pyBridge = process.env.PYTHON_BRIDGE_URL || "https://ai-studio-inixa.onrender.com";
         targetEndpoint = `${pyBridge}/v1/chat/completions`;
         g4fModel = model.replace("minitool/", "");
       } else if (model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {

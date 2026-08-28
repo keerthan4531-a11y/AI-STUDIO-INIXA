@@ -111,13 +111,24 @@ class TurnstileHarvester:
                     args=launch_args
                 )
 
+        ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" if is_linux else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+
         self.context = await self.browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+            user_agent=ua,
             viewport={"width": 1280, "height": 720}
         )
+
+        # Stealth anti-detection scripts
+        await self.context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            window.chrome = { runtime: {} };
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+        """)
+
         self.page = await self.context.new_page()
         self.is_running = True
-        logger.info("Playwright Browser launched successfully.")
+        logger.info("Playwright Browser launched with stealth patches successfully.")
         asyncio.create_task(self._harvest_loop())
 
     async def _harvest_single_token(self) -> Optional[str]:
@@ -412,6 +423,18 @@ async def health_check():
         "has_cookie": bool(harvester.session_data.get("cookie")),
         "has_utoken": bool(harvester.session_data.get("utoken")),
     }
+
+@app.post("/sync")
+async def sync_session(payload: Dict[str, Any]):
+    if payload.get("cookie"):
+        harvester.session_data["cookie"] = payload["cookie"]
+    if payload.get("utoken"):
+        harvester.session_data["utoken"] = payload["utoken"]
+    if payload.get("safety_identifier"):
+        harvester.session_data["safety_identifier"] = payload["safety_identifier"]
+    if payload.get("cft"):
+        await harvester.token_queue.put(payload["cft"])
+    return {"ok": True, "tokens_in_pool": harvester.token_queue.qsize()}
 
 if __name__ == "__main__":
     import uvicorn

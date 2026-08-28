@@ -687,39 +687,33 @@ export async function POST(req: Request) {
       const minitoolModel = selectedModel.replace('minitool/', '');
       console.log(`[MiniTool Route] Routing for model: ${minitoolModel}`);
 
-      const candidateUrls = [
-        process.env.PYTHON_BRIDGE_URL,
-        'http://localhost:8000',
-        'https://ai-studio-inixa.onrender.com'
-      ].filter(Boolean) as string[];
+      const renderBridgeUrl = process.env.PYTHON_BRIDGE_URL || 'https://ai-studio-inixa.onrender.com';
+      console.log(`[MiniTool Route] Routing strictly via Render Cloud Bridge: ${renderBridgeUrl}`);
 
       let pySuccess = false;
 
-      // 1. Try Automated Python Bridge (Local or Render Cloud 24/7)
-      for (const bridgeUrl of candidateUrls) {
-        try {
-          const pyRes = await fetch(`${bridgeUrl}/v1/chat/completions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: minitoolModel,
-              messages: formattedMessages,
-              stream: stream === true,
-            }),
-            signal: AbortSignal.timeout(35000),
-          });
+      // 1. Try Render Cloud Python Bridge (24/7 Cloud)
+      try {
+        const pyRes = await fetch(`${renderBridgeUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: minitoolModel,
+            messages: formattedMessages,
+            stream: stream === true,
+          }),
+          signal: AbortSignal.timeout(45000),
+        });
 
-          if (pyRes.ok) {
-            console.log(`[MiniTool Route] Successfully served via Python Bridge (${bridgeUrl})!`);
-            proxyResponse = pyRes;
-            pySuccess = true;
-            break;
-          } else {
-            console.warn(`[MiniTool Route] Python bridge (${bridgeUrl}) returned ${pyRes.status}`);
-          }
-        } catch (e: any) {
-          console.log(`[MiniTool Route] Bridge ${bridgeUrl} unavailable: ${e.message}`);
+        if (pyRes.ok) {
+          console.log(`[MiniTool Route] Successfully served via Render Cloud Bridge!`);
+          proxyResponse = pyRes;
+          pySuccess = true;
+        } else {
+          console.warn(`[MiniTool Route] Render Cloud bridge returned status ${pyRes.status}`);
         }
+      } catch (e: any) {
+        console.log(`[MiniTool Route] Render Cloud bridge failed: ${e.message}`);
       }
 
       // 2. Fallback to direct session fetch if Python Bridge is not active
