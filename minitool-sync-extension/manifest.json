@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "MiniToolAI Auto Sync",
+  "version": "1.0",
+  "description": "Silently syncs MiniToolAI sessions to your Cloudflare Worker.",
+  "permissions": [
+    "tabs",
+    "alarms",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://minitoolai.com/*",
+    "*://ultimate-ai-worker.haruyhari930.workers.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "MiniToolAI Sync",
+    "default_popup": "popup.html"
+  }
+}

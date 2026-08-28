@@ -43,6 +43,7 @@ next-env.d.ts
 # agent scratch files
 /scratch
 .dev.vars
+/bin/
 
 
 

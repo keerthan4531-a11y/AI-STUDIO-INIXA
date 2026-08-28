@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MiniToolAI Sync</title>
+  <style>
+    body {
+      width: 250px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 15px;
+      background: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+    }
+    h3 {
+      color: #58a6ff;
+      margin-top: 0;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 8px;
+    }
+    p {
+      font-size: 13px;
+      margin: 8px 0;
+    }
+    .status {
+      font-weight: 600;
+      color: #7ee787;
+    }
+    button {
+      background: #238636;
+      color: #ffffff;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #2ea043;
+    }
+  </style>
+</head>
+<body>
+  <h3>MiniToolAI Sync</h3>
+  <p>Status: <span id="status" class="status">Waiting...</span></p>
+  <p>Last Sync: <span id="lastSync">-</span></p>
+  <button id="syncNow">Sync Now</button>
+  <script src="popup.js"></script>
+</body>
+</html>

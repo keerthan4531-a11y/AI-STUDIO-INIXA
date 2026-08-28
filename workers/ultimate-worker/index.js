@@ -11,6 +11,7 @@ import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
 import minitoolaiWorker, { harvestTokenViaBrowser, harvestMultipleTokens } from './minitoolai.js';
+import oxalphaWorker from './oxalpha.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +53,7 @@ export default {
         return new Response(JSON.stringify({
           status: "ok",
           service: "Ultimate Serverless AI API",
-          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai"],
+          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai", "oxalpha"],
           endpoints: ["/v1/chat/completions", "/v1/models", "/minitool/init"]
         }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
@@ -74,6 +75,11 @@ export default {
           headers: request.headers,
           body: bodyText
         });
+
+        // Route to OxAlpha
+        if (model.includes("ox-alpha") || model.includes("oxalpha") || model.includes("ox_alpha")) {
+          return await oxalphaWorker.fetch(subRequest, env, ctx);
+        }
 
         // Route to OverChat AI
         if (model.includes("overchat")) {
@@ -157,11 +163,12 @@ export default {
           grokWorker.fetch(modelReq, env, ctx),
           nadanadaWorker.fetch(modelReq, env, ctx),
           minitoolaiWorker.fetch(modelReq, env, ctx),
+          oxalphaWorker.fetch(modelReq, env, ctx),
         ]);
         
         const providerNames = [
           'pollinations', 'perplexity', 'qwen', 'baidu-ernie', 'meta-ai',
-          'surfsense', 'grok', 'nadanada', 'minitoolai'
+          'surfsense', 'grok', 'nadanada', 'minitoolai', 'oxalpha'
         ];
         
         let allModels = [];
@@ -192,6 +199,10 @@ export default {
       // Route /meta/health to meta worker
       if (pathname === "/meta/health") {
         return await metaAIWorker.fetch(request, env, ctx);
+      }
+      // Route /oxalpha/* to oxalpha worker
+      if (pathname.startsWith("/oxalpha")) {
+        return await oxalphaWorker.fetch(request, env, ctx);
       }
 
       return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: CORS_HEADERS });
