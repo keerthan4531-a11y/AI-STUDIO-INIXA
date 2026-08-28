@@ -495,8 +495,12 @@ export async function POST(req: Request) {
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
-      } else if (model.startsWith("minitool/") || model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {
-        // Send all minitool/claude/overchat models directly to Cloudflare Worker
+      } else if (model.startsWith("minitool/")) {
+        const pyBridge = process.env.PYTHON_BRIDGE_URL || "http://localhost:8000";
+        targetEndpoint = `${pyBridge}/v1/chat/completions`;
+        g4fModel = model.replace("minitool/", "");
+      } else if (model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {
+        // Send claude/overchat models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
         g4fModel = model.replace("g4f/", "");

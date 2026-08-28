@@ -23,6 +23,16 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key, X-Forwarded-For, X-Real-IP",
 };
 
+// ─── Active Verified Session & Cookies ────────────────────────────
+let activeMinitoolCookie = `PHPSESSID=5e03fd540d5d7d05a03af22469ec2c41; cf_clearance=QmWOKfypgzEJBHRWZ4E.9gxPMjvGTtmRgSEla_Chb28-1787908237-1.2.1.1-zsjD6L4Anxrk0NG7ctMjlPYe41.zHiTv4VkFb.Uxr7GQ4rQliCGdM1QHptnnNhYvPwanKOjADF6Oww6Ry9VE1.eaSG5BXlxa1HCHG_ycaFXJMYx3_33FM.3jcIaIhki22iCBQ4VIZcbH0PRGf5mEQzidz3zYao1nRwUPPdlhV5za212_eud2KILxft7PZaylRNjrIg0T6VMN_08s0c8_nRPQHyptmaDU98qonw.dEfNESqL8CvG6zfpcmYOFAUVPkGU.khWGAWW1iUy96Q6MmExtl4oC7JXLVXfLepvDrPRp_M_upqad61Ccm.947l4FEV9xFxQD1BSzt5MVHdnSEGmI4Q5hFW5FrTC1AX1ERWHSRY02f85f.qz6U40qyyQ0L4XLWXsk3U_zmbIENh4TVaBwKj9CfAFO_hAELoBwjcz8qw54Vlr4Ok2OhlgZ_BpiWRvzG1DrLMYYtmb9IXVGcWgvY3_7uuld7caDoRbG7c2sPL8xc77gGzgxUU1YpJskRbiWy4gmGe_8JytWm5c2pw; uDevice=notapple; _ga=GA1.1.588016467.1787908240; _ga_TDY3XB0LQQ=GS2.1.s1787908236$o1$g1$t1787908245$j55$l0$h1764203097`;
+
+let defaultMinitoolSession = {
+  phpsessid: "5e03fd540d5d7d05a03af22469ec2c41",
+  utoken: "ddf626bb3fa5c45da0c1fc05ab63de17bd43b4eed2866dcd7a76fe1132bcbc32",
+  safety_identifier: "f149e4c58d7eda024a836e850d80d21443b1a457915b8e08ad4f72627f111c53",
+  cft: "direct"
+};
+
 // ─── Model Mapping ────────────────────────────────────────────────
 const MODEL_MAP = {
   "minitool/gpt-5.6-luna":  "gpt-5.6-luna",
@@ -452,13 +462,11 @@ async function proxyChat(session, model, messages, temperature, request) {
   headers.set("Origin", "https://minitoolai.com");
   headers.set("Referer", `${baseUrl}/`);
   headers.set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-  headers.set("X-Requested-With", "XMLHttpRequest");
-  headers.set("Cookie", `PHPSESSID=${session.phpsessid}; uDevice=notapple`);
+  const cookieToSend = session.cookie || (typeof env !== 'undefined' && env?.MINITOOL_COOKIE) || activeMinitoolCookie;
+  headers.set("Cookie", cookieToSend);
   headers.set("X-Forwarded-For", userIP);
   headers.set("X-Real-IP", userIP);
-  if(!headers.has("User-Agent")) {
-    headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36");
-  }
+  headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36");
 
   if (initPhp) {
     const convoId = `${Math.random().toString(36).substring(2)}-${Math.random().toString(36).substring(2)}`;
@@ -789,6 +797,13 @@ export default {
           session = { ...tokens, cft: data.cft, service_type: serviceType, is_claude: serviceType === 'claude', timestamp: Date.now() };
         }
 
+        // Update default active session immediately
+        defaultMinitoolSession.cft = data.cft;
+        if (data.utoken) defaultMinitoolSession.utoken = data.utoken;
+        if (data.safety_identifier) defaultMinitoolSession.safety_identifier = data.safety_identifier;
+        if (data.phpsessid) defaultMinitoolSession.phpsessid = data.phpsessid;
+        if (data.cookie) activeMinitoolCookie = data.cookie;
+
         // Add to pool (in-memory + Upstash Redis)
         sessionPool.push(session);
         if (sessionPool.length > 5) sessionPool = sessionPool.slice(-5);
@@ -845,65 +860,29 @@ export default {
           return new Response(JSON.stringify({ error: "Not a MiniToolAI model" }), { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
-        let sseRes = null;
-        let resolvedModel = selectModel;
-        let lastErr = null;
+        const session = {
+          ...defaultMinitoolSession,
+          utoken: (typeof env !== 'undefined' && env?.MINITOOL_UTOKEN) || defaultMinitoolSession.utoken,
+          safety_identifier: (typeof env !== 'undefined' && env?.MINITOOL_SAFETY) || defaultMinitoolSession.safety_identifier,
+          cookie: (typeof env !== 'undefined' && env?.MINITOOL_COOKIE) || activeMinitoolCookie,
+          cft: "direct",
+        };
 
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            let session = await getValidSession(env, serviceType);
-            if (!session && env && env.MYBROWSER) {
-              console.log(`[JIT Edge Harvest] Attempt ${attempt}: Triggering on-demand Edge Puppeteer harvest for ${serviceType}...`);
-              session = await harvestTokenViaBrowser(env, serviceType);
-            }
-            
-            // If still no session, create an emergency session attempt
-            if (!session) {
-              console.log(`[Emergency Buffer] Attempt ${attempt}: Using emergency session buffer for ${serviceType}...`);
-              session = {
-                phpsessid: `mt_emg_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
-                utoken: "af5215a3904e5b714be08e8fe13b2f2b8b491b83da86000722fd61eb56c9e409",
-                safety_identifier: "782e0b89005260f6dadb2cfd5409112d160d95f219921097d50c528eb45efe77",
-                cft: "direct",
-                service_type: serviceType,
-                is_claude: serviceType === 'claude',
-                timestamp: Date.now()
-              };
-            }
-
-            const res = await proxyChat(session, model, body.messages || [], body.temperature, request);
-            if (res && res.sseRes && res.sseRes.ok) {
-              sseRes = res.sseRes;
-              resolvedModel = res.selectModel;
-
-              // Aggressive token recycling: re-push if valid and age < RECYCLE_TTL (8 min)
-              if (ctx && session.cft !== 'direct' && (Date.now() - session.timestamp) < RECYCLE_TTL) {
-                console.log(`[Token Recycled] Session ${session.phpsessid.substring(0,8)}... recycled back to pool (age: ${Math.floor((Date.now() - session.timestamp)/1000)}s)`);
-                ctx.waitUntil(pushSessionToRedis(session));
-              }
-              break;
-            } else {
-              throw new Error(`Proxy chat failed with status ${res?.sseRes?.status}`);
-            }
-          } catch (err) {
-            console.warn(`[MiniTool Completion Attempt ${attempt}/3 Failed]: ${err.message}`);
-            lastErr = err;
-            if (attempt < 3) await new Promise(r => setTimeout(r, 600 * attempt));
-          }
+        let res;
+        try {
+          res = await proxyChat(session, model, body.messages || [], body.temperature, request, env);
+        } catch(e) {
+          return new Response(JSON.stringify({ error: `MiniTool error: ${e.message}` }), { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
         }
 
-        if (!sseRes || !sseRes.ok) {
-          // Trigger background harvest to replenish Redis
-          if (ctx && env && env.MYBROWSER) {
-            ctx.waitUntil(harvestMultipleTokens(env));
-          }
-
+        if (!res || !res.sseRes || !res.sseRes.ok) {
           return new Response(JSON.stringify({
-            error: `All session attempts failed: ${lastErr ? lastErr.message : 'No session'}. Turnstile tokens are being replenished, retry in 5 seconds.`,
-            retry_after: 5,
-            init_url: `${url.origin}/minitool/init`,
-          }), { status: 401, headers: { ...CORS, "Content-Type": "application/json", "Retry-After": "5" } });
+            error: `MiniTool request failed with status ${res?.sseRes?.status || 502}`
+          }), { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
         }
+
+        const sseRes = res.sseRes;
+        const resolvedModel = res.selectModel;
 
         if (body.stream !== false && sseRes.body) {
           return new Response(sseRes.body.pipeThrough(createTransformStream(resolvedModel)), {

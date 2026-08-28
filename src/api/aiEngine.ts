@@ -381,6 +381,17 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#ef4444',
     description: 'Baidu ERNIE-5.1 unauthenticated SSE proxy'
   },
+  {
+    id: 'oxalpha-stealth',
+    label: 'Ox Alpha',
+    engine: 'custom',
+    modelStr: 'oxalpha/ox-alpha',
+    badge: 'OXALPHA',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#6e56cf',
+    description: 'Ox Alpha Stealth Reasoning Model — 1M context'
+  },
 
 
   // ════════════════════════════════════════════════════════════════
@@ -932,7 +943,11 @@ export const aiChat = async (
     let endpointPath: string;
     let fetchUrl: string;
 
-    if (model.engine === 'direct') {
+    if (modelStr.startsWith('minitool/')) {
+      endpointPath = '/api/chat/completions';
+      fetchUrl = `${API_BASE}${endpointPath}`;
+      console.log(`[aiChat] Direct routing MiniTool to Python Bridge endpoint: ${fetchUrl}`);
+    } else if (model.engine === 'direct') {
       // Direct models go through our INIXA AI Gateway CF Worker
       // This hits Pollinations/DDG directly - no G4F, no proxies!
       fetchUrl = `${CF_WORKER_URL}/v1/chat/completions`;

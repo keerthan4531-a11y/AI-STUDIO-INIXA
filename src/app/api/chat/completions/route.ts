@@ -638,7 +638,7 @@ export async function POST(req: Request) {
       'X-Real-IP': ip,
     };
 
-    let proxyResponse: Response;
+    let proxyResponse: Response = new Response(JSON.stringify({ error: { message: "Internal route unhandled" } }), { status: 500 });
 
     // Direct Microsoft Copilot native routing (via Cloudflare Worker)
     if (selectedModel.startsWith('ms-copilot/')) {
@@ -681,6 +681,201 @@ export async function POST(req: Request) {
           stream: stream === true,
         }),
       });
+    }
+    // Direct MiniToolAI routing (Automated Python Bridge with Direct Fallback)
+    else if (selectedModel.startsWith('minitool/')) {
+      const minitoolModel = selectedModel.replace('minitool/', '');
+      console.log(`[MiniTool Route] Routing for model: ${minitoolModel}`);
+
+      const pythonBridgeUrl = process.env.PYTHON_BRIDGE_URL || 'http://localhost:8000';
+      let pySuccess = false;
+
+      // 1. Try Automated Python Bridge (100% automated Turnstile solver & cookie-free)
+      try {
+        const pyRes = await fetch(`${pythonBridgeUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: minitoolModel,
+            messages: formattedMessages,
+            stream: stream === true,
+          }),
+        });
+
+        if (pyRes.ok) {
+          console.log(`[MiniTool Route] Successfully served via Python Bridge!`);
+          proxyResponse = pyRes;
+          pySuccess = true;
+        } else {
+          console.warn(`[MiniTool Route] Python bridge returned ${pyRes.status}`);
+        }
+      } catch (e: any) {
+        console.log(`[MiniTool Route] Python bridge not connected (${e.message}), using direct session`);
+      }
+
+      // 2. Fallback to direct session fetch if Python Bridge is not active
+      if (!pySuccess) {
+        const mtCookie = process.env.MINITOOL_COOKIE || 'PHPSESSID=5e03fd540d5d7d05a03af22469ec2c41; cf_clearance=QmWOKfypgzEJBHRWZ4E.9gxPMjvGTtmRgSEla_Chb28-1787908237-1.2.1.1-zsjD6L4Anxrk0NG7ctMjlPYe41.zHiTv4VkFb.Uxr7GQ4rQliCGdM1QHptnnNhYvPwanKOjADF6Oww6Ry9VE1.eaSG5BXlxa1HCHG_ycaFXJMYx3_33FM.3jcIaIhki22iCBQ4VIZcbH0PRGf5mEQzidz3zYao1nRwUPPdlhV5za212_eud2KILxft7PZaylRNjrIg0T6VMN_08s0c8_nRPQHyptmaDU98qonw.dEfNESqL8CvG6zfpcmYOFAUVPkGU.khWGAWW1iUy96Q6MmExtl4oC7JXLVXfLepvDrPRp_M_upqad61Ccm.947l4FEV9xFxQD1BSzt5MVHdnSEGmI4Q5hFW5FrTC1AX1ERWHSRY02f85f.qz6U40qyyQ0L4XLWXsk3U_zmbIENh4TVaBwKj9CfAFO_hAELoBwjcz8qw54Vlr4Ok2OhlgZ_BpiWRvzG1DrLMYYtmb9IXVGcWgvY3_7uuld7caDoRbG7c2sPL8xc77gGzgxUU1YpJskRbiWy4gmGe_8JytWm5c2pw; uDevice=notapple; _ga=GA1.1.588016467.1787908240; _ga_TDY3XB0LQQ=GS2.1.s1787908236$o1$g1$t1787908245$j55$l0$h1764203097';
+        const mtUtoken = process.env.MINITOOL_UTOKEN || 'ddf626bb3fa5c45da0c1fc05ab63de17bd43b4eed2866dcd7a76fe1132bcbc32';
+        const mtSafety = process.env.MINITOOL_SAFETY || 'f149e4c58d7eda024a836e850d80d21443b1a457915b8e08ad4f72627f111c53';
+
+        const userMsgs = chatMessages.filter((m: any) => m.role === 'user');
+        const botMsgs = chatMessages.filter((m: any) => m.role === 'assistant');
+        const lastMsg = userMsgs.length > 0 ? (typeof userMsgs[userMsgs.length-1].content === 'string' ? userMsgs[userMsgs.length-1].content : JSON.stringify(userMsgs[userMsgs.length-1].content)) : '';
+        const prevU1 = userMsgs.length >= 2 ? userMsgs[userMsgs.length-2]?.content || '' : '';
+        const prevB1 = botMsgs.length >= 1 ? botMsgs[botMsgs.length-1]?.content || '' : '';
+        const prevU2 = userMsgs.length >= 3 ? userMsgs[userMsgs.length-3]?.content || '' : '';
+        const prevB2 = botMsgs.length >= 2 ? botMsgs[botMsgs.length-2]?.content || '' : '';
+
+        try {
+          const form = new URLSearchParams({
+            messagebase64img1: '',
+            messagebase64img0: '',
+            safety_identifier: mtSafety,
+            select_model: minitoolModel,
+            temperature: '0.7',
+            utoken: mtUtoken,
+            message: lastMsg,
+            umes1a: typeof prevU1 === 'string' ? prevU1 : JSON.stringify(prevU1),
+            umes1stimg1a: '', umes2ndimg1a: '',
+            bres1a: typeof prevB1 === 'string' ? prevB1 : JSON.stringify(prevB1),
+            umes2a: typeof prevU2 === 'string' ? prevU2 : JSON.stringify(prevU2),
+            umes1stimg2a: '', umes2ndimg2a: '',
+            bres2a: typeof prevB2 === 'string' ? prevB2 : JSON.stringify(prevB2),
+            cft: 'direct',
+          });
+
+          const postRes = await fetch('https://minitoolai.com/gpt-ai/chatgpt_stream.php', {
+            method: 'POST',
+            headers: {
+              'Origin': 'https://minitoolai.com',
+              'Referer': 'https://minitoolai.com/gpt-ai/',
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Cookie': mtCookie,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+            },
+            body: form.toString()
+          });
+
+          const streamToken = await postRes.text();
+          if (!streamToken || streamToken === 'refresh' || streamToken.length < 5) {
+            throw new Error(`MiniTool session invalid or expired (token: ${streamToken})`);
+          }
+
+        const sseRes = await fetch(`https://minitoolai.com/gpt-ai/chatgpt_stream.php?streamtoken=${streamToken}`, {
+          headers: {
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Cookie': mtCookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+            'Referer': 'https://minitoolai.com/gpt-ai/'
+          }
+        });
+
+        if (!sseRes.ok) {
+          throw new Error(`MiniTool SSE fetch failed with status ${sseRes.status}`);
+        }
+
+        // Transform MiniTool SSE stream into standard OpenAI chunk stream
+        const transformStream = new TransformStream({
+          transform(chunk, controller) {
+            const text = new TextDecoder().decode(chunk);
+            const lines = text.split('\n');
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith('data:')) {
+                const jsonStr = trimmed.slice(5).trim();
+                if (!jsonStr) continue;
+                try {
+                  const data = JSON.parse(jsonStr);
+                  if (data.type === 'response.output_text.delta' && data.delta) {
+                    const openaiChunk = {
+                      id: `chatcmpl-mt-${Date.now()}`,
+                      object: 'chat.completion.chunk',
+                      created: Math.floor(Date.now() / 1000),
+                      model: selectedModel,
+                      choices: [{ index: 0, delta: { content: data.delta }, finish_reason: null }]
+                    };
+                    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+                  } else if (data.type === 'response.completed') {
+                    const stopChunk = {
+                      id: `chatcmpl-mt-${Date.now()}`,
+                      object: 'chat.completion.chunk',
+                      created: Math.floor(Date.now() / 1000),
+                      model: selectedModel,
+                      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }]
+                    };
+                    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(stopChunk)}\n\n`));
+                    controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                  }
+                } catch(e) {}
+              }
+            }
+          }
+        });
+
+        proxyResponse = new Response(sseRes.body!.pipeThrough(transformStream), {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          }
+        });
+      } catch (e: any) {
+        console.error(`[MiniTool Route] Connection error: ${e.message}`);
+        proxyResponse = new Response(JSON.stringify({ error: { message: `MiniTool connection error: ${e.message}` } }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+  }
+    // Direct OxAlpha routing (Strict direct - no fallback)
+    else if (selectedModel.startsWith('oxalpha/')) {
+      const oxModel = selectedModel.replace('oxalpha/', '');
+      console.log(`[OxAlpha Route] Direct OxAlpha execution for model: ${oxModel}`);
+
+      // Filter and clean messages (OxAlpha only allows user & assistant)
+      let cleanMessages = chatMessages.map((m: any) => ({
+        role: m.role,
+        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+      }));
+      const systemParts = cleanMessages.filter((m: any) => m.role === 'system').map((m: any) => m.content);
+      cleanMessages = cleanMessages.filter((m: any) => m.role !== 'system');
+      if (systemParts.length > 0 && cleanMessages.length > 0) {
+        const firstUserIdx = cleanMessages.findIndex((m: any) => m.role === 'user');
+        if (firstUserIdx !== -1) {
+          cleanMessages[firstUserIdx] = {
+            role: 'user',
+            content: systemParts.join('\n') + '\n\n' + cleanMessages[firstUserIdx].content
+          };
+        } else {
+          cleanMessages.unshift({ role: 'user', content: systemParts.join('\n') });
+        }
+      }
+
+      const oxCookies = process.env.OXALPHA_COOKIE || 'XSRF-TOKEN=eyJpdiI6ImdLaDJhWlVZSXNKN1lXR3ZrY1dET0E9PSIsInZhbHVlIjoianpwRzdwRzIxK0t2MUdtYnh3NHRsa0hMMGF3RFE1eDJZckJFMUh6RUxWbUNvVjVJZ2xpT2syWFV2cmtWNFArdXErWkI4Wmd1dzIveUhueFlOSDRJbllFWkJJc3dPMkVTOVpLSm1nZnVkY0NLMjc4RDZ6QlRVN3NPRWZPYXJvT0IiLCJtYWMiOiIzZWVhMGM0YzcxNjAxMzhiNTc0YTI4MWE0NDRjYTg3ODY0M2MwNjU4YTE5YWYyZDA3YWIxOTE5NDUxNzZkOWMyIiwidGFnIjoiIn0%3D; ox_alpha_session=eyJpdiI6IlJDTCs5QnowY0p5anQzK0dPaWZReVE9PSIsInZhbHVlIjoiYnhCeW5jNGNRYmVId0pIT3dmc0tTMmFGSFFKUWlBM2R1NnNrZmFXNkhkNDFRQ21Ha3dTYTZBdXlwYnRoWW94NmZqa1dlYUorSXBBWG56SmV2UWgrY0JpWjZYZnhKcHBXcUJIQXd3SGlTYm9CZ3VmQklTWE45WTdMT2JIU3NoQVIiLCJtYWMiOiIyZTAxMjI4ZDM5ZTMyODMxMjUyMzQ3OWNiZDk4ZTU1YjFlYTcxNWMyMTQ4ZWEyNjE1NWJlNzQ4OGMxZDk4YTFlIiwidGFnIjoiIn0%3D; _ga=GA1.1.2066746023.1787904545; _ga_CX9YVRPWDX=GS2.1.s1787904544$o1$g1$t1787906463$j43$l0$h0';
+      const oxCsrf = process.env.OXALPHA_CSRF || 'ssaVZTBaFa2USH3GbBxQXFYKQOJuwx36zwvqVmPB';
+
+      try {
+        proxyResponse = await fetch('https://oxalpha.com/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': 'https://oxalpha.com',
+            'Referer': 'https://oxalpha.com/chat',
+            'X-CSRF-TOKEN': oxCsrf,
+            'Cookie': oxCookies,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36'
+          },
+          body: JSON.stringify({
+            model: 'z-ai/glm-5.3-flash',
+            messages: cleanMessages
+          })
+        });
+      } catch (e: any) {
+        console.error(`[OxAlpha Route] Direct OxAlpha connection failed: ${e.message}`);
+        proxyResponse = new Response(JSON.stringify({ error: { message: `OxAlpha connection error: ${e.message}` } }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+      }
     }
     // Direct Google Gemini API routing
     else if (selectedModel.startsWith('gemini/')) {
