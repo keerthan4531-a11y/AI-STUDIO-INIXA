@@ -317,6 +317,15 @@ async def chat_completions(req: ChatCompletionRequest):
         "cft": cft_token
     }
 
+    headers = {
+        "Origin": "https://minitoolai.com",
+        "Referer": "https://minitoolai.com/gpt-ai/",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        "Cookie": session_data.get("cookie", ""),
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    }
+
     # Retry up to 2 times with fresh token if Cloudflare challenge or refresh occurs
     stream_token = ""
     for attempt in range(2):
