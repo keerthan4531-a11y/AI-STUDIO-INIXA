@@ -687,30 +687,39 @@ export async function POST(req: Request) {
       const minitoolModel = selectedModel.replace('minitool/', '');
       console.log(`[MiniTool Route] Routing for model: ${minitoolModel}`);
 
-      const pythonBridgeUrl = process.env.PYTHON_BRIDGE_URL || 'http://localhost:8000';
+      const candidateUrls = [
+        process.env.PYTHON_BRIDGE_URL,
+        'http://localhost:8000',
+        'https://ai-studio-inixa.onrender.com'
+      ].filter(Boolean) as string[];
+
       let pySuccess = false;
 
-      // 1. Try Automated Python Bridge (100% automated Turnstile solver & cookie-free)
-      try {
-        const pyRes = await fetch(`${pythonBridgeUrl}/v1/chat/completions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: minitoolModel,
-            messages: formattedMessages,
-            stream: stream === true,
-          }),
-        });
+      // 1. Try Automated Python Bridge (Local or Render Cloud 24/7)
+      for (const bridgeUrl of candidateUrls) {
+        try {
+          const pyRes = await fetch(`${bridgeUrl}/v1/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: minitoolModel,
+              messages: formattedMessages,
+              stream: stream === true,
+            }),
+            signal: AbortSignal.timeout(35000),
+          });
 
-        if (pyRes.ok) {
-          console.log(`[MiniTool Route] Successfully served via Python Bridge!`);
-          proxyResponse = pyRes;
-          pySuccess = true;
-        } else {
-          console.warn(`[MiniTool Route] Python bridge returned ${pyRes.status}`);
+          if (pyRes.ok) {
+            console.log(`[MiniTool Route] Successfully served via Python Bridge (${bridgeUrl})!`);
+            proxyResponse = pyRes;
+            pySuccess = true;
+            break;
+          } else {
+            console.warn(`[MiniTool Route] Python bridge (${bridgeUrl}) returned ${pyRes.status}`);
+          }
+        } catch (e: any) {
+          console.log(`[MiniTool Route] Bridge ${bridgeUrl} unavailable: ${e.message}`);
         }
-      } catch (e: any) {
-        console.log(`[MiniTool Route] Python bridge not connected (${e.message}), using direct session`);
       }
 
       // 2. Fallback to direct session fetch if Python Bridge is not active
