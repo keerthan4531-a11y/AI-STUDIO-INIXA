@@ -346,7 +346,7 @@ export async function POST(req: Request) {
       selectedModel.startsWith('grok-proxy/');
 
     if (isGrokModel) {
-      const grokProxyEndpoint = process.env.GROK_PROXY_URL || 'https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions';
+      const grokProxyEndpoint = process.env.GROK_PROXY_URL || 'https://grok-proxy-v1.vercel.app/v1/chat/completions';
       const grokApiKey = process.env.GROK_PROXY_API_KEY || '';
       console.log(`[Grok Proxy Route] Routing model "${selectedModel}" to ${grokProxyEndpoint}`);
 
