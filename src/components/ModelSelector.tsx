@@ -48,11 +48,11 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
   
   const filteredModels = AI_MODELS.filter(m => {
     if (filter === 'all') return true;
-    if (m.id.startsWith('gpt-5.6-luna')) return true;
+    if (m.id.startsWith('gpt-5.6-luna') || m.id.startsWith('grok-4.6')) return true;
     if (filter === 'puter') return m.engine === 'puter';
     if (filter === 'chinese') return m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE' || m.engine.endsWith('-free') || m.engine === 'parallel-chat' || m.engine === 'coze-proxy';
-    if (filter === 'free') return m.badge === 'FREE' || m.badge === 'DDG' || m.badge === 'POLL' || m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE' || m.badge === 'DEFAULT';
-    if (filter === 'premium') return m.engine === 'llm7' || m.badge === 'PRO' || m.badge === 'ULTRA' || m.badge === 'DEFAULT';
+    if (filter === 'free') return m.badge === 'FREE' || m.badge === 'DDG' || m.badge === 'POLL' || m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE' || m.badge === 'DEFAULT' || m.badge?.includes('GROK');
+    if (filter === 'premium') return m.engine === 'llm7' || m.badge === 'PRO' || m.badge === 'ULTRA' || m.badge === 'DEFAULT' || m.badge?.includes('GROK');
     return m.engine === filter;
   });
 

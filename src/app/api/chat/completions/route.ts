@@ -338,6 +338,87 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Grok 4.6 (grok-proxy) ──
+    const isGrokModel = 
+      selectedModel === 'grok-4.6' || 
+      selectedModel === 'grok-4-6' || 
+      selectedModel.startsWith('grok-4.6') || 
+      selectedModel.startsWith('grok-proxy/');
+
+    if (isGrokModel) {
+      const grokProxyEndpoint = process.env.GROK_PROXY_URL || 'https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions';
+      const grokApiKey = process.env.GROK_PROXY_API_KEY || '';
+      console.log(`[Grok Proxy Route] Routing model "${selectedModel}" to ${grokProxyEndpoint}`);
+
+      try {
+        const reqHeaders: Record<string, string> = {
+          'accept': '*/*',
+          'content-type': 'application/json',
+          'referrer': 'https://chatgpt-proxy-chi-five.vercel.app/'
+        };
+        if (grokApiKey) {
+          reqHeaders['Authorization'] = `Bearer ${grokApiKey}`;
+        }
+
+        const isThinking = selectedModel.includes('thinking');
+        const grokModelName = selectedModel.startsWith('grok-proxy/') 
+          ? selectedModel.replace('grok-proxy/', '') 
+          : 'grok-4-6';
+
+        const grokRes = await fetch(grokProxyEndpoint, {
+          method: 'POST',
+          headers: reqHeaders,
+          body: JSON.stringify({
+            model: grokModelName,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            is_reasoning: isThinking,
+            web_search: null,
+            force_use_tools: null,
+            force_use_canvas: null
+          }),
+        });
+
+        if (!grokRes.ok) {
+          const errBody = await grokRes.text();
+          throw new Error(`Grok Proxy error: HTTP ${grokRes.status} - ${errBody}`);
+        }
+
+        if (stream === true && grokRes.body) {
+          console.log(`[Grok Proxy] Streaming response started`);
+          return new Response(grokRes.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await grokRes.json();
+        const content = data.choices?.[0]?.message?.content || data.reply || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[Grok Proxy Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Grok 4.6 error: ${err.message || err}`, reply: `⚠️ Grok 4.6 Error: Unable to fetch response from proxy endpoint.` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
     const isChineseProxyModel = [
       'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',

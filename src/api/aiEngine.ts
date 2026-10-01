@@ -57,6 +57,32 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ GROK 4.6 (xAI Frontier Reasoning)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'grok-4.6',
+    label: 'Grok 4.6 (xAI)',
+    engine: 'custom',
+    modelStr: 'grok-4.6',
+    badge: 'GROK 4.6',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Grok 4.6 — xAI Frontier Thinking & Ultra-High Speed Reasoning'
+  },
+  {
+    id: 'grok-4.6-thinking',
+    label: 'Grok 4.6 Thinking (xAI)',
+    engine: 'custom',
+    modelStr: 'grok-4.6-thinking',
+    badge: 'THINKING',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Grok 4.6 Deep Reasoning & Complex Cognitive Problem Solving'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🌟 HIX AI MODELS (Claude Opus 5 / 4.8 / 4.7 / 4.6 & Sonnet / Haiku)
   // ════════════════════════════════════════════════════════════════
   {
