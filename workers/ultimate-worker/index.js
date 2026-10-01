@@ -12,6 +12,7 @@ import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
 import minitoolaiWorker, { harvestTokenViaBrowser, harvestMultipleTokens } from './minitoolai.js';
 import oxalphaWorker from './oxalpha.js';
+import hixWorker from './hix.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,7 +54,7 @@ export default {
         return new Response(JSON.stringify({
           status: "ok",
           service: "Ultimate Serverless AI API",
-          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai", "oxalpha"],
+          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai", "oxalpha", "hix"],
           endpoints: ["/v1/chat/completions", "/v1/models", "/minitool/init"]
         }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
@@ -75,6 +76,51 @@ export default {
           headers: request.headers,
           body: bodyText
         });
+
+        // Route to ChatGPT Proxy (GPT-5.6 Luna)
+        if (model.includes("luna") || model.includes("gpt-5.6") || model.includes("gpt-5-6") || model.startsWith("chatgpt/")) {
+          const actualLunaModel = model.includes("mini") ? "gpt-5-6-mini" : "gpt-5-6";
+          try {
+            const parsed = JSON.parse(bodyText);
+            return await fetch("https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "accept": "*/*",
+                "accept-language": "en-US,en;q=0.9",
+                "content-type": "application/json",
+                "referrer": "https://chatgpt-proxy-chi-five.vercel.app/"
+              },
+              body: JSON.stringify({
+                model: actualLunaModel,
+                messages: parsed.messages || [{ role: "user", content: parsed.message }],
+                stream: parsed.stream === true,
+                web_search: null,
+                force_use_tools: null,
+                force_use_canvas: null
+              })
+            });
+          } catch (e) {
+            console.error("[ChatGPT Proxy Worker] Error:", e);
+          }
+        }
+
+        // Route to HIX AI (New Claude Opus 5, 4.8, 4.7, Sonnet 4.6, Haiku 4.5, etc.)
+        if (
+          model.includes("hix") || 
+          model.includes("claude-opus-5") || 
+          model.includes("claude-opus-4.8") || 
+          model.includes("claude-opus-4.7") || 
+          model.includes("claude-sonnet-4.6") || 
+          model.includes("claude-opus-4.6") || 
+          model.includes("claude-opus-4.5") || 
+          model.includes("claude-sonnet-4.5") || 
+          model.includes("claude-haiku-4.5") ||
+          model.includes("gpt-5.5") ||
+          model.includes("gemini-3.6") ||
+          model.includes("deepseek-v4")
+        ) {
+          return await hixWorker.fetch(subRequest, env, ctx);
+        }
 
         // Route to OxAlpha
         if (model.includes("ox-alpha") || model.includes("oxalpha") || model.includes("ox_alpha")) {
@@ -164,11 +210,12 @@ export default {
           nadanadaWorker.fetch(modelReq, env, ctx),
           minitoolaiWorker.fetch(modelReq, env, ctx),
           oxalphaWorker.fetch(modelReq, env, ctx),
+          hixWorker.fetch(modelReq, env, ctx),
         ]);
         
         const providerNames = [
           'pollinations', 'perplexity', 'qwen', 'baidu-ernie', 'meta-ai',
-          'surfsense', 'grok', 'nadanada', 'minitoolai', 'oxalpha'
+          'surfsense', 'grok', 'nadanada', 'minitoolai', 'oxalpha', 'hix'
         ];
         
         let allModels = [];

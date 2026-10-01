@@ -61,3 +61,8 @@ meta-*
 write-dump.js
 run_test*.js
 build_test*.js
+__pycache__/
+*.timestamp-*.mjs
+capture_meta_ws.js
+run-dump.js
+test_meta_image.js

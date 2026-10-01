@@ -31,6 +31,168 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
 
   // ════════════════════════════════════════════════════════════════
+  // 🌟 GPT-5.6 LUNA (Default Flagship — OpenAI Proxy)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    engine: 'custom',
+    modelStr: 'gpt-5-6',
+    badge: 'DEFAULT',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#8b5cf6',
+    description: 'GPT-5.6 Luna — OpenAI Frontier Reasoning & High-Order Intelligence'
+  },
+  {
+    id: 'gpt-5.6-luna-mini',
+    label: 'GPT-5.6 Luna Mini',
+    engine: 'custom',
+    modelStr: 'gpt-5-6-mini',
+    badge: 'FAST',
+    badgeColor: 'blue',
+    icon: 'Zap',
+    iconColor: '#3b82f6',
+    description: 'GPT-5.6 Luna Mini — High-speed reasoning model'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🌟 HIX AI MODELS (Claude Opus 5 / 4.8 / 4.7 / 4.6 & Sonnet / Haiku)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'hix-claude-opus-5',
+    label: 'Claude Opus 5 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-opus-5',
+    badge: 'OPUS 5',
+    badgeColor: 'red',
+    icon: 'Sparkles',
+    iconColor: '#e11d48',
+    description: 'Claude Opus 5 — Frontier agentic coding & ultra-deep reasoning via HIX AI'
+  },
+  {
+    id: 'hix-claude-opus-4.8',
+    label: 'Claude Opus 4.8 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-opus-4.8',
+    badge: 'OPUS 4.8',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Claude Opus 4.8 — Ultra-deep multi-step reasoning & architecture model via HIX AI'
+  },
+  {
+    id: 'hix-claude-opus-4.7',
+    label: 'Claude Opus 4.7 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-opus-4.7',
+    badge: 'OPUS 4.7',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#ea580c',
+    description: 'Claude Opus 4.7 — Advanced codebase comprehension and deep analysis via HIX AI'
+  },
+  {
+    id: 'hix-claude-sonnet-4.6',
+    label: 'Claude Sonnet 4.6 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-sonnet-4.6',
+    badge: 'SONNET 4.6',
+    badgeColor: 'orange',
+    icon: 'Brain',
+    iconColor: '#f97316',
+    description: 'Claude Sonnet 4.6 — Fast, state-of-the-art coding and agentic workflow model via HIX AI'
+  },
+  {
+    id: 'hix-claude-opus-4.6',
+    label: 'Claude Opus 4.6 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-opus-4.6',
+    badge: 'OPUS 4.6',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Claude Opus 4.6 — High-end intelligence for enterprise tasks via HIX AI'
+  },
+  {
+    id: 'hix-claude-opus-4.5',
+    label: 'Claude Opus 4.5 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-opus-4.5',
+    badge: 'OPUS 4.5',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#d97706',
+    description: 'Claude Opus 4.5 — Deep cognitive analysis & long-context reasoning via HIX AI'
+  },
+  {
+    id: 'hix-claude-sonnet-4.5',
+    label: 'Claude Sonnet 4.5 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-sonnet-4.5',
+    badge: 'SONNET 4.5',
+    badgeColor: 'orange',
+    icon: 'Zap',
+    iconColor: '#f97316',
+    description: 'Claude Sonnet 4.5 — High precision agentic and coding performance via HIX AI'
+  },
+  {
+    id: 'hix-claude-haiku-4.5',
+    label: 'Claude Haiku 4.5 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/claude-haiku-4.5',
+    badge: 'HAIKU 4.5',
+    badgeColor: 'amber',
+    icon: 'Zap',
+    iconColor: '#d97706',
+    description: 'Claude Haiku 4.5 — Super fast, near-frontier lightweight Claude via HIX AI'
+  },
+  {
+    id: 'hix-gpt-5.5',
+    label: 'GPT-5.5 (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/gpt-5.5',
+    badge: '5.5',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'GPT-5.5 — OpenAI Next-Gen flagship model via HIX AI'
+  },
+  {
+    id: 'hix-gpt-5.6-luna',
+    label: 'GPT-5.6 Luna (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/gpt-5.6-luna',
+    badge: '5.6 LUNA',
+    badgeColor: 'violet',
+    icon: 'Zap',
+    iconColor: '#8b5cf6',
+    description: 'GPT-5.6 Luna — Advanced multi-modal reasoning via HIX AI'
+  },
+  {
+    id: 'hix-gemini-3.6-flash',
+    label: 'Gemini 3.6 Flash (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/gemini-3.6-flash',
+    badge: '3.6 FLASH',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Gemini 3.6 Flash — Ultra-fast multimodal model via HIX AI'
+  },
+  {
+    id: 'hix-deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro (HIX AI)',
+    engine: 'g4f',
+    modelStr: 'hix/deepseek-v4-pro',
+    badge: 'V4 PRO',
+    badgeColor: 'cyan',
+    icon: 'Brain',
+    iconColor: '#06b6d4',
+    description: 'DeepSeek V4 Pro — Frontier reasoning & code architecture via HIX AI'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
   // ════════════════════════════════════════════════════════════════
   {
@@ -633,7 +795,7 @@ export const AI_MODELS: AIModel[] = [
 ];
 
 
-// Clear saved model on page load/refresh so it always defaults to OpenAI Fast
+// Clear saved model on page load/refresh so it always defaults to GPT-5.6 Luna
 if (typeof window !== 'undefined') {
   try {
     localStorage.removeItem('inixa_ai_model');
@@ -650,7 +812,7 @@ export const getSelectedModel = (): AIModel => {
       }
     } catch (e) { }
   }
-  return AI_MODELS.find(m => m.id === 'surfsense-gpt5.4-mini') || AI_MODELS[0];
+  return AI_MODELS.find(m => m.id === 'gpt-5.6-luna') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {
@@ -846,8 +1008,24 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
         try {
           const parsed = JSON.parse(dataStr);
           if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
-          const content = parsed.choices?.[0]?.delta?.content || parsed.message || '';
-          const reasoning = parsed.choices?.[0]?.delta?.reasoning_content || parsed.choices?.[0]?.delta?.reasoning || '';
+          
+          // Universal content extractor for OpenAI, Anthropic, Perplexity, OverChat, Pollinations
+          const content = 
+            parsed.choices?.[0]?.delta?.content || 
+            parsed.choices?.[0]?.text || 
+            parsed.data?.text ||
+            parsed.data?.content ||
+            parsed.message || 
+            (typeof parsed.content === 'string' ? parsed.content : '') ||
+            parsed.text ||
+            parsed.response ||
+            '';
+            
+          const reasoning = 
+            parsed.choices?.[0]?.delta?.reasoning_content || 
+            parsed.choices?.[0]?.delta?.reasoning || 
+            parsed.data?.reasoning ||
+            '';
 
           if (reasoning) {
             if (!fullReply.includes('<think>')) {
@@ -865,7 +1043,11 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
             changed = true;
           }
         } catch (e) {
-          // Ignore partial JSON parsing errors if any
+          // If raw text chunk (not JSON)
+          if (dataStr && !dataStr.startsWith('{') && !dataStr.startsWith('[')) {
+            fullReply += dataStr;
+            changed = true;
+          }
         }
       }
       boundary = buffer.indexOf('\n');
@@ -982,6 +1164,10 @@ export const aiChat = async (
         directModelStr = modelStr;
         directEndpoint = ''; // Skip direct fetch to avoid browser CORS; let /api/chat/g4f handle server fetch
         provider = 'overchat';
+      } else if (modelStr.startsWith('hix/')) {
+        directModelStr = modelStr;
+        directEndpoint = ''; // Skip direct fetch to avoid browser CORS / 402; let /api/chat/g4f handle server fetch
+        provider = 'hix';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';

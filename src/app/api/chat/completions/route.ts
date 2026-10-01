@@ -224,7 +224,7 @@ export async function POST(req: Request) {
     // 1. { messages: [...], model: "..." } — full conversation
     // 2. { message: "...", model: "..." } — single message (legacy)
     const chatMessages = messages || [{ role: 'user', content: message }];
-    let selectedModel = model || 'gemini-2.5-flash';
+    let selectedModel = model || 'gpt-5-6';
 
     if (!chatMessages || chatMessages.length === 0) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -258,6 +258,85 @@ export async function POST(req: Request) {
     }
 
     console.log(`[Route] Final selectedModel = "${selectedModel}"`);
+
+    // ── Route: ChatGPT Proxy (GPT-5.6 Luna) ──
+    const isLunaModel = 
+      selectedModel === 'gpt-5-6' || 
+      selectedModel === 'gpt-5-6-mini' || 
+      selectedModel === 'gpt-5.6-luna' || 
+      selectedModel === 'gpt-5.6' || 
+      selectedModel.startsWith('chatgpt/') || 
+      selectedModel.startsWith('luna/');
+
+    if (isLunaModel) {
+      let actualModel = 'gpt-5-6';
+      if (selectedModel.includes('mini')) {
+        actualModel = 'gpt-5-6-mini';
+      } else if (selectedModel.startsWith('chatgpt/')) {
+        actualModel = selectedModel.replace('chatgpt/', '');
+      } else if (selectedModel.startsWith('luna/')) {
+        actualModel = selectedModel.replace('luna/', '');
+      }
+
+      console.log(`[ChatGPT Proxy Route] Routing to chatgpt-proxy-chi-five.vercel.app with model: ${actualModel}`);
+      try {
+        const chatgptRes = await fetch('https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'content-type': 'application/json',
+            'referrer': 'https://chatgpt-proxy-chi-five.vercel.app/'
+          },
+          body: JSON.stringify({
+            model: actualModel,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            web_search: null,
+            force_use_tools: null,
+            force_use_canvas: null
+          }),
+        });
+
+        if (!chatgptRes.ok) {
+          const errBody = await chatgptRes.text();
+          throw new Error(`ChatGPT Proxy error: HTTP ${chatgptRes.status} - ${errBody}`);
+        }
+
+        if (stream === true && chatgptRes.body) {
+          console.log(`[ChatGPT Proxy] Streaming response started`);
+          return new Response(chatgptRes.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await chatgptRes.json();
+        const content = data.choices?.[0]?.message?.content || data.reply || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[ChatGPT Proxy Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `GPT-5.6 Luna error: ${err.message || err}`, reply: `⚠️ GPT-5.6 Luna Error: Unable to fetch response from proxy endpoint.` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
 
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
     const isChineseProxyModel = [
@@ -580,8 +659,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Route: G4F / Qwen / OverChat (Local forward to /api/chat/g4f) ──
-    if (selectedModel.startsWith('g4f/') || selectedModel.startsWith('overchat/') || selectedModel.startsWith('qwen_worker/')) {
+    // ── Route: G4F / Qwen / OverChat / HIX (Local forward to /api/chat/g4f) ──
+    if (selectedModel.startsWith('g4f/') || selectedModel.startsWith('overchat/') || selectedModel.startsWith('qwen_worker/') || selectedModel.startsWith('hix/')) {
        console.log(`[Route] Forwarding to /api/chat/g4f for model: ${selectedModel}`);
        
        const protocol = req.headers.get('x-forwarded-proto') || 'http';
