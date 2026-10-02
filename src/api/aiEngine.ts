@@ -82,6 +82,20 @@ export const AI_MODELS: AIModel[] = [
     description: 'Grok 4.6 Deep Reasoning & Complex Cognitive Problem Solving'
   },
 
+  // ════════════════════════════════════════════════════════════════
+  // 🔴 DOTS3-NOTE PREVIEW (Dots Studio 280B MoE Multimodal - 512k Context)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'dots3-note-preview',
+    label: 'Dots3-Note Preview (Free)',
+    engine: 'custom',
+    modelStr: 'dots3/dots-3-note-preview',
+    badge: '512K FREE',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Dots3-Note Preview — 280B MoE Multimodal AI with 512k Context Window (Zero Setup)'
+  },
 
   // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)

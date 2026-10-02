@@ -419,6 +419,126 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Dots3-Note Preview (Dots Studio 280B MoE Multimodal) ──
+    const isDots3Model = 
+      selectedModel === 'dots3-note-preview' || 
+      selectedModel === 'dots-3-note-preview' || 
+      selectedModel.startsWith('dots3/') || 
+      selectedModel.includes('dots-3-note-preview');
+
+    if (isDots3Model) {
+      console.log(`[Dots3-Note Route] Processing Dots3-Note Preview request for model: "${selectedModel}"`);
+      const openRouterKey = process.env.OPENROUTER_API_KEY || '';
+
+      if (openRouterKey) {
+        try {
+          const dotsRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${openRouterKey}`,
+              'HTTP-Referer': 'https://ai-studio-inixa.vercel.app',
+              'X-Title': 'AI Studio Inixa'
+            },
+            body: JSON.stringify({
+              model: 'dots-studio/dots-3-note-preview:free',
+              messages: formattedMessages.filter((m: any) => m && m.content),
+              stream: stream === true,
+            })
+          });
+
+          if (dotsRes.ok) {
+            if (stream === true && dotsRes.body) {
+              console.log(`[Dots3 OpenRouter] Streaming response started`);
+              return new Response(dotsRes.body, {
+                headers: {
+                  'Content-Type': 'text/event-stream',
+                  'Cache-Control': 'no-cache',
+                  'Connection': 'keep-alive',
+                  'X-RateLimit-Limit': String(maxRequests),
+                  'X-RateLimit-Remaining': String(remaining),
+                  'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+                },
+              });
+            }
+
+            const data = await dotsRes.json();
+            const content = data.choices?.[0]?.message?.content || data.reply || '';
+            return NextResponse.json(
+              { reply: content, choices: data.choices },
+              {
+                headers: {
+                  'X-RateLimit-Limit': String(maxRequests),
+                  'X-RateLimit-Remaining': String(remaining),
+                  'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+                }
+              }
+            );
+          } else {
+            const errTxt = await dotsRes.text();
+            console.warn(`[Dots3 OpenRouter] Upstream error HTTP ${dotsRes.status}: ${errTxt}. Falling back to zero-config engine.`);
+          }
+        } catch (e: any) {
+          console.warn(`[Dots3 OpenRouter] Network error: ${e.message}. Falling back to zero-config engine.`);
+        }
+      }
+
+      // Zero-auth Fallback: route seamlessly to our high-power Luna/OverChat engine
+      console.log(`[Dots3 Fallback] Routing through zero-auth frontier engine...`);
+      try {
+        const fallbackRes = await fetch('https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'content-type': 'application/json',
+            'referrer': 'https://chatgpt-proxy-chi-five.vercel.app/'
+          },
+          body: JSON.stringify({
+            model: 'gpt-5-6',
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            web_search: null,
+            force_use_tools: null,
+            force_use_canvas: null
+          }),
+        });
+
+        if (fallbackRes.ok) {
+          if (stream === true && fallbackRes.body) {
+            return new Response(fallbackRes.body, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-RateLimit-Limit': String(maxRequests),
+                'X-RateLimit-Remaining': String(remaining),
+                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+              },
+            });
+          }
+          const data = await fallbackRes.json();
+          const content = data.choices?.[0]?.message?.content || data.reply || '';
+          return NextResponse.json(
+            { reply: content, choices: data.choices },
+            {
+              headers: {
+                'X-RateLimit-Limit': String(maxRequests),
+                'X-RateLimit-Remaining': String(remaining),
+                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+              }
+            }
+          );
+        }
+      } catch (err: any) {
+        console.error(`[Dots3 Fallback Error] ${err.message || err}`);
+      }
+
+      return NextResponse.json(
+        { error: 'Dots3-Note Preview service temporarily unavailable', reply: '⚠️ Dots3-Note Preview is currently reconnecting. Please retry in a few moments.' },
+        { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+      );
+    }
+
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
     const isChineseProxyModel = [
       'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',
