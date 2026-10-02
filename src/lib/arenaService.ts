@@ -11,8 +11,10 @@ async function getBrowser(): Promise<any> {
 
   browserInitPromise = (async () => {
     try {
-      // Lazy load playwright so Vercel doesn't crash on module initialization
-      const { chromium } = await import('playwright');
+      // Dynamic runtime require prevents Next.js / Webpack from bundling heavy playwright binaries on Vercel
+      const req = typeof eval !== 'undefined' ? eval('require') : null;
+      if (!req) return null;
+      const { chromium } = req('playwright');
       const browser = await chromium.launch({
         channel: 'chrome',
         headless: false,
@@ -27,6 +29,9 @@ async function getBrowser(): Promise<any> {
       });
       sharedBrowser = browser;
       return browser;
+    } catch (e: any) {
+      console.warn('[ArenaService] Playwright not available locally, will use fallback:', e.message);
+      return null;
     } finally {
       browserInitPromise = null;
     }
@@ -60,6 +65,9 @@ export async function runArenaBattle(
 
   try {
     const browser = await getBrowser();
+    if (!browser) {
+      return runVercelDualBattle(prompt, onChunk, headerA, headerB);
+    }
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     });
