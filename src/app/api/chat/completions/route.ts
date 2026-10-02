@@ -673,6 +673,202 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Space Bunny Alpha (Stealth Frontier Reasoning) ──
+    const isSpaceBunnyModel = 
+      selectedModel.startsWith('spacebunny') || 
+      selectedModel.startsWith('space-bunny') || 
+      selectedModel.includes('space-bunny') ||
+      selectedModel.includes('spacebunny');
+
+    if (isSpaceBunnyModel) {
+      console.log(`[Space Bunny Route] Routing model "${selectedModel}" directly to spacebunnymodel.com/api/chat`);
+      try {
+        const spaceBunnyRes = await fetch('https://spacebunnymodel.com/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Referer': 'https://spacebunnymodel.com/',
+            'Origin': 'https://spacebunnymodel.com'
+          },
+          body: JSON.stringify({
+            messages: formattedMessages.filter((m: any) => m && m.content)
+          })
+        });
+
+        if (!spaceBunnyRes.ok || !spaceBunnyRes.body) {
+          const errText = await spaceBunnyRes.text();
+          throw new Error(`Space Bunny API error: ${spaceBunnyRes.status} - ${errText}`);
+        }
+
+        const streamId = `chatcmpl-spacebunny-${crypto.randomUUID().substring(0, 8)}`;
+        const created = Math.floor(Date.now() / 1000);
+
+        if (stream === true) {
+          const { readable, writable } = new TransformStream();
+          const writer = writable.getWriter();
+          const encoder = new TextEncoder();
+          const reader = spaceBunnyRes.body.getReader();
+          const decoder = new TextDecoder();
+
+          (async () => {
+            let buffer = '';
+            let startedThinking = false;
+            let endedThinking = false;
+
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed.startsWith('data:')) continue;
+                  const dataStr = trimmed.slice(5).trim();
+                  if (!dataStr || dataStr === '[DONE]') continue;
+
+                  try {
+                    const json = JSON.parse(dataStr);
+                    const delta = json.choices?.[0]?.delta;
+                    let textChunk = '';
+
+                    if (delta?.reasoning) {
+                      if (!startedThinking) {
+                        textChunk += '<think>\n';
+                        startedThinking = true;
+                      }
+                      textChunk += delta.reasoning;
+                    }
+
+                    if (delta?.content) {
+                      if (startedThinking && !endedThinking) {
+                        textChunk = '\n</think>\n\n' + textChunk;
+                        endedThinking = true;
+                      }
+                      textChunk += delta.content;
+                    }
+
+                    if (textChunk) {
+                      const chunkPayload = {
+                        id: streamId,
+                        object: 'chat.completion.chunk',
+                        created,
+                        model: selectedModel,
+                        choices: [{
+                          index: 0,
+                          delta: { content: textChunk },
+                          finish_reason: null
+                        }]
+                      };
+                      await writer.write(encoder.encode(`data: ${JSON.stringify(chunkPayload)}\n\n`));
+                    }
+                  } catch {}
+                }
+              }
+
+              if (startedThinking && !endedThinking) {
+                await writer.write(encoder.encode(`data: ${JSON.stringify({
+                  id: streamId,
+                  object: 'chat.completion.chunk',
+                  created,
+                  model: selectedModel,
+                  choices: [{ index: 0, delta: { content: '\n</think>\n\n' }, finish_reason: null }]
+                })}\n\n`));
+              }
+
+              const finalChunk = {
+                id: streamId,
+                object: 'chat.completion.chunk',
+                created,
+                model: selectedModel,
+                choices: [{ index: 0, delta: {}, finish_reason: 'stop' }]
+              };
+              await writer.write(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\ndata: [DONE]\n\n`));
+            } catch (err) {
+              console.error('[Space Bunny Stream Error]', err);
+            } finally {
+              await writer.close();
+            }
+          })();
+
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          });
+        }
+
+        // Non-streaming response collection
+        const reader = spaceBunnyRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullReasoning = '';
+        let fullContent = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const dataStr = trimmed.slice(5).trim();
+            if (!dataStr || dataStr === '[DONE]') continue;
+
+            try {
+              const json = JSON.parse(dataStr);
+              const delta = json.choices?.[0]?.delta;
+              if (delta?.reasoning) fullReasoning += delta.reasoning;
+              if (delta?.content) fullContent += delta.content;
+            } catch {}
+          }
+        }
+
+        let finalReply = fullContent;
+        if (fullReasoning) {
+          finalReply = `<think>\n${fullReasoning}\n</think>\n\n${fullContent}`;
+        }
+
+        return NextResponse.json(
+          {
+            reply: finalReply,
+            choices: [{
+              index: 0,
+              message: { role: 'assistant', content: finalReply },
+              finish_reason: 'stop'
+            }]
+          },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+
+      } catch (err: any) {
+        console.error(`[Space Bunny Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Space Bunny error: ${err.message || err}`, reply: `⚠️ Space Bunny Error: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
     const isChineseProxyModel = [
       'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',

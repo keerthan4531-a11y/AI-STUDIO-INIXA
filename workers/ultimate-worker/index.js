@@ -12,6 +12,7 @@ import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
 import oxalphaWorker from './oxalpha.js';
 import poolsideWorker from './poolside.js';
+import spacebunnyWorker from './spacebunny.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +101,11 @@ export default {
         // Route to Poolside Laguna
         if (model.includes("laguna") || model.includes("poolside")) {
           return await poolsideWorker.fetch(subRequest, env, ctx);
+        }
+
+        // Route to Space Bunny
+        if (model.includes("spacebunny") || model.includes("space-bunny")) {
+          return await spacebunnyWorker.fetch(subRequest, env, ctx);
         }
 
         // Route to Microsoft Copilot

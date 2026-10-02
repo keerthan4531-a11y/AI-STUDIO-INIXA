@@ -109,6 +109,21 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // 🐰 SPACE BUNNY AI (Stealth Frontier Reasoning — 100% Free)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'space-bunny-alpha',
+    label: 'Space Bunny Alpha (Stealth)',
+    engine: 'custom',
+    modelStr: 'space-bunny-alpha',
+    badge: 'GPT-5 CLASS',
+    badgeColor: 'pink',
+    icon: 'Sparkles',
+    iconColor: '#ec4899',
+    description: 'Space Bunny Alpha — Stealth Frontier Reasoning Model with Chain-of-Thought (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
   // ════════════════════════════════════════════════════════════════
   {
