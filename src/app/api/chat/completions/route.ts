@@ -691,6 +691,15 @@ export async function POST(req: Request) {
     if (isSpaceBunnyModel) {
       console.log(`[Space Bunny Route] Routing model "${selectedModel}" directly to spacebunnymodel.com/api/chat`);
       try {
+        const cleanMessages = formattedMessages.filter((m: any) => m && m.content);
+        const hasSystemMsg = cleanMessages.some((m: any) => m && m.role === 'system');
+        const finalMessages = hasSystemMsg
+          ? cleanMessages
+          : [
+              { role: 'system', content: 'You are Space Bunny Alpha, an autonomous stealth frontier reasoning AI model developed by Stealth AI. Answer questions thoughtfully with rigorous step-by-step logic.' },
+              ...cleanMessages
+            ];
+
         const spaceBunnyRes = await fetch('https://spacebunnymodel.com/api/chat', {
           method: 'POST',
           headers: {
@@ -700,7 +709,7 @@ export async function POST(req: Request) {
             'Origin': 'https://spacebunnymodel.com'
           },
           body: JSON.stringify({
-            messages: formattedMessages.filter((m: any) => m && m.content)
+            messages: finalMessages
           })
         });
 
