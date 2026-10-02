@@ -195,7 +195,12 @@ async function runVercelDualBattle(
     try {
       const res = await fetch('https://spacebunnymodel.com/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Referer': 'https://spacebunnymodel.com/',
+          'Origin': 'https://spacebunnymodel.com'
+        },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }]
         })
