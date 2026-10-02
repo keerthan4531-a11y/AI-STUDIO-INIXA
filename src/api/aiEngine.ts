@@ -124,19 +124,19 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
-  // ⚔️ LMSYS CHATBOT ARENA (Frontier Dual-Model Battle — 100% Free)
+  // ⚔️ ARENA AI (Frontier Dual-Model Battle — 100% Free)
   // ════════════════════════════════════════════════════════════════
   {
-    id: 'lmsys-chatbot-arena',
-    label: 'LMSYS Chatbot Arena (Dual Battle)',
+    id: 'arena-ai',
+    label: 'Arena AI (Dual Battle)',
     engine: 'custom',
     modelStr: 'arena/lmsys-battle',
     provider: 'arena',
-    badge: 'ARENA',
+    badge: 'ARENA AI',
     badgeColor: 'amber',
     icon: 'Swords',
     iconColor: '#f59e0b',
-    description: 'LMSYS Chatbot Arena — Evaluates your prompt across two frontier models with live dual-streaming'
+    description: 'Arena AI — Frontier side-by-side battle evaluating your prompt across two frontier models simultaneously'
   },
 
   // ════════════════════════════════════════════════════════════════

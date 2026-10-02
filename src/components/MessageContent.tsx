@@ -15,6 +15,7 @@ import { MathSolverAgent } from './MathSolverAgent';
 import { FlashcardAgent } from './FlashcardAgent';
 import { QuizAgent } from './QuizAgent';
 import { ArenaCodeBlock, parseFilesFromMarkdown, hasMultiFileCode } from './chat/ArenaCodeBlock';
+import { ArenaBattleCard, parseArenaBattle } from './chat/ArenaBattleCard';
 
 
 mermaid.initialize({
@@ -182,6 +183,16 @@ export function MessageContent({ content, isCodex, onOpenArtifact }: {
           }}>{textOnly}</ReactMarkdown>
         )}
         <ArenaCodeBlock files={arenaFiles} />
+      </div>
+    );
+  }
+
+  // If Arena AI dual battle response detected, render side-by-side battle card
+  const battle = useMemo(() => parseArenaBattle(cleanContent), [cleanContent]);
+  if (battle.isBattle) {
+    return (
+      <div className="text-[14.5px] sm:text-[15px] leading-[1.7] markdown-content text-white/85 break-words">
+        <ArenaBattleCard contentA={battle.modelA} contentB={battle.modelB} />
       </div>
     );
   }
