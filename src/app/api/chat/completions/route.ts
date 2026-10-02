@@ -419,6 +419,260 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Poolside Laguna S 2.1 & Laguna S 2.1 Thinking ──
+    const isPoolsideModel = 
+      selectedModel.startsWith('poolside/') || 
+      selectedModel.startsWith('laguna') || 
+      selectedModel.includes('laguna-s-2.1');
+
+    if (isPoolsideModel) {
+      console.log(`[Poolside Route] Routing model "${selectedModel}" directly to chat.poolside.ai`);
+      const isThinking = selectedModel.includes('thinking');
+      const targetModelId = selectedModel.includes('xs') ? 'poolside/laguna-xs-2.1' : 'poolside/laguna-s-2.1';
+
+      try {
+        // 1. Obtain Guest Session
+        const guestRes = await fetch('https://chat.poolside.ai/guest.data?_routes=routes%2Fguest', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          }
+        });
+
+        const cookieHeader = guestRes.headers.get('set-cookie') || '';
+        const psc = cookieHeader.match(/psc_session=[^;]+/)?.[0] || '';
+        const awsalb = cookieHeader.match(/AWSALB=[^;]+/)?.[0] || '';
+        const awsalbcors = cookieHeader.match(/AWSALBCORS=[^;]+/)?.[0] || '';
+        const cookieStr = [psc, awsalb, awsalbcors].filter(Boolean).join('; ');
+
+        if (!cookieStr) {
+          throw new Error('Failed to obtain Poolside guest session cookie');
+        }
+
+        // 2. Create Chat Session
+        const createChatRes = await fetch('https://chat.poolside.ai/api/chats', {
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Cookie': cookieStr,
+            'Content-Type': 'application/json',
+            'Origin': 'https://chat.poolside.ai',
+            'Referer': 'https://chat.poolside.ai/new'
+          },
+          body: JSON.stringify({ model: targetModelId })
+        });
+
+        if (!createChatRes.ok) {
+          throw new Error(`Failed to create Poolside chat: ${createChatRes.status} ${await createChatRes.text()}`);
+        }
+
+        const chatData = await createChatRes.json();
+        const chatId = chatData.id;
+
+        // 3. Extract last user prompt
+        const lastUserPrompt = (chatMessages || []).slice().reverse().find((m: any) => m && m.role === 'user')?.content || message || 'Hello';
+        const messageId = crypto.randomUUID();
+        const generationId = crypto.randomUUID();
+
+        const payload = {
+          id: chatId,
+          trigger: 'submit-message',
+          messageId: messageId,
+          baseMessageId: null,
+          model: targetModelId,
+          inferenceMode: 'platform',
+          options: {
+            thinking: isThinking
+          },
+          message: {
+            id: messageId,
+            role: 'user',
+            parts: [{ type: 'text', text: typeof lastUserPrompt === 'string' ? lastUserPrompt : JSON.stringify(lastUserPrompt) }]
+          },
+          generationId: generationId
+        };
+
+        const chatSubmitRes = await fetch('https://chat.poolside.ai/api/chat', {
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Cookie': cookieStr,
+            'Content-Type': 'application/json',
+            'x-poolside-stream-protocol': 'resumable-v1',
+            'Origin': 'https://chat.poolside.ai',
+            'Referer': `https://chat.poolside.ai/chat/${chatId}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!chatSubmitRes.ok) {
+          throw new Error(`Failed to submit message to Poolside: ${chatSubmitRes.status} ${await chatSubmitRes.text()}`);
+        }
+
+        // 4. Stream connection
+        const streamUrl = `https://chat.poolside.ai/api/chat/${chatId}/stream?generationId=${generationId}`;
+        const streamRes = await fetch(streamUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            'Cookie': cookieStr,
+            'Accept': 'text/event-stream',
+            'Referer': 'https://chat.poolside.ai/guest'
+          }
+        });
+
+        if (!streamRes.ok || !streamRes.body) {
+          throw new Error(`Poolside stream error: ${streamRes.status}`);
+        }
+
+        const streamId = `chatcmpl-laguna-${crypto.randomUUID().substring(0, 8)}`;
+        const created = Math.floor(Date.now() / 1000);
+
+        if (stream === true) {
+          const { readable, writable } = new TransformStream();
+          const writer = writable.getWriter();
+          const encoder = new TextEncoder();
+          const reader = streamRes.body.getReader();
+          const decoder = new TextDecoder();
+
+          (async () => {
+            let buffer = '';
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed.startsWith('data:')) continue;
+                  const dataStr = trimmed.slice(5).trim();
+                  if (!dataStr || dataStr === '[DONE]') continue;
+
+                  try {
+                    const ev = JSON.parse(dataStr);
+                    let deltaText = '';
+
+                    if (ev.type === 'reasoning-start') {
+                      deltaText = '<think>\n';
+                    } else if (ev.type === 'reasoning-delta' && ev.delta) {
+                      deltaText = ev.delta;
+                    } else if (ev.type === 'reasoning-end') {
+                      deltaText = '\n</think>\n\n';
+                    } else if (ev.type === 'text-delta' && ev.delta) {
+                      deltaText = ev.delta;
+                    }
+
+                    if (deltaText) {
+                      const chunkPayload = {
+                        id: streamId,
+                        object: 'chat.completion.chunk',
+                        created,
+                        model: selectedModel,
+                        choices: [{
+                          index: 0,
+                          delta: { content: deltaText },
+                          finish_reason: null
+                        }]
+                      };
+                      await writer.write(encoder.encode(`data: ${JSON.stringify(chunkPayload)}\n\n`));
+                    }
+                  } catch {}
+                }
+              }
+
+              const finalChunk = {
+                id: streamId,
+                object: 'chat.completion.chunk',
+                created,
+                model: selectedModel,
+                choices: [{ index: 0, delta: {}, finish_reason: 'stop' }]
+              };
+              await writer.write(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\ndata: [DONE]\n\n`));
+            } catch (err) {
+              console.error('[Poolside Stream Error]', err);
+            } finally {
+              await writer.close();
+            }
+          })();
+
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          });
+        }
+
+        // Non-streaming response collection
+        const reader = streamRes.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullContent = '';
+        let fullReasoning = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const dataStr = trimmed.slice(5).trim();
+            if (!dataStr || dataStr === '[DONE]') continue;
+
+            try {
+              const ev = JSON.parse(dataStr);
+              if (ev.type === 'reasoning-delta' && ev.delta) {
+                fullReasoning += ev.delta;
+              } else if (ev.type === 'text-delta' && ev.delta) {
+                fullContent += ev.delta;
+              }
+            } catch {}
+          }
+        }
+
+        let finalReply = fullContent;
+        if (fullReasoning) {
+          finalReply = `<think>\n${fullReasoning}\n</think>\n\n${fullContent}`;
+        }
+
+        return NextResponse.json(
+          {
+            reply: finalReply,
+            choices: [{
+              index: 0,
+              message: { role: 'assistant', content: finalReply },
+              finish_reason: 'stop'
+            }]
+          },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+
+      } catch (err: any) {
+        console.error(`[Poolside Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Poolside Laguna error: ${err.message || err}`, reply: `⚠️ Poolside Laguna Error: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
     const isChineseProxyModel = [
       'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',

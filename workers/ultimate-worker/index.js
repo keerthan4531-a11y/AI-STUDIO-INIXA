@@ -11,6 +11,7 @@ import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
 import oxalphaWorker from './oxalpha.js';
+import poolsideWorker from './poolside.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -94,6 +95,11 @@ export default {
         // Route to OverChat AI
         if (model.includes("overchat")) {
           return await overchatWorker.fetch(subRequest, env, ctx);
+        }
+
+        // Route to Poolside Laguna
+        if (model.includes("laguna") || model.includes("poolside")) {
+          return await poolsideWorker.fetch(subRequest, env, ctx);
         }
 
         // Route to Microsoft Copilot

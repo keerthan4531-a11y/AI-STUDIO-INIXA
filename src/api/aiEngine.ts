@@ -83,6 +83,32 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // 🌊 POOLSIDE AI MODELS (Laguna 2.1 Frontier Reasoning)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'poolside-laguna-s-2.1',
+    label: 'Laguna S 2.1 (Poolside)',
+    engine: 'custom',
+    modelStr: 'poolside/laguna-s-2.1',
+    badge: 'LAGUNA 2.1',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Laguna S 2.1 — Poolside Frontier Code & Reasoning Intelligence (100% Free)'
+  },
+  {
+    id: 'poolside-laguna-s-2.1-thinking',
+    label: 'Laguna S 2.1 Thinking (Poolside)',
+    engine: 'custom',
+    modelStr: 'poolside/laguna-s-2.1-thinking',
+    badge: 'THINKING',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Laguna S 2.1 Deep Thought & Mathematical / Agentic Reasoning (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
   // ════════════════════════════════════════════════════════════════
   {
