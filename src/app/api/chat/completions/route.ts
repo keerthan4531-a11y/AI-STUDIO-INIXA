@@ -1296,8 +1296,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Direct OxAlpha routing (Strict direct - no fallback)
-    else if (selectedModel.startsWith('oxalpha/')) {
+    // Direct OxAlpha routing (Strict direct - no fallback, Fresh Session Reset)
+    else if (selectedModel.startsWith('oxalpha/') || selectedModel.startsWith('oxalpha') || selectedModel === 'ox-alpha') {
       const oxModel = selectedModel.replace('oxalpha/', '');
       console.log(`[OxAlpha Route] Direct OxAlpha execution for model: ${oxModel}`);
 
@@ -1320,25 +1320,69 @@ export async function POST(req: Request) {
         }
       }
 
-      const oxCookies = process.env.OXALPHA_COOKIE || 'XSRF-TOKEN=eyJpdiI6ImdLaDJhWlVZSXNKN1lXR3ZrY1dET0E9PSIsInZhbHVlIjoianpwRzdwRzIxK0t2MUdtYnh3NHRsa0hMMGF3RFE1eDJZckJFMUh6RUxWbUNvVjVJZ2xpT2syWFV2cmtWNFArdXErWkI4Wmd1dzIveUhueFlOSDRJbllFWkJJc3dPMkVTOVpLSm1nZnVkY0NLMjc4RDZ6QlRVN3NPRWZPYXJvT0IiLCJtYWMiOiIzZWVhMGM0YzcxNjAxMzhiNTc0YTI4MWE0NDRjYTg3ODY0M2MwNjU4YTE5YWYyZDA3YWIxOTE5NDUxNzZkOWMyIiwidGFnIjoiIn0%3D; ox_alpha_session=eyJpdiI6IlJDTCs5QnowY0p5anQzK0dPaWZReVE9PSIsInZhbHVlIjoiYnhCeW5jNGNRYmVId0pIT3dmc0tTMmFGSFFKUWlBM2R1NnNrZmFXNkhkNDFRQ21Ha3dTYTZBdXlwYnRoWW94NmZqa1dlYUorSXBBWG56SmV2UWgrY0JpWjZYZnhKcHBXcUJIQXd3SGlTYm9CZ3VmQklTWE45WTdMT2JIU3NoQVIiLCJtYWMiOiIyZTAxMjI4ZDM5ZTMyODMxMjUyMzQ3OWNiZDk4ZTU1YjFlYTcxNWMyMTQ4ZWEyNjE1NWJlNzQ4OGMxZDk4YTFlIiwidGFnIjoiIn0%3D; _ga=GA1.1.2066746023.1787904545; _ga_CX9YVRPWDX=GS2.1.s1787904544$o1$g1$t1787906463$j43$l0$h0';
-      const oxCsrf = process.env.OXALPHA_CSRF || 'ssaVZTBaFa2USH3GbBxQXFYKQOJuwx36zwvqVmPB';
+      const oxHeaders = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Referer': 'https://oxalpha.com/chat',
+        'Origin': 'https://oxalpha.com',
+      };
 
       try {
+        // Step 1: Initialize fresh guest session & CSRF token from oxalpha.com/chat (Session Reset)
+        const initRes = await fetch('https://oxalpha.com/chat', {
+          headers: oxHeaders,
+          cache: 'no-store'
+        });
+
+        const html = await initRes.text();
+        const csrfMatch = html.match(/<meta name="csrf-token" content="([^"]+)"/);
+        const oxCsrf = csrfMatch ? csrfMatch[1] : '';
+
+        const setCookies = typeof (initRes.headers as any).getSetCookie === 'function'
+          ? (initRes.headers as any).getSetCookie()
+          : (initRes.headers.get('set-cookie') || '').split(/,(?=[^;]+=[^;]+)/);
+        
+        const oxCookies = setCookies.map((c: string) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+
+        // Step 2: Call the chat API with fresh session
         proxyResponse = await fetch('https://oxalpha.com/api/chat', {
           method: 'POST',
           headers: {
+            ...oxHeaders,
             'Content-Type': 'application/json',
-            'Origin': 'https://oxalpha.com',
-            'Referer': 'https://oxalpha.com/chat',
             'X-CSRF-TOKEN': oxCsrf,
-            'Cookie': oxCookies,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36'
+            'Cookie': oxCookies
           },
           body: JSON.stringify({
             model: 'z-ai/glm-5.3-flash',
             messages: cleanMessages
           })
         });
+
+        // Step 3: If 428 is ever encountered, retry once with another fresh session
+        if (proxyResponse.status === 428) {
+          console.warn('[OxAlpha Route] Got 428 turnstile_required, resetting with fresh session retry...');
+          const retryInit = await fetch('https://oxalpha.com/chat', { headers: oxHeaders, cache: 'no-store' });
+          const retryHtml = await retryInit.text();
+          const retryCsrf = (retryHtml.match(/<meta name="csrf-token" content="([^"]+)"/) || [])[1] || '';
+          const retrySetCookies = typeof (retryInit.headers as any).getSetCookie === 'function'
+            ? (retryInit.headers as any).getSetCookie()
+            : (retryInit.headers.get('set-cookie') || '').split(/,(?=[^;]+=[^;]+)/);
+          const retryCookies = retrySetCookies.map((c: string) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+
+          proxyResponse = await fetch('https://oxalpha.com/api/chat', {
+            method: 'POST',
+            headers: {
+              ...oxHeaders,
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': retryCsrf,
+              'Cookie': retryCookies
+            },
+            body: JSON.stringify({
+              model: 'z-ai/glm-5.3-flash',
+              messages: cleanMessages
+            })
+          });
+        }
       } catch (e: any) {
         console.error(`[OxAlpha Route] Direct OxAlpha connection failed: ${e.message}`);
         proxyResponse = new Response(JSON.stringify({ error: { message: `OxAlpha connection error: ${e.message}` } }), { status: 502, headers: { 'Content-Type': 'application/json' } });

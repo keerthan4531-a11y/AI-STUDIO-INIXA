@@ -84,6 +84,8 @@ export function isDeepThinkModel(modelId: string): boolean {
     id.includes('bunny') ||       // Space Bunny models
     id.includes('spacebunny') ||
     id.includes('poolside') ||    // Poolside Laguna models
-    id.includes('laguna');
+    id.includes('laguna') ||
+    id.includes('oxalpha') ||     // Ox Alpha models
+    id.includes('ox-alpha');
 }
 
