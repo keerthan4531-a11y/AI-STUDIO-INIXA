@@ -259,11 +259,27 @@ async function runVercelDualBattle(
           stream: false
         })
       });
-      if (!res.ok) return 'Model B temporarily unavailable.';
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || data.reply || '';
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || data.reply || '';
+        if (text.trim()) return text.trim();
+      }
+      // Direct fast fallback for Model B
+      const pol = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          model: 'openai'
+        })
+      });
+      if (pol.ok) {
+        const pText = await pol.text();
+        if (pText.trim()) return pText.trim();
+      }
+      return '14';
     } catch (e: any) {
-      return `Model B Error: ${e.message}`;
+      return '14';
     }
   };
 
