@@ -352,36 +352,27 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
          const hasThinkClose = chunk.includes('</think>');
          
          if (hasThinkOpen) {
-            // Extract thinking content between <think> and </think> (or end of string)
-            const thinkMatch = chunk.match(/<think>([\s\S]*?)(?:<\/think>|$)/);
-            if (thinkMatch) {
-               thinkContent = thinkMatch[1].trim();
-               setThinkingContent(thinkContent);
-            }
-            
+            const firstThinkIdx = chunk.indexOf('<think>');
             if (hasThinkClose) {
-               // Thinking is complete — extract the answer after </think>
+               const lastThinkCloseIdx = chunk.lastIndexOf('</think>');
+               thinkContent = chunk.substring(firstThinkIdx + 7, lastThinkCloseIdx).replace(/<\/?think>/g, '').trim();
+               setThinkingContent(thinkContent);
                setIsThinking(false);
-               const afterThink = chunk.split('</think>');
-               answerContent = (afterThink[afterThink.length - 1] || '').trimStart();
+               answerContent = chunk.substring(lastThinkCloseIdx + 8).replace(/<\/?think>/g, '').trimStart();
             } else {
-               // Still thinking — show thinking panel, no answer yet
+               thinkContent = chunk.substring(firstThinkIdx + 7).replace(/<\/?think>/g, '').trim();
+               setThinkingContent(thinkContent);
                setIsThinking(true);
                answerContent = '';
             }
          } else if (hasThinkClose) {
-            // Edge case: </think> arrives in a chunk without <think>
+            const lastThinkCloseIdx = chunk.lastIndexOf('</think>');
             setIsThinking(false);
-            const afterThink = chunk.split('</think>');
-            answerContent = (afterThink[afterThink.length - 1] || '').trimStart();
+            answerContent = chunk.substring(lastThinkCloseIdx + 8).replace(/<\/?think>/g, '').trimStart();
          } else if (chunk.startsWith('<') && chunk.length < 8 && !chunk.includes(' ')) {
-            // Partial opening tag building up (e.g., "<", "<th", "<thin", "<think")
-            // Suppress from display to avoid raw tag flash
             answerContent = '';
          } else {
-            // No think tags — normal content
-            // But still strip any residual think tags that might be in the full text
-            answerContent = chunk.replace(/<think>[\s\S]*?<\/think>/g, '').trimStart();
+            answerContent = chunk.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trimStart();
          }
          
          setStreamingText(answerContent);
@@ -389,16 +380,32 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
       
       setIsStreaming(false);
       setIsThinking(false);
+
+      let finalAnswer = result;
+      let finalThinking = thinkContent;
+
+      if (result.includes('<think>')) {
+         const firstOpen = result.indexOf('<think>');
+         const lastClose = result.lastIndexOf('</think>');
+         if (lastClose !== -1 && lastClose > firstOpen) {
+            finalThinking = result.substring(firstOpen + 7, lastClose).replace(/<\/?think>/g, '').trim();
+            finalAnswer = result.substring(lastClose + 8);
+         } else {
+            finalThinking = result.substring(firstOpen + 7).replace(/<\/?think>/g, '').trim();
+            finalAnswer = '';
+         }
+      }
+      finalAnswer = finalAnswer.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trim();
       
       setMessages([...newMessages, { 
          role: 'assistant', 
-         content: result.replace(/<think>[\s\S]*?<\/think>/g, '').trim(), 
-         ...(thinkContent ? { thinking: thinkContent } : {}),
+         content: finalAnswer, 
+         ...(finalThinking ? { thinking: finalThinking } : {}),
          ...(localSearchSources.length > 0 ? { sources: localSearchSources } : {}) 
       }]);
 
       // Generate follow-up suggestions from the AI response
-      const cleanedResult = (result || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      const cleanedResult = (finalAnswer || '').trim();
       if (cleanedResult.length > 50) {
         const words = text.split(/\s+/).slice(0, 5).join(' ');
         const followups: string[] = [];
@@ -457,36 +464,53 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         const hasThinkClose = chunk.includes('</think>');
         
         if (hasThinkOpen) {
-          const thinkMatch = chunk.match(/<think>([\s\S]*?)(?:<\/think>|$)/);
-          if (thinkMatch) {
-            regenThinkContent = thinkMatch[1].trim();
-            setThinkingContent(regenThinkContent);
-          }
+          const firstThinkIdx = chunk.indexOf('<think>');
           if (hasThinkClose) {
+            const lastThinkCloseIdx = chunk.lastIndexOf('</think>');
+            regenThinkContent = chunk.substring(firstThinkIdx + 7, lastThinkCloseIdx).replace(/<\/?think>/g, '').trim();
+            setThinkingContent(regenThinkContent);
             setIsThinking(false);
-            const afterThink = chunk.split('</think>');
-            answerContent = (afterThink[afterThink.length - 1] || '').trimStart();
+            answerContent = chunk.substring(lastThinkCloseIdx + 8).replace(/<\/?think>/g, '').trimStart();
           } else {
+            regenThinkContent = chunk.substring(firstThinkIdx + 7).replace(/<\/?think>/g, '').trim();
+            setThinkingContent(regenThinkContent);
             setIsThinking(true);
             answerContent = '';
           }
         } else if (hasThinkClose) {
+          const lastThinkCloseIdx = chunk.lastIndexOf('</think>');
           setIsThinking(false);
-          const afterThink = chunk.split('</think>');
-          answerContent = (afterThink[afterThink.length - 1] || '').trimStart();
+          answerContent = chunk.substring(lastThinkCloseIdx + 8).replace(/<\/?think>/g, '').trimStart();
         } else if (chunk.startsWith('<') && chunk.length < 8 && !chunk.includes(' ')) {
           answerContent = '';
         } else {
-          answerContent = chunk.replace(/<think>[\s\S]*?<\/think>/g, '').trimStart();
+          answerContent = chunk.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trimStart();
         }
         setStreamingText(answerContent);
       }); 
       setIsStreaming(false);
       setIsThinking(false);
+
+      let finalAnswer = r;
+      let finalThinking = regenThinkContent;
+
+      if (r.includes('<think>')) {
+        const firstOpen = r.indexOf('<think>');
+        const lastClose = r.lastIndexOf('</think>');
+        if (lastClose !== -1 && lastClose > firstOpen) {
+          finalThinking = r.substring(firstOpen + 7, lastClose).replace(/<\/?think>/g, '').trim();
+          finalAnswer = r.substring(lastClose + 8);
+        } else {
+          finalThinking = r.substring(firstOpen + 7).replace(/<\/?think>/g, '').trim();
+          finalAnswer = '';
+        }
+      }
+      finalAnswer = finalAnswer.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trim();
+
       setMessages([...msgsUpTo, { 
         role: 'assistant', 
-        content: r.replace(/<think>[\s\S]*?<\/think>/g, '').trim(),
-        ...(regenThinkContent ? { thinking: regenThinkContent } : {})
+        content: finalAnswer,
+        ...(finalThinking ? { thinking: finalThinking } : {})
       }]); 
     }
     catch { setMessages([...msgsUpTo, { role: 'assistant', content: 'Failed. Try again.' }]); }

@@ -80,6 +80,10 @@ export function isDeepThinkModel(modelId: string): boolean {
     id.includes('gemma') ||       // Gemma models think by default
     id.includes('thinking') ||    // Any model with "thinking" in name
     id.includes('devstral') ||    // Devstral thinks by default
-    id.includes('nemotron');      // Nemotron models think by default
+    id.includes('nemotron') ||    // Nemotron models think by default
+    id.includes('bunny') ||       // Space Bunny models
+    id.includes('spacebunny') ||
+    id.includes('poolside') ||    // Poolside Laguna models
+    id.includes('laguna');
 }
 

@@ -552,19 +552,7 @@ export async function POST(req: Request) {
 
                   try {
                     const ev = JSON.parse(dataStr);
-                    let deltaText = '';
-
-                    if (ev.type === 'reasoning-start') {
-                      deltaText = '<think>\n';
-                    } else if (ev.type === 'reasoning-delta' && ev.delta) {
-                      deltaText = ev.delta;
-                    } else if (ev.type === 'reasoning-end') {
-                      deltaText = '\n</think>\n\n';
-                    } else if (ev.type === 'text-delta' && ev.delta) {
-                      deltaText = ev.delta;
-                    }
-
-                    if (deltaText) {
+                    if (ev.type === 'reasoning-delta' && ev.delta) {
                       const chunkPayload = {
                         id: streamId,
                         object: 'chat.completion.chunk',
@@ -572,7 +560,27 @@ export async function POST(req: Request) {
                         model: selectedModel,
                         choices: [{
                           index: 0,
-                          delta: { content: deltaText },
+                          delta: {
+                            role: 'assistant',
+                            reasoning: ev.delta,
+                            reasoning_content: ev.delta
+                          },
+                          finish_reason: null
+                        }]
+                      };
+                      await writer.write(encoder.encode(`data: ${JSON.stringify(chunkPayload)}\n\n`));
+                    } else if (ev.type === 'text-delta' && ev.delta) {
+                      const chunkPayload = {
+                        id: streamId,
+                        object: 'chat.completion.chunk',
+                        created,
+                        model: selectedModel,
+                        choices: [{
+                          index: 0,
+                          delta: {
+                            role: 'assistant',
+                            content: ev.delta
+                          },
                           finish_reason: null
                         }]
                       };
@@ -713,8 +721,6 @@ export async function POST(req: Request) {
 
           (async () => {
             let buffer = '';
-            let startedThinking = false;
-            let endedThinking = false;
 
             try {
               while (true) {
@@ -734,25 +740,10 @@ export async function POST(req: Request) {
                   try {
                     const json = JSON.parse(dataStr);
                     const delta = json.choices?.[0]?.delta;
-                    let textChunk = '';
+                    const reasoning = delta?.reasoning || delta?.reasoning_content || '';
+                    const content = delta?.content || '';
 
-                    if (delta?.reasoning) {
-                      if (!startedThinking) {
-                        textChunk += '<think>\n';
-                        startedThinking = true;
-                      }
-                      textChunk += delta.reasoning;
-                    }
-
-                    if (delta?.content) {
-                      if (startedThinking && !endedThinking) {
-                        textChunk = '\n</think>\n\n' + textChunk;
-                        endedThinking = true;
-                      }
-                      textChunk += delta.content;
-                    }
-
-                    if (textChunk) {
+                    if (reasoning) {
                       const chunkPayload = {
                         id: streamId,
                         object: 'chat.completion.chunk',
@@ -760,7 +751,29 @@ export async function POST(req: Request) {
                         model: selectedModel,
                         choices: [{
                           index: 0,
-                          delta: { content: textChunk },
+                          delta: {
+                            role: 'assistant',
+                            reasoning: reasoning,
+                            reasoning_content: reasoning
+                          },
+                          finish_reason: null
+                        }]
+                      };
+                      await writer.write(encoder.encode(`data: ${JSON.stringify(chunkPayload)}\n\n`));
+                    }
+
+                    if (content) {
+                      const chunkPayload = {
+                        id: streamId,
+                        object: 'chat.completion.chunk',
+                        created,
+                        model: selectedModel,
+                        choices: [{
+                          index: 0,
+                          delta: {
+                            role: 'assistant',
+                            content: content
+                          },
                           finish_reason: null
                         }]
                       };
@@ -768,16 +781,6 @@ export async function POST(req: Request) {
                     }
                   } catch {}
                 }
-              }
-
-              if (startedThinking && !endedThinking) {
-                await writer.write(encoder.encode(`data: ${JSON.stringify({
-                  id: streamId,
-                  object: 'chat.completion.chunk',
-                  created,
-                  model: selectedModel,
-                  choices: [{ index: 0, delta: { content: '\n</think>\n\n' }, finish_reason: null }]
-                })}\n\n`));
               }
 
               const finalChunk = {

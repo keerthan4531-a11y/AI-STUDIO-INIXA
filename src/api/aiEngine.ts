@@ -763,6 +763,7 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
   let fullReply = '';
   let buffer = '';
   let citations: string[] | undefined = undefined;
+  let isReasoningActive = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -801,16 +802,22 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
             '';
 
           if (reasoning) {
-            if (!fullReply.includes('<think>')) {
-              fullReply += '<think>\n';
+            if (!isReasoningActive) {
+              if (!fullReply.includes('<think>')) {
+                fullReply += '<think>\n';
+              }
+              isReasoningActive = true;
             }
             fullReply += reasoning;
             changed = true;
           }
 
           if (content) {
-            if (fullReply.includes('<think>') && !fullReply.includes('</think>')) {
-              fullReply += '\n</think>\n';
+            if (isReasoningActive) {
+              if (!fullReply.includes('</think>')) {
+                fullReply += '\n</think>\n\n';
+              }
+              isReasoningActive = false;
             }
             fullReply += content;
             changed = true;
@@ -830,6 +837,12 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
       onChunk(fullReply, citations);
     }
   }
+
+  if (isReasoningActive && !fullReply.includes('</think>')) {
+    fullReply += '\n</think>\n\n';
+    onChunk(fullReply, citations);
+  }
+
   return fullReply || 'No response received from the AI model.';
 }
 
