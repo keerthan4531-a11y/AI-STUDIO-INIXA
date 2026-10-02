@@ -188,7 +188,7 @@ async function runVercelDualBattle(
 ): Promise<ArenaBattleResult> {
   // Try real Arena AI via Cloudflare Worker Browser first
   try {
-    const workerRes = await fetch('https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions', {
+    const workerRes = await fetch('https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -247,7 +247,7 @@ async function runVercelDualBattle(
       }
 
       // Fallback via Worker
-      const fbRes = await fetch('https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions', {
+      const fbRes = await fetch('https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -271,7 +271,7 @@ async function runVercelDualBattle(
   // Model B: Ox Alpha (1M Context Reasoning via Worker Gateway)
   const fetchModelB = async () => {
     try {
-      const res = await fetch('https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions', {
+      const res = await fetch('https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

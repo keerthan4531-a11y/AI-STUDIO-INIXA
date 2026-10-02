@@ -534,14 +534,14 @@ export async function POST(req: Request) {
       model.startsWith("updf")
     ) {
       let g4fModel = model;
-      let targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
+      let targetEndpoint = "https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions";
 
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
       } else if (model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {
         // Send claude/updf/overchat models directly to Cloudflare Worker
-        targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
+        targetEndpoint = "https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
         g4fModel = model.replace("g4f/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";

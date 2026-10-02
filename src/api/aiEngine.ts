@@ -947,10 +947,10 @@ export const aiChat = async (
         provider = 'deepinfra';
       } else if (modelStr.startsWith('qwen_worker/')) {
         directModelStr = modelStr.replace('qwen_worker/', '');
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
       } else if (modelStr.startsWith('updf')) {
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
+        directEndpoint = 'https://ultimate-ai-worker.keerthan4531.workers.dev/v1/chat/completions';
         provider = 'updf';
       } else if (modelStr.startsWith('overchat/')) {
         directModelStr = modelStr;
