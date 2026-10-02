@@ -449,7 +449,7 @@ export async function POST(req: Request) {
 
           if (dotsRes.ok) {
             if (stream === true && dotsRes.body) {
-              console.log(`[Dots3 OpenRouter] Streaming response started`);
+              console.log(`[Dots3 OpenRouter] Streaming real Dots3-Note Preview response`);
               return new Response(dotsRes.body, {
                 headers: {
                   'Content-Type': 'text/event-stream',
@@ -476,66 +476,29 @@ export async function POST(req: Request) {
             );
           } else {
             const errTxt = await dotsRes.text();
-            console.warn(`[Dots3 OpenRouter] Upstream error HTTP ${dotsRes.status}: ${errTxt}. Falling back to zero-config engine.`);
+            console.error(`[Dots3 OpenRouter] Real Dots3 error HTTP ${dotsRes.status}: ${errTxt}`);
+            return NextResponse.json(
+              { error: `Dots3 API error: ${dotsRes.status}`, reply: `⚠️ Dots3-Note Preview Error (${dotsRes.status}): ${errTxt}` },
+              { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+            );
           }
         } catch (e: any) {
-          console.warn(`[Dots3 OpenRouter] Network error: ${e.message}. Falling back to zero-config engine.`);
-        }
-      }
-
-      // Zero-auth Fallback: route seamlessly to our high-power Luna/OverChat engine
-      console.log(`[Dots3 Fallback] Routing through zero-auth frontier engine...`);
-      try {
-        const fallbackRes = await fetch('https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'accept': '*/*',
-            'content-type': 'application/json',
-            'referrer': 'https://chatgpt-proxy-chi-five.vercel.app/'
-          },
-          body: JSON.stringify({
-            model: 'gpt-5-6',
-            messages: formattedMessages.filter((m: any) => m && m.content),
-            stream: stream === true,
-            web_search: null,
-            force_use_tools: null,
-            force_use_canvas: null
-          }),
-        });
-
-        if (fallbackRes.ok) {
-          if (stream === true && fallbackRes.body) {
-            return new Response(fallbackRes.body, {
-              headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-                'X-RateLimit-Limit': String(maxRequests),
-                'X-RateLimit-Remaining': String(remaining),
-                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
-              },
-            });
-          }
-          const data = await fallbackRes.json();
-          const content = data.choices?.[0]?.message?.content || data.reply || '';
+          console.error(`[Dots3 OpenRouter] Network error: ${e.message}`);
           return NextResponse.json(
-            { reply: content, choices: data.choices },
-            {
-              headers: {
-                'X-RateLimit-Limit': String(maxRequests),
-                'X-RateLimit-Remaining': String(remaining),
-                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
-              }
-            }
+            { error: `Dots3 network error: ${e.message}`, reply: `⚠️ Dots3-Note Preview connection error: ${e.message}` },
+            { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
           );
         }
-      } catch (err: any) {
-        console.error(`[Dots3 Fallback Error] ${err.message || err}`);
       }
 
+      // No server API key configured yet
+      console.warn(`[Dots3-Note Route] OPENROUTER_API_KEY is missing on server`);
       return NextResponse.json(
-        { error: 'Dots3-Note Preview service temporarily unavailable', reply: '⚠️ Dots3-Note Preview is currently reconnecting. Please retry in a few moments.' },
-        { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        { 
+          error: 'OPENROUTER_API_KEY missing on server', 
+          reply: '⚠️ **Dots3-Note Preview (Free)** உண்மையான மாடலை இயக்க, சர்வரில் **OPENROUTER_API_KEY** தேவைப்படுகிறது.\n\nOpenRouter-ல் ஒரு இலவச அக்கவுண்ட் மூலம் $0.00 கிரெடிட் உள்ள இலவச API Key-ஐ எடுத்து .env அல்லது Vercel Environment Variables-ல் சேர்த்தால் போதும். வெப்சைட்டில் வரும் பயனர்கள் எந்த API Key-யும் போட தேவையில்லை!'
+        },
+        { status: 401, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
       );
     }
 
