@@ -909,7 +909,7 @@ export async function POST(req: Request) {
 
           (async () => {
             try {
-              await runArenaBattle(promptText, async (chunkText) => {
+              await runArenaBattle(promptText, async (chunkText: string) => {
                 const sseChunk = {
                   id: streamId,
                   object: 'chat.completion.chunk',
