@@ -13,6 +13,7 @@ import overchatWorker from './overchat.js';
 import oxalphaWorker from './oxalpha.js';
 import poolsideWorker from './poolside.js';
 import spacebunnyWorker from './spacebunny.js';
+import arenaWorker from './arena.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -87,6 +88,11 @@ export default {
           }
         }
 
+
+        // Route to Arena AI (LMSYS Real Browser Evaluation)
+        if (model.includes("arena") || model.includes("lmsys")) {
+          return await arenaWorker.fetch(subRequest, env, ctx);
+        }
 
         // Route to OxAlpha
         if (model.includes("ox-alpha") || model.includes("oxalpha") || model.includes("ox_alpha")) {

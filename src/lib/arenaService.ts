@@ -186,6 +186,27 @@ async function runVercelDualBattle(
   headerA: string,
   headerB: string
 ): Promise<ArenaBattleResult> {
+  // Try real Arena AI via Cloudflare Worker Browser first
+  try {
+    const workerRes = await fetch('https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'arena-ai',
+        messages: [{ role: 'user', content: prompt }],
+        stream: false
+      })
+    });
+    if (workerRes.ok) {
+      const data = await workerRes.json();
+      const reply = data.choices?.[0]?.message?.content || data.reply || '';
+      if (reply && (reply.includes('Assistant A') || reply.includes('Frontier Battle'))) {
+        if (onChunk) onChunk(reply);
+        return { assistantA: '', assistantB: '', fullReply: reply };
+      }
+    }
+  } catch (_) {}
+
   if (onChunk) {
     onChunk(headerA);
   }
