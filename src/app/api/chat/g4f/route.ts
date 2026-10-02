@@ -525,278 +525,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2B. HIX AI Handler - Local Puppeteer Stealth Proxy → CF Worker → OverChat Claude Engine → Fallback
-    if (model.startsWith("hix/")) {
-      // Strategy A: Local Puppeteer Stealth Proxy (real Claude via hix.ai browser automation)
-      const localProxyUrl = "http://localhost:3456/v1/chat/completions";
-      try {
-        console.log(`[HIX Route] Trying local Puppeteer Stealth Proxy for: ${model}`);
-        const localRes = await nodeFetch(localProxyUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": stream ? "text/event-stream" : "application/json"
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(90000) // 90s timeout for browser startup
-        });
 
-        if (localRes.ok) {
-          console.log(`[HIX Route] ✅ Local Stealth Proxy responded successfully!`);
-          if (stream) {
-            const bodyStream = new ReadableStream({
-              start(controller) {
-                (localRes.body as any).on("data", (chunk: Buffer) =>
-                  controller.enqueue(chunk),
-                );
-                (localRes.body as any).on("end", () => controller.close());
-                (localRes.body as any).on("error", (err: Error) =>
-                  controller.error(err),
-                );
-              },
-              cancel() {
-                (localRes.body as any).destroy();
-              },
-            });
-            return new Response(bodyStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-                "X-Provider": "hix.ai (Local Stealth Proxy)",
-              },
-            });
-          }
-          return NextResponse.json(await localRes.json());
-        } else {
-          console.warn(`[HIX Route] Local proxy returned ${localRes.status}, trying CF Worker...`);
-        }
-      } catch (err: any) {
-        console.warn(`[HIX Route] Local proxy unavailable (${err.message?.substring(0, 50)}), trying CF Worker...`);
-      }
-
-      // Strategy B: Cloudflare Worker (remote browser rendering / HIX proxy)
-      const targetWorkerUrl = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
-      try {
-        console.log(`[HIX Route] Dispatching to Cloudflare Worker Browser Engine: ${model}`);
-        const workerRes = await nodeFetch(targetWorkerUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": stream ? "text/event-stream" : "application/json"
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(20000)
-        });
-
-        if (workerRes.ok) {
-          if (stream) {
-            const bodyStream = new ReadableStream({
-              start(controller) {
-                (workerRes.body as any).on("data", (chunk: Buffer) =>
-                  controller.enqueue(chunk),
-                );
-                (workerRes.body as any).on("end", () => controller.close());
-                (workerRes.body as any).on("error", (err: Error) =>
-                  controller.error(err),
-                );
-              },
-              cancel() {
-                (workerRes.body as any).destroy();
-              },
-            });
-            return new Response(bodyStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-              },
-            });
-          }
-          return NextResponse.json(await workerRes.json());
-        } else {
-          console.warn(`[HIX Route] Cloudflare Worker returned status ${workerRes.status}`);
-        }
-      } catch (err: any) {
-        console.warn(`[HIX Worker Route Error]:`, err.message || err);
-      }
-
-      // Strategy C: Genuine Anthropic Claude Engine via OverChat
-      try {
-        console.log(`[HIX Route] Dispatching to Anthropic Claude Engine for model: ${model}...`);
-        const genUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random()*16|0).toString(16));
-        const rawMsgs = body.messages || [{ role: "user", content: body.message || "" }];
-        
-        // OverChat requires a system message as the first element
-        const formattedMsgs: any[] = [{ id: genUUID(), role: "system", content: "" }];
-        for (const m of rawMsgs) {
-          if (m.role === "system") continue;
-          formattedMsgs.push({
-            id: genUUID(),
-            role: m.role || "user",
-            content: typeof m.content === "string" ? m.content : JSON.stringify(m.content)
-          });
-        }
-
-        const overchatPayload = {
-          chatId: genUUID(),
-          model: "claude-haiku-4-5-20251001",
-          messages: formattedMsgs,
-          personaId: "claude-haiku-4-5-landing",
-          frequency_penalty: 0,
-          max_tokens: 4000,
-          presence_penalty: 0,
-          stream: true,
-          temperature: 0.5,
-          top_p: 0.95
-        };
-
-        const fakeIP = `${Math.floor(Math.random() * 200) + 20}.${Math.floor(Math.random() * 200) + 10}.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}`;
-        const overchatRes = await nodeFetch("https://api.overchat.ai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "accept": "*/*",
-            "content-type": "application/json",
-            "origin": "https://overchat.ai",
-            "referer": "https://overchat.ai/",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
-            "x-device-language": "en-US",
-            "x-device-platform": "web",
-            "x-device-uuid": genUUID(),
-            "x-device-version": "1.0.44",
-            "x-forwarded-for": fakeIP,
-            "x-real-ip": fakeIP
-          },
-          body: JSON.stringify(overchatPayload),
-          signal: AbortSignal.timeout(15000)
-        });
-
-        if (overchatRes.ok) {
-          console.log(`[HIX Route] ✅ Anthropic Claude Engine responded successfully!`);
-          if (stream) {
-            const bodyStream = new ReadableStream({
-              start(controller) {
-                (overchatRes.body as any).on("data", (chunk: Buffer) => controller.enqueue(chunk));
-                (overchatRes.body as any).on("end", () => controller.close());
-                (overchatRes.body as any).on("error", (err: Error) => controller.error(err));
-              },
-              cancel() {
-                (overchatRes.body as any).destroy();
-              },
-            });
-            return new Response(bodyStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-                "X-Provider": "Anthropic Claude Engine",
-              },
-            });
-          }
-
-          // Parse SSE stream for non-streaming requests
-          const rawText = await overchatRes.text();
-          let fullContent = "";
-          for (const line of rawText.split("\n")) {
-            if (!line.startsWith("data: ")) continue;
-            const dataStr = line.slice(6).trim();
-            if (dataStr === "[DONE]") continue;
-            try {
-              const p = JSON.parse(dataStr);
-              const delta = p.choices?.[0]?.delta?.content || "";
-              if (delta) fullContent += delta;
-            } catch (_) {}
-          }
-
-          return NextResponse.json({
-            id: `chatcmpl-${genUUID()}`,
-            object: "chat.completion",
-            created: Math.floor(Date.now() / 1000),
-            model: model,
-            choices: [{
-              index: 0,
-              message: { role: "assistant", content: fullContent },
-              finish_reason: "stop"
-            }]
-          }, {
-            headers: {
-              "X-Provider": "Anthropic Claude Engine"
-            }
-          });
-        } else {
-          console.warn(`[HIX Route] OverChat returned status ${overchatRes.status}`);
-        }
-      } catch (ocErr: any) {
-        console.warn(`[HIX Route] OverChat Claude failed:`, ocErr.message || ocErr);
-      }
-
-      // Robust Instant Fallback: Google AI Studio / Gemini 2.5 Flash
-      try {
-        console.log(`[HIX Route] Engaging seamless fallback...`);
-        const geminiApiKey = process.env.GEMINI_API_KEY;
-        const rawMessages = body.messages || [{ role: "user", content: body.message || "" }];
-        const systemPrompt = {
-          role: "system",
-          content: `You are Claude Opus (Anthropic's flagship frontier reasoning model). Provide insightful, precise, deeply reasoned, and helpful answers.`
-        };
-        const augmentedMessages = [systemPrompt, ...rawMessages.filter((m: any) => m.role !== 'system')];
-
-        const geminiRes = await nodeFetch(
-          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(geminiApiKey ? { "Authorization": `Bearer ${geminiApiKey}` } : {})
-            },
-            body: JSON.stringify({
-              model: "gemini-2.5-flash",
-              messages: augmentedMessages,
-              stream: stream === true,
-              max_tokens: 8192,
-              temperature: 0.7,
-            }),
-          }
-        );
-
-        if (geminiRes.ok) {
-          if (stream) {
-            const bodyStream = new ReadableStream({
-              start(controller) {
-                (geminiRes.body as any).on("data", (chunk: Buffer) =>
-                  controller.enqueue(chunk),
-                );
-                (geminiRes.body as any).on("end", () => controller.close());
-                (geminiRes.body as any).on("error", (err: Error) =>
-                  controller.error(err),
-                );
-              },
-              cancel() {
-                (geminiRes.body as any).destroy();
-              },
-            });
-            return new Response(bodyStream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-              },
-            });
-          }
-          return NextResponse.json(await geminiRes.json());
-        }
-      } catch (fallbackErr: any) {
-        console.error(`[HIX Route] Gemini fallback failed:`, fallbackErr.message || fallbackErr);
-      }
-    }
-
-    // 3. G4F / DeepInfra / Qwen / MiniTool / Claude / HIX Model Routing
+    // 3. G4F / DeepInfra / Qwen / Claude Model Routing
     if (
       model.startsWith("g4f/") ||
       model.startsWith("qwen_worker/") ||
-      model.startsWith("minitool/") ||
       model.startsWith("claude/") ||
-      model.startsWith("hix/") ||
       model.startsWith("updf")
     ) {
       let g4fModel = model;
@@ -805,12 +539,8 @@ export async function POST(req: Request) {
       if (model.startsWith("qwen_worker/")) {
         g4fModel = model.replace("qwen_worker/", "");
         targetEndpoint = "https://g4f.space/v1/chat/completions";
-      } else if (model.startsWith("minitool/")) {
-        const pyBridge = process.env.PYTHON_BRIDGE_URL || "https://ai-studio-inixa.onrender.com";
-        targetEndpoint = `${pyBridge}/v1/chat/completions`;
-        g4fModel = model.replace("minitool/", "");
-      } else if (model.startsWith("claude/") || model.startsWith("hix/") || model.startsWith("updf") || model.startsWith("overchat/")) {
-        // Send claude/hix/overchat models directly to Cloudflare Worker
+      } else if (model.startsWith("claude/") || model.startsWith("updf") || model.startsWith("overchat/")) {
+        // Send claude/updf/overchat models directly to Cloudflare Worker
         targetEndpoint = "https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions";
       } else if (model.startsWith("g4f/")) {
         g4fModel = model.replace("g4f/", "");
@@ -827,12 +557,8 @@ export async function POST(req: Request) {
       const baseHeaders: any = {
         "Content-Type": "application/json",
         Accept: stream ? "text/event-stream" : "application/json",
-        Origin: targetEndpoint.includes("minitool")
-            ? "https://ultimate-ai-worker.haruyhari930.workers.dev"
-            : "https://g4f.space",
-        Referer: targetEndpoint.includes("minitool")
-            ? "https://ultimate-ai-worker.haruyhari930.workers.dev/"
-            : "https://g4f.space/",
+        Origin: "https://g4f.space",
+        Referer: "https://g4f.space/",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "X-Forwarded-For": fakeIP,
       };
@@ -934,53 +660,6 @@ export async function POST(req: Request) {
           } else {
             console.warn(`[Primary] Direct fetch returned HTML (blocked/captcha). Falling back to proxies...`);
           }
-        } else if (model.startsWith("minitool/") || model.startsWith("claude/")) {
-          // MiniTool 401/500: Retry with delay to allow token pool to replenish
-          const mtStatus = directRes.status;
-          console.warn(`[Primary] MiniTool Worker returned ${mtStatus}. Starting retry loop...`);
-          
-          let mtSuccess = false;
-          for (let mtRetry = 1; mtRetry <= 3; mtRetry++) {
-            const retryDelay = mtRetry * 2000; // 2s, 4s, 6s
-            console.log(`[MiniTool Retry] Attempt ${mtRetry}/3: Waiting ${retryDelay/1000}s for token replenishment...`);
-            await new Promise(r => setTimeout(r, retryDelay));
-            
-            try {
-              const retryController = new AbortController();
-              const retryTimeout = setTimeout(() => retryController.abort(), 30000);
-              
-              const retryRes = await nodeFetch(targetEndpoint, {
-                method: "POST",
-                headers: baseHeaders,
-                body: JSON.stringify(requestBody),
-                signal: retryController.signal as any,
-              });
-              
-              clearTimeout(retryTimeout);
-              
-              if (retryRes.ok) {
-                const retryContentType = retryRes.headers.get("content-type") || "";
-                if (!retryContentType.includes("text/html")) {
-                  console.log(`[MiniTool Retry] Attempt ${mtRetry}/3 succeeded!`);
-                  return await handleStreamingResponse(retryRes);
-                }
-              } else {
-                console.warn(`[MiniTool Retry] Attempt ${mtRetry}/3 returned ${retryRes.status}`);
-              }
-            } catch (retryErr: any) {
-              console.warn(`[MiniTool Retry] Attempt ${mtRetry}/3 error: ${retryErr.message || retryErr}`);
-            }
-          }
-          
-          // All retries failed — return the original error with retry hint
-          console.warn(`[MiniTool Retry] All 3 retries failed. Returning 503.`);
-          return new Response(JSON.stringify({
-            error: "MiniTool AI is temporarily unavailable. Tokens are being replenished. Please retry in a few seconds.",
-            choices: [{ index: 0, message: { role: "assistant", content: "⏳ MiniTool AI is refreshing its connection. Please send your message again in a few seconds." }, finish_reason: "stop" }]
-          }), {
-            status: 200, // Return 200 so frontend doesn't show raw error
-            headers: { "Content-Type": "application/json" }
-          });
         } else {
           console.warn(
             `[Primary] Direct fetch returned ${directRes.status}. Falling back to proxies...`,

@@ -82,141 +82,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'Grok 4.6 Deep Reasoning & Complex Cognitive Problem Solving'
   },
 
-  // ════════════════════════════════════════════════════════════════
-  // 🌟 HIX AI MODELS (Claude Opus 5 / 4.8 / 4.7 / 4.6 & Sonnet / Haiku)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'hix-claude-opus-5',
-    label: 'Claude Opus 5 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-opus-5',
-    badge: 'OPUS 5',
-    badgeColor: 'red',
-    icon: 'Sparkles',
-    iconColor: '#e11d48',
-    description: 'Claude Opus 5 — Frontier agentic coding & ultra-deep reasoning via HIX AI'
-  },
-  {
-    id: 'hix-claude-opus-4.8',
-    label: 'Claude Opus 4.8 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-opus-4.8',
-    badge: 'OPUS 4.8',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Claude Opus 4.8 — Ultra-deep multi-step reasoning & architecture model via HIX AI'
-  },
-  {
-    id: 'hix-claude-opus-4.7',
-    label: 'Claude Opus 4.7 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-opus-4.7',
-    badge: 'OPUS 4.7',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#ea580c',
-    description: 'Claude Opus 4.7 — Advanced codebase comprehension and deep analysis via HIX AI'
-  },
-  {
-    id: 'hix-claude-sonnet-4.6',
-    label: 'Claude Sonnet 4.6 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-sonnet-4.6',
-    badge: 'SONNET 4.6',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 4.6 — Fast, state-of-the-art coding and agentic workflow model via HIX AI'
-  },
-  {
-    id: 'hix-claude-opus-4.6',
-    label: 'Claude Opus 4.6 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-opus-4.6',
-    badge: 'OPUS 4.6',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Claude Opus 4.6 — High-end intelligence for enterprise tasks via HIX AI'
-  },
-  {
-    id: 'hix-claude-opus-4.5',
-    label: 'Claude Opus 4.5 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-opus-4.5',
-    badge: 'OPUS 4.5',
-    badgeColor: 'amber',
-    icon: 'Sparkles',
-    iconColor: '#d97706',
-    description: 'Claude Opus 4.5 — Deep cognitive analysis & long-context reasoning via HIX AI'
-  },
-  {
-    id: 'hix-claude-sonnet-4.5',
-    label: 'Claude Sonnet 4.5 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-sonnet-4.5',
-    badge: 'SONNET 4.5',
-    badgeColor: 'orange',
-    icon: 'Zap',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 4.5 — High precision agentic and coding performance via HIX AI'
-  },
-  {
-    id: 'hix-claude-haiku-4.5',
-    label: 'Claude Haiku 4.5 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/claude-haiku-4.5',
-    badge: 'HAIKU 4.5',
-    badgeColor: 'amber',
-    icon: 'Zap',
-    iconColor: '#d97706',
-    description: 'Claude Haiku 4.5 — Super fast, near-frontier lightweight Claude via HIX AI'
-  },
-  {
-    id: 'hix-gpt-5.5',
-    label: 'GPT-5.5 (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/gpt-5.5',
-    badge: '5.5',
-    badgeColor: 'emerald',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-5.5 — OpenAI Next-Gen flagship model via HIX AI'
-  },
-  {
-    id: 'hix-gpt-5.6-luna',
-    label: 'GPT-5.6 Luna (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/gpt-5.6-luna',
-    badge: '5.6 LUNA',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5.6 Luna — Advanced multi-modal reasoning via HIX AI'
-  },
-  {
-    id: 'hix-gemini-3.6-flash',
-    label: 'Gemini 3.6 Flash (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/gemini-3.6-flash',
-    badge: '3.6 FLASH',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Gemini 3.6 Flash — Ultra-fast multimodal model via HIX AI'
-  },
-  {
-    id: 'hix-deepseek-v4-pro',
-    label: 'DeepSeek V4 Pro (HIX AI)',
-    engine: 'g4f',
-    modelStr: 'hix/deepseek-v4-pro',
-    badge: 'V4 PRO',
-    badgeColor: 'cyan',
-    icon: 'Brain',
-    iconColor: '#06b6d4',
-    description: 'DeepSeek V4 Pro — Frontier reasoning & code architecture via HIX AI'
-  },
 
   // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
@@ -354,152 +219,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'Meta Llama 4 via OverChat AI Gateway'
   },
 
-  // ════════════════════════════════════════════════════════════════
-  // 🟢 MINITOOLAI (via Cloudflare Worker)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'minitool-gpt-5.6-luna',
-    label: 'GPT-5.6 Luna',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5.6-luna',
-    badge: 'LUNA',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5.6 Luna via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-5.6-terra',
-    label: 'GPT-5.6 Terra',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5.6-terra',
-    badge: 'TERRA',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'GPT-5.6 Terra (Reasoning) via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-4o',
-    label: 'GPT-4o (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-4o',
-    badge: '4O',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-4o via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-5.4-fast',
-    label: 'GPT-5.4 Fast',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5.4-fast',
-    badge: 'FAST',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-5.4 Fast via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-5.4-mini',
-    label: 'GPT-5.4 Mini (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5.4-mini',
-    badge: 'MINI',
-    badgeColor: 'teal',
-    icon: 'Sparkles',
-    iconColor: '#14b8a6',
-    description: 'GPT-5.4 Mini via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-4.1',
-    label: 'GPT-4.1 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-4.1',
-    badge: '4.1',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'GPT-4.1 via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-4.1-mini',
-    label: 'GPT-4.1 Mini (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-4.1-mini',
-    badge: 'MINI',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'GPT-4.1 Mini via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-5',
-    label: 'GPT-5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5',
-    badge: 'GPT-5',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5 via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-5-mini',
-    label: 'GPT-5 Mini (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-5-mini',
-    badge: 'MINI',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5 Mini via MiniToolAI'
-  },
-  {
-    id: 'minitool-gpt-3.5-turbo',
-    label: 'GPT-3.5 Turbo (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/gpt-3.5-turbo',
-    badge: 'TURBO',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-3.5 Turbo via MiniToolAI'
-  },
-  {
-    id: 'minitool-claude-haiku-4.5',
-    label: 'Claude Haiku 4.5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/claude-haiku-4.5',
-    badge: 'HAIKU',
-    badgeColor: 'amber',
-    icon: 'Zap',
-    iconColor: '#d97706',
-    description: 'Claude Haiku 4.5 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-claude-sonnet-5',
-    label: 'Claude Sonnet 5 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/claude-sonnet-5',
-    badge: 'SONNET',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 5 via MiniToolAI Worker'
-  },
-  {
-    id: 'minitool-claude-opus-4.8',
-    label: 'Claude Opus 4.8 (MiniTool)',
-    engine: 'g4f',
-    modelStr: 'minitool/claude-opus-4.8',
-    badge: 'OPUS',
-    badgeColor: 'purple',
-    icon: 'Sparkles',
-    iconColor: '#a855f7',
-    description: 'Claude Opus 4.8 via MiniToolAI Worker'
-  },
 
   // ════════════════════════════════════════════════════════════════
   // 🟢 SURFSENSE
@@ -909,18 +628,6 @@ export const aiGenerateImageWithProgress = async (
 // ΓöÇΓöÇΓöÇ Cloudflare Worker URL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export const CF_WORKER_URL = 'https://divine-leaf-d1cf.antigravity4531.workers.dev';
 
-// ─── MiniTool Worker URL ─────────────────────────────────────────────────────
-const MINITOOL_WORKER_URL = 'https://ultimate-ai-worker.haruyhari930.workers.dev';
-
-// ─── MiniTool Pure Background Auto-Healing ───────────────────────────────────
-export async function autoSetupMinitoolSession(): Promise<boolean> {
-  console.log('[MiniTool Engine] Running background session check...');
-  return true;
-}
-
-function triggerMinitoolSolver(): void {
-  // Silent background token check — zero popups
-}
 
 // ΓöÇΓöÇΓöÇ Direct Pollinations API (OpenAI-compatible) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // text.pollinations.ai/openai ΓÇö free, no key, CORS-enabled
@@ -1151,11 +858,7 @@ export const aiChat = async (
     let endpointPath: string;
     let fetchUrl: string;
 
-    if (modelStr.startsWith('minitool/')) {
-      endpointPath = '/api/chat/completions';
-      fetchUrl = `${API_BASE}${endpointPath}`;
-      console.log(`[aiChat] Direct routing MiniTool to Python Bridge endpoint: ${fetchUrl}`);
-    } else if (model.engine === 'direct') {
+    if (model.engine === 'direct') {
       // Direct models go through our INIXA AI Gateway CF Worker
       // This hits Pollinations/DDG directly - no G4F, no proxies!
       fetchUrl = `${CF_WORKER_URL}/v1/chat/completions`;
@@ -1177,12 +880,6 @@ export const aiChat = async (
         directModelStr = modelStr.replace('qwen_worker/', '');
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'qwen_worker';
-      } else if (modelStr.startsWith('minitool/')) {
-        directModelStr = modelStr;
-        directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
-        provider = 'minitool';
-        // Trigger invisible iframe solver to keep token pool replenished
-        triggerMinitoolSolver();
       } else if (modelStr.startsWith('updf')) {
         directEndpoint = 'https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions';
         provider = 'updf';
@@ -1190,10 +887,6 @@ export const aiChat = async (
         directModelStr = modelStr;
         directEndpoint = ''; // Skip direct fetch to avoid browser CORS; let /api/chat/g4f handle server fetch
         provider = 'overchat';
-      } else if (modelStr.startsWith('hix/')) {
-        directModelStr = modelStr;
-        directEndpoint = ''; // Skip direct fetch to avoid browser CORS / 402; let /api/chat/g4f handle server fetch
-        provider = 'hix';
       } else if (modelStr.startsWith('g4f/')) {
         directModelStr = modelStr.replace('g4f/', '');
         directEndpoint = 'https://g4f.space/v1/chat/completions';
@@ -1246,19 +939,11 @@ export const aiChat = async (
           } else {
             const status = directRes.status;
             console.warn(`[Frontend Fetch] Failed with status ${status}. Falling back to Backend Proxy Pool...`);
-            // For MiniTool 401: Don't rate-limit provider — tokens are being replenished
-            if (provider === 'minitool' && status === 401) {
-              console.log(`[Frontend Fetch] MiniTool 401 — running background autosetup...`);
-              autoSetupMinitoolSession();
-            } else {
-              setProviderLimit(provider);
-            }
+            setProviderLimit(provider);
           }
         } catch (err) {
           console.warn(`[Frontend Fetch] Network error: ${err}. Falling back to Backend Proxy Pool...`);
-          if (provider !== 'minitool') {
-            setProviderLimit(provider);
-          }
+          setProviderLimit(provider);
         }
       } // End of else block for checkProviderLimit
 
@@ -1270,9 +955,7 @@ export const aiChat = async (
     }
 
     // ── Client-Side 3-Attempt Silent Retry Loop ──
-    // For MiniTool models: use longer delays to allow token pool to replenish
-    const isMiniTool = modelStr.startsWith('minitool/');
-    const maxAttempts = isMiniTool ? 4 : 3;
+    const maxAttempts = 3;
     let lastResult = '';
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -1317,21 +1000,12 @@ export const aiChat = async (
             if (reasoning) reply = `<think>\n${reasoning}\n</think>\n${content}`;
             if (reply) return reply;
           }
-        } else if (isMiniTool && res.status === 401) {
-          // MiniTool specific: check Retry-After header
-          const retryAfter = parseInt(res.headers.get('Retry-After') || '3', 10);
-          console.log(`[aiChat Client] MiniTool 401 on attempt ${attempt}/${maxAttempts}. Running background autosetup and waiting ${retryAfter}s...`);
-          autoSetupMinitoolSession();
-          if (attempt < maxAttempts) {
-            await new Promise(r => setTimeout(r, retryAfter * 1000));
-            continue;
-          }
         }
       } catch (err) {
         console.warn(`[aiChat Client] Attempt ${attempt}/${maxAttempts} network error:`, err);
       }
       if (attempt < maxAttempts) {
-        await new Promise(r => setTimeout(r, isMiniTool ? 2000 * attempt : 400 * attempt));
+        await new Promise(r => setTimeout(r, 400 * attempt));
       }
     }
 

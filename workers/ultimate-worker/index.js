@@ -10,9 +10,7 @@ import grokWorker from './grok.js';
 import nadanadaWorker from './nadanada.js';
 import copilotWorker from './copilot.js';
 import overchatWorker from './overchat.js';
-import minitoolaiWorker, { harvestTokenViaBrowser, harvestMultipleTokens } from './minitoolai.js';
 import oxalphaWorker from './oxalpha.js';
-import hixWorker from './hix.js';
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -22,13 +20,6 @@ const CORS_HEADERS = {
 };
 
 export default {
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil((async () => {
-      console.log("[Cron Trigger] Harvesting tokens for ALL service types (GPT, Claude, Grok, GLM)...");
-      const result = await harvestMultipleTokens(env);
-      console.log(`[Cron Trigger] Harvest complete: ${result.harvested}/${result.total} succeeded`);
-    })());
-  },
 
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
@@ -39,23 +30,13 @@ export default {
       const url = new URL(request.url);
       const pathname = url.pathname;
       
-      // Route /minitool/* paths to minitoolai worker
-      if (pathname.startsWith("/minitool/")) {
-        return await minitoolaiWorker.fetch(request, env, ctx);
-      }
-
-      // Route /health/minitool to minitoolai worker
-      if (pathname === "/health/minitool") {
-        return await minitoolaiWorker.fetch(request, env, ctx);
-      }
-
       // Health check and root
       if (pathname === "/" || pathname === "/health") {
         return new Response(JSON.stringify({
           status: "ok",
           service: "Ultimate Serverless AI API",
-          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "minitoolai", "oxalpha", "hix"],
-          endpoints: ["/v1/chat/completions", "/v1/models", "/minitool/init"]
+          providers: ["pollinations", "perplexity", "qwen", "baidu-ernie", "meta-ai", "ms-copilot", "oxalpha"],
+          endpoints: ["/v1/chat/completions", "/v1/models"]
         }), { headers: { ...CORS_HEADERS, "Content-Type": "application/json" } });
       }
 
@@ -104,23 +85,6 @@ export default {
           }
         }
 
-        // Route to HIX AI (New Claude Opus 5, 4.8, 4.7, Sonnet 4.6, Haiku 4.5, etc.)
-        if (
-          model.includes("hix") || 
-          model.includes("claude-opus-5") || 
-          model.includes("claude-opus-4.8") || 
-          model.includes("claude-opus-4.7") || 
-          model.includes("claude-sonnet-4.6") || 
-          model.includes("claude-opus-4.6") || 
-          model.includes("claude-opus-4.5") || 
-          model.includes("claude-sonnet-4.5") || 
-          model.includes("claude-haiku-4.5") ||
-          model.includes("gpt-5.5") ||
-          model.includes("gemini-3.6") ||
-          model.includes("deepseek-v4")
-        ) {
-          return await hixWorker.fetch(subRequest, env, ctx);
-        }
 
         // Route to OxAlpha
         if (model.includes("ox-alpha") || model.includes("oxalpha") || model.includes("ox_alpha")) {
@@ -157,10 +121,6 @@ export default {
           return await perplexityCopilotWorker.fetch(subRequest, env, ctx);
         }
         
-        // Route to MiniToolAI
-        if (model.includes("minitool")) {
-          return await minitoolaiWorker.fetch(subRequest, env, ctx);
-        }
 
         // Route to UPDF
         if (model.includes("updf")) {

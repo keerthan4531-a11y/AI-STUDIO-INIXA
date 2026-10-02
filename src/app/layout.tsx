@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import AdminOverlay from "@/components/AdminOverlay";
-import { TurnstileHarvester } from "@/components/TurnstileHarvester";
 
 export const metadata: Metadata = {
   title: "Inixa AI Studio — The Future of AI, Reimagined",
@@ -25,7 +24,6 @@ export default function RootLayout({
       <body className="bg-[#030712]">
         {children}
         <AdminOverlay />
-        <TurnstileHarvester />
       </body>
     </html>
   );
