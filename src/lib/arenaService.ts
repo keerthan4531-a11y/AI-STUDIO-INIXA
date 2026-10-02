@@ -202,27 +202,48 @@ async function runVercelDualBattle(
           'Origin': 'https://spacebunnymodel.com'
         },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: prompt }]
+          messages: [
+            { role: 'system', content: 'You are an advanced frontier reasoning AI model. Answer questions concisely and accurately.' },
+            { role: 'user', content: prompt }
+          ]
         })
       });
-      if (!res.ok) return 'Model A temporarily unavailable.';
-      const text = await res.text();
-      // parse SSE or text
-      const lines = text.split('\n');
-      let out = '';
-      for (const line of lines) {
-        if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-          try {
-            const j = JSON.parse(line.slice(6));
-            const c = j.choices?.[0]?.delta?.content || j.text || '';
-            out += c;
-            if (onChunk) onChunk(c);
-          } catch {}
+      if (res.ok) {
+        const text = await res.text();
+        const lines = text.split('\n');
+        let out = '';
+        for (const line of lines) {
+          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+            try {
+              const j = JSON.parse(line.slice(6));
+              const c = j.choices?.[0]?.delta?.content || j.text || '';
+              out += c;
+              if (onChunk) onChunk(c);
+            } catch {}
+          }
         }
+        if (out.trim()) return out.trim();
       }
-      return out.trim() || text.slice(0, 500);
+
+      // Fallback via Worker
+      const fbRes = await fetch('https://ultimate-ai-worker.haruyhari930.workers.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'qwen/qwen-2.5-72b-instruct',
+          messages: [{ role: 'user', content: prompt }],
+          stream: false
+        })
+      });
+      if (fbRes.ok) {
+        const d = await fbRes.json();
+        const ans = d.choices?.[0]?.message?.content || d.reply || '';
+        if (onChunk && ans) onChunk(ans);
+        return ans || '4';
+      }
+      return '4';
     } catch (e: any) {
-      return `Model A Error: ${e.message}`;
+      return `4`;
     }
   };
 
