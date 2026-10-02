@@ -4,6 +4,7 @@ import { HttpProxyAgent } from 'http-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import nodeFetch from 'node-fetch';
+import { runArenaBattle } from '@/lib/arenaService';
 
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route — Forwards to 9router (decolua)
@@ -881,7 +882,113 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: LMSYS Chatbot Arena (Frontier Dual-Model Battle) ──
+    const isArenaModel = 
+      selectedModel.startsWith('arena') || 
+      selectedModel.startsWith('lmsys') || 
+      selectedModel.includes('chatbot-arena') ||
+      selectedModel.includes('arena-battle');
+
+    if (isArenaModel) {
+      console.log(`[Arena Route] Routing model "${selectedModel}" to LMSYS Chatbot Arena Battle`);
+      try {
+        const lastUserMsg = formattedMessages.filter((m: any) => m && m.role === 'user').pop();
+        const promptText = typeof lastUserMsg?.content === 'string'
+          ? lastUserMsg.content
+          : Array.isArray(lastUserMsg?.content)
+            ? lastUserMsg.content.filter((c: any) => c.type === 'text').map((c: any) => c.text).join('\n')
+            : 'Hello';
+
+        const streamId = `chatcmpl-arena-${crypto.randomUUID().substring(0, 8)}`;
+        const created = Math.floor(Date.now() / 1000);
+
+        if (stream === true) {
+          const { readable, writable } = new TransformStream();
+          const writer = writable.getWriter();
+          const encoder = new TextEncoder();
+
+          (async () => {
+            try {
+              await runArenaBattle(promptText, async (chunkText) => {
+                const sseChunk = {
+                  id: streamId,
+                  object: 'chat.completion.chunk',
+                  created,
+                  model: selectedModel,
+                  choices: [{
+                    index: 0,
+                    delta: { content: chunkText },
+                    finish_reason: null
+                  }]
+                };
+                await writer.write(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+              });
+
+              const finalChunk = {
+                id: streamId,
+                object: 'chat.completion.chunk',
+                created,
+                model: selectedModel,
+                choices: [{ index: 0, delta: {}, finish_reason: 'stop' }]
+              };
+              await writer.write(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\ndata: [DONE]\n\n`));
+            } catch (err: any) {
+              console.error('[Arena Stream Error]', err);
+              const errChunk = {
+                id: streamId,
+                object: 'chat.completion.chunk',
+                created,
+                model: selectedModel,
+                choices: [{ index: 0, delta: { content: `\n\n⚠️ Arena Evaluation Error: ${err.message || err}` }, finish_reason: 'stop' }]
+              };
+              await writer.write(encoder.encode(`data: ${JSON.stringify(errChunk)}\n\ndata: [DONE]\n\n`));
+            } finally {
+              await writer.close();
+            }
+          })();
+
+          return new Response(readable, {
+            headers: {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          });
+        }
+
+        // Non-streaming
+        const battleRes = await runArenaBattle(promptText);
+        return NextResponse.json(
+          {
+            reply: battleRes.fullReply,
+            choices: [{
+              index: 0,
+              message: { role: 'assistant', content: battleRes.fullReply },
+              finish_reason: 'stop'
+            }]
+          },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[Arena Battle Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Arena error: ${err.message || err}`, reply: `⚠️ Arena Error: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Chinese Reverse Proxies (Local & Configured) ──
+
     const isChineseProxyModel = [
       'qwen-free/', 'kimi-free/', 'glm-free/', 'step-free/',
       'spark-free/', 'metaso-free/', 'parallel-chat/', 'coze/'

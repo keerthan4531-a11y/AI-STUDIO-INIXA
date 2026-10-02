@@ -124,6 +124,22 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚔️ LMSYS CHATBOT ARENA (Frontier Dual-Model Battle — 100% Free)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'lmsys-chatbot-arena',
+    label: 'LMSYS Chatbot Arena (Dual Battle)',
+    engine: 'custom',
+    modelStr: 'arena/lmsys-battle',
+    provider: 'arena',
+    badge: 'ARENA',
+    badgeColor: 'amber',
+    icon: 'Swords',
+    iconColor: '#f59e0b',
+    description: 'LMSYS Chatbot Arena — Evaluates your prompt across two frontier models with live dual-streaming'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
   // ════════════════════════════════════════════════════════════════
   {

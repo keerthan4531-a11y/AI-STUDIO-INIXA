@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, XCircle, Bot, Zap as ZapIcon, Brain, Sparkles, Star, Boxes, Code, Terminal, Globe, Eye } from 'lucide-react';
+import { Cpu, XCircle, Bot, Zap as ZapIcon, Brain, Sparkles, Star, Boxes, Code, Terminal, Globe, Eye, Swords } from 'lucide-react';
 import { cn } from './GlassCard';
 import { OpenAILogo, GeminiLogo, GrokLogo, ClaudeLogo, MetaLogo, BaiduLogo, DeepSeekLogo, KimiLogo, ZaiLogo, QwenLogo, MiniMaxLogo } from './Logos';
 import { AI_MODELS, type AIModel } from '../api/aiEngine';
@@ -34,6 +34,7 @@ export function ModelIcon({ model, active }: { model: AIModel; active: boolean }
     case 'Cpu': return <Cpu size={size} className={cn(active ? "text-white" : "text-indigo-400")} />;
     case 'Globe': return <Globe size={size} className={cn(active ? "text-white" : "text-teal-400")} />;
     case 'Eye': return <Eye size={size} className={cn(active ? "text-white" : "text-sky-400")} />;
+    case 'Swords': return <Swords size={size} className={cn(active ? "text-white" : "text-amber-400")} />;
     case 'Bot': return <Bot size={size} className={cn(active ? "text-white" : "text-emerald-400")} />;
     default: return <Bot size={size} className={cn(active ? "text-white" : "text-white/20")} />;
   }

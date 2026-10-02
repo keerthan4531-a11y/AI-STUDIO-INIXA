@@ -66,3 +66,5 @@ __pycache__/
 capture_meta_ws.js
 run-dump.js
 test_meta_image.js
+.arena_battle_profile/
+.arena_profile/
