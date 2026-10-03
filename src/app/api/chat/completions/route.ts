@@ -1569,28 +1569,19 @@ export async function POST(req: Request) {
         }
       } catch (e: any) {
         console.error(`[OxAlpha Route] Direct OxAlpha connection failed: ${e.message}`);
+        return NextResponse.json(
+          { error: `OxAlpha connection error: ${e.message}`, reply: `⚠️ OxAlpha Error (GLM 5.3): ${e.message}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
       }
 
-      // If OxAlpha failed, auto-fallback to Kilo AI so 502 Bad Gateway is never returned
-      if (!proxyResponse || !proxyResponse.ok) {
-        console.warn(`[OxAlpha Route] OxAlpha failed (${proxyResponse?.status}), falling back to Kilo AI frontier model...`);
-        try {
-          const kiloFallback = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'kilo-auto/free',
-              messages: formattedMessages,
-              stream: stream === true,
-              max_tokens: 8000,
-            })
-          });
-          if (kiloFallback.ok) {
-            proxyResponse = kiloFallback;
-          }
-        } catch (kErr) {
-          console.error('[OxAlpha Route] Fallback to Kilo failed:', kErr);
-        }
+      if (!proxyResponse.ok) {
+        const oxErr = await proxyResponse.text();
+        console.error(`[OxAlpha Route] OxAlpha HTTP ${proxyResponse.status}:`, oxErr);
+        return NextResponse.json(
+          { error: `OxAlpha HTTP ${proxyResponse.status}: ${oxErr}`, reply: `⚠️ OxAlpha Error (GLM 5.3) [HTTP ${proxyResponse.status}]: ${oxErr.slice(0, 300)}` },
+          { status: proxyResponse.status, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
       }
     }
     // Direct ChatX AI routing (100% Free & Unlimited Guest Mode)
@@ -1870,45 +1861,32 @@ export async function POST(req: Request) {
     }
 
     if (!proxyResponse || !proxyResponse.ok) {
-      console.warn(`[Route Fallback] Upstream failed with status ${proxyResponse?.status || 'unknown'}. Attempting resilient fallback to Kilo AI...`);
-      try {
-        const kiloRes = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'kilo-auto/free',
-            messages: formattedMessages,
-            stream: stream === true,
-            max_tokens: 8000,
-          })
-        });
-        if (kiloRes.ok) {
-          proxyResponse = kiloRes;
-        }
-      } catch (kErr) {
-        console.error('[Route Fallback] Kilo resilient fallback failed:', kErr);
-      }
-    }
+      const status = proxyResponse?.status || 502;
+      const errorText = proxyResponse ? await proxyResponse.text() : 'No response received from provider';
+      console.error(`[Provider Error] Model "${selectedModel}" failed with HTTP ${status}:`, errorText);
 
-    if (!proxyResponse.ok) {
-      const errorText = await proxyResponse.text();
-      console.error('Provider error:', proxyResponse.status, errorText);
-
-      // Parse error details
-      let errorMessage = 'AI provider error. ';
+      // Parse error details from provider
+      let errorMessage = `Model "${selectedModel}" failed (HTTP ${status}): `;
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson?.error?.message) {
           errorMessage += errorJson.error.message;
+        } else if (errorJson?.message) {
+          errorMessage += errorJson.message;
+        } else {
+          errorMessage += JSON.stringify(errorJson);
         }
       } catch {
-        errorMessage += errorText.slice(0, 200);
+        errorMessage += errorText.slice(0, 300);
       }
 
       return NextResponse.json(
-        { error: errorMessage, reply: `⚠️ ${errorMessage}\n\nPlease try another free model or re-send your prompt.` },
+        { 
+          error: errorMessage, 
+          reply: `⚠️ Error [${selectedModel}]: ${errorMessage}` 
+        },
         {
-          status: 502,
+          status: status >= 400 && status < 600 ? status : 502,
           headers: {
             'X-RateLimit-Limit': String(maxRequests),
             'X-RateLimit-Remaining': String(remaining),
