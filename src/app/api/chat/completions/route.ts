@@ -675,36 +675,43 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Liquid, etc.) ──
+    // ── Route: Kilo Gateway (Nemotron Ultra/Lightning, Laguna, Cohere North, StepFun, Qwen 3.8, Liquid, etc.) ──
     const isKiloGatewayModel = 
       selectedModel.startsWith('kilo/') ||
       selectedModel.includes('nemotron') ||
-      selectedModel.includes('liquid');
+      selectedModel.includes('liquid') ||
+      selectedModel.startsWith('cohere/north') ||
+      selectedModel.startsWith('stepfun/') ||
+      selectedModel.startsWith('inclusionai/') ||
+      selectedModel.includes('laguna-xs-2.1');
 
     if (isKiloGatewayModel) {
       let targetKiloModel = selectedModel.replace(/^kilo\//, '');
-      if (targetKiloModel.includes('nemotron-3.5') || targetKiloModel.includes('nemotron-3-5')) targetKiloModel = 'nvidia/nemotron-3.5-lightning:free';
-      else if (targetKiloModel.includes('nemotron-3-ultra') || targetKiloModel.includes('nemotron-ultra')) targetKiloModel = 'nvidia/nemotron-3-ultra-550b-a55b:free';
+      if (!targetKiloModel.endsWith(':free') && !targetKiloModel.endsWith('/free')) {
+        targetKiloModel = `${targetKiloModel}:free`;
+      }
 
-      console.log(`[Kilo Gateway Route] Routing model "${selectedModel}" -> "${targetKiloModel}"`);
+      console.log(`[Kilo Gateway Route] Routing model "${selectedModel}" -> "${targetKiloModel}" to api.kilo.ai`);
 
       try {
         const kiloRes = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
           },
           body: JSON.stringify({
             model: targetKiloModel,
-            messages: chatMessages,
-            stream: stream === true
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            max_tokens: body.max_tokens || 2048,
+            temperature: body.temperature || 0.7
           })
         });
 
         if (!kiloRes.ok) {
           const errText = await kiloRes.text();
-          throw new Error(`Kilo Gateway error: HTTP ${kiloRes.status} - ${errText}`);
+          throw new Error(`Kilo Gateway HTTP ${kiloRes.status} - ${errText}`);
         }
 
         if (stream === true && kiloRes.body) {
@@ -721,7 +728,8 @@ export async function POST(req: Request) {
         }
 
         const data = await kiloRes.json();
-        const content = data.choices?.[0]?.message?.content || data.reply || '';
+        const choice = data.choices?.[0];
+        const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
         return NextResponse.json(
           { reply: content, choices: data.choices },
           {
@@ -734,6 +742,13 @@ export async function POST(req: Request) {
         );
       } catch (err: any) {
         console.error(`[Kilo Gateway Error] ${err.message || err}`);
+        return NextResponse.json(
+          { 
+            error: `Kilo Gateway (${targetKiloModel}) Error: ${err.message || err}`, 
+            reply: `⚠️ Error [${targetKiloModel}]: ${err.message || err}` 
+          },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
       }
     }
 

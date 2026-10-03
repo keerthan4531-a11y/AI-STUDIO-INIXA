@@ -142,6 +142,87 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ KILO GATEWAY FREE MODELS (Zero-Auth Multi-Model Gateway)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'kilo-auto-free',
+    label: 'Kilo Auto Router (Free Pool)',
+    engine: 'custom',
+    modelStr: 'kilo/kilo-auto/free',
+    badge: 'AUTO FREE',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Kilo Auto Router — Automatically routes to the fastest active free model'
+  },
+  {
+    id: 'kilo-nemotron-3-ultra',
+    label: 'Nemotron 3 Ultra 550B (NVIDIA)',
+    engine: 'custom',
+    modelStr: 'kilo/nvidia/nemotron-3-ultra-550b-a55b:free',
+    badge: 'NVIDIA 550B',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'NVIDIA Nemotron 3 Ultra 550B — Massive scale frontier enterprise intelligence (100% Free)'
+  },
+  {
+    id: 'kilo-nemotron-3.5-lightning',
+    label: 'Nemotron 3.5 Lightning (NVIDIA)',
+    engine: 'custom',
+    modelStr: 'kilo/nvidia/nemotron-3.5-lightning:free',
+    badge: 'LIGHTNING',
+    badgeColor: 'amber',
+    icon: 'Zap',
+    iconColor: '#f59e0b',
+    description: 'NVIDIA Nemotron 3.5 Lightning — High-speed low-latency reasoning model (100% Free)'
+  },
+  {
+    id: 'kilo-cohere-north-mini-code',
+    label: 'North Mini Code (Cohere)',
+    engine: 'custom',
+    modelStr: 'kilo/cohere/north-mini-code:free',
+    badge: 'COHERE CODE',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Cohere North Mini Code — Specialized code generation and engineering model (100% Free)'
+  },
+  {
+    id: 'kilo-step-3.7-flash',
+    label: 'Step 3.7 Flash (StepFun)',
+    engine: 'custom',
+    modelStr: 'kilo/stepfun/step-3.7-flash:free',
+    badge: 'STEPFUN',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Step 3.7 Flash — High-performance multimodal-trained reasoning model (100% Free)'
+  },
+  {
+    id: 'kilo-liquid-lfm-2.5',
+    label: 'LFM 2.5 (Liquid AI)',
+    engine: 'custom',
+    modelStr: 'kilo/liquid/lfm-2.5-2.6b:free',
+    badge: 'LIQUID AI',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Liquid Neural Network (LFM 2.5) — Dynamic adaptive sequence model (100% Free)'
+  },
+  {
+    id: 'kilo-ling-3.0-flash',
+    label: 'Ling 3.0 Flash (InclusionAI)',
+    engine: 'custom',
+    modelStr: 'kilo/inclusionai/ling-3.0-flash-sante:free',
+    badge: 'LING 3.0',
+    badgeColor: 'pink',
+    icon: 'Sparkles',
+    iconColor: '#ec4899',
+    description: 'InclusionAI Ling 3.0 Flash — Ultra-fast multilingual reasoning model (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ GROK 4.6 (xAI Frontier Reasoning)
   // ════════════════════════════════════════════════════════════════
   {
