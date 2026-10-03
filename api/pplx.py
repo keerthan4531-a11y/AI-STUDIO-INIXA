@@ -1,6 +1,7 @@
 import json
 import uuid
 import re
+import time
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,8 +66,10 @@ def _build_session():
     s.impersonate = "chrome120"
     return s
 
+import os
+
 def _android_headers(device_id: str) -> dict:
-    return {
+    headers = {
         "X-App-Version":    "2.95.0",
         "X-Client-Version": "2.95.0",
         "X-Client-Name":    "Perplexity-Android",
@@ -74,97 +77,128 @@ def _android_headers(device_id: str) -> dict:
         "X-App-ApiClient":  "android",
         "X-App-ApiVersion": "2.17",
         "X-Device-ID":      device_id,
-        "Accept-Language":  "en-US,en;q=0.9",
+        "Accept-Language":  "es-ES",
         "Content-Type":     "application/json",
         "Accept":           "text/event-stream",
         "User-Agent":       "okhttp/4.12.0",
     }
+    token = os.environ.get("PERPLEXITY_SESSION_TOKEN") or os.environ.get("PERPLEXITY_COOKIE")
+    if token:
+        clean_token = token.replace("__Secure-next-auth.session-token=", "").replace("next-auth.session-token=", "").strip()
+        headers["Cookie"] = f"__Secure-next-auth.session-token={clean_token}; next-auth.session-token={clean_token}"
+    return headers
+
+def _parse_sse(raw: bytes):
+    text = raw.decode("utf-8", errors="replace")
+    events = []
+    for chunk in re.split(r"\r\n\r\n", text):
+        ev = {}
+        for line in chunk.split("\r\n"):
+            if line.startswith("event:"):
+                ev["type"] = line[6:].strip()
+            elif line.startswith("data:"):
+                ev["data"] = line[5:].strip()
+        if "type" in ev and "data" in ev:
+            events.append(ev)
+    return events
+
+def _extract_result(final_data):
+    text = ""
+    sources = []
+    for block in final_data.get("blocks", []):
+        usage = block.get("intended_usage", "")
+        if "markdown_block" in block:
+            mb = block["markdown_block"]
+            block_text = "".join(c for c in mb.get("chunks", []) if isinstance(c, str))
+            if "ask_text_0_markdown" in usage and block_text:
+                text = block_text
+            elif not text and block_text and "ask_text" in usage:
+                text = block_text
+        elif "web_result_block" in block:
+            for src in block["web_result_block"].get("web_results", []):
+                url = src.get("url", "")
+                if url and url not in sources:
+                    sources.append(url)
+    return text.strip(), sources
 
 def stream_perplexity_generator(query: str, model_name: str):
-    device_id = str(uuid.uuid4())
     cleaned_model = model_name.lower().replace("pplx/", "").replace("perplexity/", "").strip()
     target_model = MODELS_MAP.get(cleaned_model, cleaned_model or "turbo")
     
     session = _build_session()
-    body = {
-        "query_str": query,
-        "params": {
-            "source": "android",
-            "version": "2.17",
-            "frontend_uuid": str(uuid.uuid4()),
-            "last_backend_uuid": None,
-            "android_device_id": device_id,
-            "mode": "concise",
-            "is_related_query": False,
-            "is_voice_to_voice": False,
-            "timezone": "America/New_York",
-            "language": "en",
-            "is_incognito": False,
-            "use_schematized_api": True,
-            "send_back_text_in_streaming_api": True,
-            "supported_block_use_cases": ["ANSWER", "SOURCES", "IMAGE", "VIDEO"],
-            "sources": ["web"],
-            "model_preference": target_model,
+    last_err = ""
+
+    for attempt in range(1, 3):
+        device_id = str(uuid.uuid4())
+        body = {
+            "query_str": query,
+            "params": {
+                "source": "android",
+                "version": "2.17",
+                "frontend_uuid": str(uuid.uuid4()),
+                "last_backend_uuid": None,
+                "android_device_id": device_id,
+                "mode": "concise",
+                "is_related_query": False,
+                "is_voice_to_voice": False,
+                "timezone": "America/Bogota",
+                "language": "es",
+                "is_incognito": False,
+                "use_schematized_api": True,
+                "send_back_text_in_streaming_api": False,
+                "supported_block_use_cases": ["ANSWER", "SOURCES", "IMAGE", "VIDEO"],
+                "sources": ["web"],
+                "model_preference": target_model,
+            }
         }
-    }
 
-    r = session.post(API_URL, json=body, headers=_android_headers(device_id), timeout=120, stream=True)
-    r.raise_for_status()
+        try:
+            r = session.post(API_URL, json=body, headers=_android_headers(device_id), timeout=45)
+            r.raise_for_status()
 
-    buf = ""
-    accumulated_length = 0
-    sources_sent = False
+            final_data = None
+            for ev in _parse_sse(r.content):
+                if ev["type"] == "message":
+                    try:
+                        d = json.loads(ev["data"])
+                        if d.get("final_sse_message"):
+                            final_data = d
+                            break
+                    except:
+                        pass
 
-    for chunk in r.iter_content(chunk_size=None):
-        if not chunk:
-            continue
-        buf += chunk.decode("utf-8", errors="replace")
-        
-        while "\r\n\r\n" in buf:
-            seg, buf = buf.split("\r\n\r\n", 1)
-            ev_type, data_str = None, ""
-            for line in seg.split("\r\n"):
-                if line.startswith("event:"):
-                    ev_type = line[6:].strip()
-                elif line.startswith("data:"):
-                    data_str = line[5:].strip()
-            
-            if ev_type != "message" or not data_str:
-                continue
-            try:
-                data = json.loads(data_str)
-            except Exception:
-                continue
+            if final_data:
+                text, sources = _extract_result(final_data)
+                if "Sign up and repeat your request" in text or "Sign in to continue" in text:
+                    last_err = f"Sign in required by Perplexity for model {target_model}."
+                    time.sleep(0.5)
+                    continue
 
-            # Extract source links
-            if not sources_sent and data.get("blocks"):
-                found_sources = []
-                for b in data.get("blocks", []):
-                    if b.get("web_result_block") and b["web_result_block"].get("web_results"):
-                        for item in b["web_result_block"]["web_results"]:
-                            url = item.get("url")
-                            if url and url not in found_sources:
-                                found_sources.append(url)
-                if found_sources:
-                    sources_sent = True
-                    yield f"data: {json.dumps({'type': 'citations', 'citations': found_sources})}\n\n"
+                if text:
+                    # 1. Send citations if available
+                    if sources:
+                        yield f"data: {json.dumps({'type': 'citations', 'citations': sources})}\n\n"
 
-            # Check for error / authwall
-            upsell = data.get("upsell_information")
-            if upsell and upsell.get("title") and "Sign in" in upsell.get("title"):
-                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': f'\n\n❌ [Perplexity Error - {target_model}]: Sign in required for this query.'})}\n\n"
-                return
+                    # 2. Stream out text smoothly in words/chunks
+                    words = re.split(r'(\s+)', text)
+                    chunk_acc = ""
+                    for w in words:
+                        chunk_acc += w
+                        if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
+                            yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
+                            chunk_acc = ""
+                    if chunk_acc:
+                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
 
-            for block in data.get("blocks", []):
-                usage = block.get("intended_usage", "")
-                if "ask_text_0_markdown" in usage and "markdown_block" in block:
-                    delta = "".join(
-                        c for c in block["markdown_block"].get("chunks", [])
-                        if isinstance(c, str)
-                    )
-                    if delta:
-                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+        except Exception as e:
+            last_err = str(e)
+            time.sleep(0.5)
 
+    # If attempts exhausted without valid response, yield strict error
+    err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'No valid response returned from Perplexity engine.'}"
+    yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_delta})}\n\n"
     yield "data: [DONE]\n\n"
 
 @app.get("/api/pplx")
