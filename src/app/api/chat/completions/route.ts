@@ -1504,6 +1504,44 @@ export async function POST(req: Request) {
         proxyResponse = new Response(JSON.stringify({ error: { message: `OxAlpha connection error: ${e.message}` } }), { status: 502, headers: { 'Content-Type': 'application/json' } });
       }
     }
+    // Direct ChatX AI routing (100% Free & Unlimited Guest Mode)
+    else if (selectedModel.startsWith('chatx/') || selectedModel.startsWith('chatx-')) {
+      const chatxModel = selectedModel.replace(/^chatx[\/-]/, '');
+      console.log(`[ChatX Route] Direct ChatX execution for model: ${chatxModel}`);
+      const lastUserMsg = [...chatMessages].reverse().find((m: any) => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      const host = req.headers.get('host') || 'localhost:3000';
+      const protocol = req.headers.get('x-forwarded-proto') || 'http';
+      proxyResponse = await fetch(`${protocol}://${host}/api/chat/chatx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: promptText,
+          model: chatxModel,
+          turnstileToken: ''
+        })
+      });
+    }
+    // Direct Perplexity AI routing (Live Web Search & Frontier Reasoning)
+    else if (selectedModel.startsWith('pplx/') || selectedModel.startsWith('pplx-') || selectedModel.startsWith('perplexity/')) {
+      const pplxModel = selectedModel.replace(/^(pplx[\/-]|perplexity\/)/, '');
+      console.log(`[Perplexity Route] Direct Perplexity execution for model: ${pplxModel}`);
+      const lastUserMsg = [...chatMessages].reverse().find((m: any) => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      const host = req.headers.get('host') || 'localhost:3000';
+      const protocol = req.headers.get('x-forwarded-proto') || 'http';
+      proxyResponse = await fetch(`${protocol}://${host}/api/chat/perplexity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: promptText,
+          model: pplxModel,
+          stream
+        })
+      });
+    }
     // Direct Google Gemini API routing
     else if (selectedModel.startsWith('gemini/')) {
       const geminiModel = selectedModel.replace('gemini/', '');

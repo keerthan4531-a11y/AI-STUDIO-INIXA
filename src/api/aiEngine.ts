@@ -116,7 +116,7 @@ export const AI_MODELS: AIModel[] = [
     label: 'Space Bunny Alpha (Stealth)',
     engine: 'custom',
     modelStr: 'space-bunny-alpha',
-    badge: 'GPT-5 CLASS',
+    badge: 'TOP-CLASS',
     badgeColor: 'pink',
     icon: 'Sparkles',
     iconColor: '#ec4899',
@@ -137,6 +137,278 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Swords',
     iconColor: '#f59e0b',
     description: 'Arena AI — Frontier side-by-side battle evaluating your prompt across two frontier models simultaneously'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🌐 PERPLEXITY AI (Live Web Search & Frontier Reasoning — 100% Free)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'pplx-turbo',
+    label: 'Perplexity Turbo (Sonar Web)',
+    engine: 'custom',
+    modelStr: 'pplx/turbo',
+    provider: 'perplexity',
+    badge: 'LIVE WEB',
+    badgeColor: 'teal',
+    icon: 'Globe',
+    iconColor: '#14b8a6',
+    description: 'Perplexity Turbo — Ultra-fast real-time web search with citations & verified sources (100% Free)'
+  },
+  {
+    id: 'pplx-gpt56-sol',
+    label: 'GPT-5.6 Sol (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/gpt56_sol',
+    provider: 'perplexity',
+    badge: 'GPT-5.6 WEB',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'OpenAI GPT-5.6 Sol augmented with live Perplexity web search & citations (100% Free)'
+  },
+  {
+    id: 'pplx-sonnet5',
+    label: 'Claude Sonnet 5 (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/sonnet5',
+    provider: 'perplexity',
+    badge: 'SONNET 5 WEB',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#f59e0b',
+    description: 'Anthropic Claude Sonnet 5 with real-time web search verification & citations (100% Free)'
+  },
+  {
+    id: 'pplx-opus5',
+    label: 'Claude Opus 5 (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/opus5',
+    provider: 'perplexity',
+    badge: 'OPUS 5 WEB',
+    badgeColor: 'rose',
+    icon: 'Brain',
+    iconColor: '#f43f5e',
+    description: 'Anthropic Claude Opus 5 deep reasoning with real-time web grounding (100% Free)'
+  },
+  {
+    id: 'pplx-gemini31',
+    label: 'Gemini 3.1 Pro (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/gemini31',
+    provider: 'perplexity',
+    badge: 'GEMINI 3.1 WEB',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Google Gemini 3.1 Pro augmented with live web search & citation links (100% Free)'
+  },
+  {
+    id: 'pplx-grok45',
+    label: 'Grok 4.5 (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/grok45',
+    provider: 'perplexity',
+    badge: 'GROK 4.5 WEB',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'xAI Grok 4.5 frontier intelligence with live Perplexity web search (100% Free)'
+  },
+  {
+    id: 'pplx-kimi3',
+    label: 'Kimi K3 (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/kimi3',
+    provider: 'perplexity',
+    badge: 'KIMI K3 WEB',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Moonshot Kimi K3 long-context reasoning with real-time web search (100% Free)'
+  },
+  {
+    id: 'pplx-glm52',
+    label: 'GLM 5.2 (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/glm52',
+    provider: 'perplexity',
+    badge: 'GLM 5.2 WEB',
+    badgeColor: 'purple',
+    icon: 'Globe',
+    iconColor: '#a855f7',
+    description: 'Zhipu GLM-5.2 frontier research model with live web grounding (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // ⚡ CHATX.AI FRONTIER MODELS (All 10 Models — 100% Free & Unlimited)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'chatx-grok-fast',
+    label: 'Grok 4.3 Fast (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/grok_fast',
+    provider: 'chatx',
+    badge: 'GROK 4.3',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Grok 4.3 Fast — xAI Ultra-fast reasoning via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-grok-main',
+    label: 'Grok 4.6 Main (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/grok_main',
+    provider: 'chatx',
+    badge: 'GROK 4.6',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Grok 4.6 Main — xAI Flagship Thinking & Deep Cognitive Reasoning via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-deepseek',
+    label: 'DeepSeek V4.1 Flash (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/deepseek_flash',
+    provider: 'chatx',
+    badge: 'DEEPSEEK',
+    badgeColor: 'blue',
+    icon: 'Zap',
+    iconColor: '#0ea5e9',
+    description: 'DeepSeek V4.1 Flash — Ultra-low latency reasoning model via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-claude-sonnet',
+    label: 'Claude Sonnet 5 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/claude_sonnet',
+    provider: 'chatx',
+    badge: 'SONNET 5',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Claude Sonnet 5 — Anthropic Next-gen coding & nuanced reasoning via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-claude-opus',
+    label: 'Claude Opus 5.5 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/claude_opus',
+    provider: 'chatx',
+    badge: 'OPUS 5.5',
+    badgeColor: 'amber',
+    icon: 'Brain',
+    iconColor: '#d97706',
+    description: 'Claude Opus 5.5 — Anthropic Highest-order reasoning & synthesis via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-claude-haiku',
+    label: 'Claude Haiku 4.5 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/claude_haiku',
+    provider: 'chatx',
+    badge: 'HAIKU 4.5',
+    badgeColor: 'yellow',
+    icon: 'Zap',
+    iconColor: '#eab308',
+    description: 'Claude Haiku 4.5 — Anthropic Fast lightweight model via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-claude-fable',
+    label: 'Claude Fable 5.1 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/claude_fable',
+    provider: 'chatx',
+    badge: 'FABLE 5.1',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#d97706',
+    description: 'Claude Fable 5.1 — Anthropic Creative & narrative intelligence via ChatX'
+  },
+  {
+    id: 'chatx-gemini-pro',
+    label: 'Gemini 3.8 Flash (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gemini_pro',
+    provider: 'chatx',
+    badge: 'GEMINI 3.8',
+    badgeColor: 'green',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Gemini 3.8 Flash — Google High efficiency multimodal intelligence via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-gemini-lite',
+    label: 'Gemini 3.5 Flash Lite (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gemini',
+    provider: 'chatx',
+    badge: 'GEMINI 3.5',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Gemini 3.5 Flash Lite — Google Ultra-lightweight reasoning model via ChatX'
+  },
+  {
+    id: 'chatx-gpt3',
+    label: 'GPT-6 Luna (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gpt3',
+    provider: 'chatx',
+    badge: 'LUNA',
+    badgeColor: 'cyan',
+    icon: 'Sparkles',
+    iconColor: '#06b6d4',
+    description: 'GPT-6 Luna — OpenAI Fast reasoning model via ChatX'
+  },
+  {
+    id: 'chatx-gpt4',
+    label: 'GPT-5.4 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gpt4',
+    provider: 'chatx',
+    badge: 'GPT-5.4',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#059669',
+    description: 'GPT-5.4 — OpenAI High-order logic & reasoning intelligence via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-gpt4-5',
+    label: 'GPT-4.1 (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gpt4_5',
+    provider: 'chatx',
+    badge: 'GPT-4.1',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'GPT-4.1 — OpenAI Fast instruction model via ChatX'
+  },
+  {
+    id: 'chatx-gpt5-sol',
+    label: 'GPT-6.1 Sol (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gpt5_5',
+    provider: 'chatx',
+    badge: 'GPT-6.1 SOL',
+    badgeColor: 'rose',
+    icon: 'Sparkles',
+    iconColor: '#f43f5e',
+    description: 'GPT-6.1 Sol — OpenAI Advanced synthesis model via ChatX (100% Free & Unlimited)'
+  },
+  {
+    id: 'chatx-gpt6-astra',
+    label: 'GPT-6 Astra (ChatX)',
+    engine: 'custom',
+    modelStr: 'chatx/gpt6_astra',
+    provider: 'chatx',
+    badge: 'GPT-6 ASTRA',
+    badgeColor: 'purple',
+    icon: 'Brain',
+    iconColor: '#a855f7',
+    description: 'GPT-6 Astra — OpenAI Next-gen flagship intelligence via ChatX (100% Free & Unlimited)'
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -798,22 +1070,23 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
         try {
           const parsed = JSON.parse(dataStr);
           if (parsed.citations && Array.isArray(parsed.citations)) citations = parsed.citations;
-          
-          // Universal content extractor for OpenAI, Anthropic, Perplexity, OverChat, Pollinations
-          const content = 
-            parsed.choices?.[0]?.delta?.content || 
-            parsed.choices?.[0]?.text || 
+
+          // Universal content extractor for OpenAI, Anthropic, Perplexity, OverChat, Pollinations, ChatX
+          const content =
+            parsed.delta ||
+            parsed.choices?.[0]?.delta?.content ||
+            parsed.choices?.[0]?.text ||
             parsed.data?.text ||
             parsed.data?.content ||
-            parsed.message || 
+            parsed.message ||
             (typeof parsed.content === 'string' ? parsed.content : '') ||
             parsed.text ||
             parsed.response ||
             '';
-            
-          const reasoning = 
-            parsed.choices?.[0]?.delta?.reasoning_content || 
-            parsed.choices?.[0]?.delta?.reasoning || 
+
+          const reasoning =
+            parsed.choices?.[0]?.delta?.reasoning_content ||
+            parsed.choices?.[0]?.delta?.reasoning ||
             parsed.data?.reasoning ||
             '';
 
@@ -1018,6 +1291,132 @@ export const aiChat = async (
 
       endpointPath = '/api/chat/g4f';
       fetchUrl = `${API_BASE}${endpointPath}`;
+    } else if (model.provider === 'chatx' || modelStr.startsWith('chatx/')) {
+      // ═══════════════════════════════════════════════════════════════════
+      // ⚡ ChatX.ai Direct Route — STRICT: NO FALLBACK, SHOW REAL ERRORS
+      // ═══════════════════════════════════════════════════════════════════
+      const targetModel = modelStr.replace('chatx/', '');
+      const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      console.log(`[aiChat ChatX] Direct invocation for ${modelStr} (Strict mode, no fallback)...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/chatx`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptText,
+            model: targetModel,
+            turnstileToken: ''
+          })
+        });
+
+        if (!res.ok) {
+          let errDetail = `HTTP ${res.status}: ${res.statusText}`;
+          try {
+            const data = await res.json();
+            if (data.error) errDetail = data.error;
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) errDetail = text;
+            } catch {}
+          }
+          const errorMsg = `\n\n❌ [ChatX Error - ${targetModel}]: ${errDetail}`;
+          if (onChunk) onChunk(errorMsg);
+          return errorMsg;
+        }
+
+        // Handle streaming response directly from ChatX
+        if (onChunk && res.body) {
+          const sseReply = await handleSSEStream(res, onChunk);
+          if (sseReply && sseReply !== 'No response received from the AI model.') {
+            return sseReply;
+          }
+          const emptyMsg = `\n\n❌ [ChatX Error - ${targetModel}]: No response received or model restricted.`;
+          onChunk(emptyMsg);
+          return emptyMsg;
+        } else {
+          const data = await res.json();
+          const content = data.reply || data.choices?.[0]?.message?.content || '';
+          if (content) {
+            if (onChunk) onChunk(content);
+            return content;
+          }
+          const emptyMsg = `\n\n❌ [ChatX Error - ${targetModel}]: No response received from ChatX engine.`;
+          if (onChunk) onChunk(emptyMsg);
+          return emptyMsg;
+        }
+      } catch (err: any) {
+        console.error(`[aiChat ChatX Error]:`, err);
+        const netErrorMsg = `\n\n❌ [ChatX Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/chatx'}`;
+        if (onChunk) onChunk(netErrorMsg);
+        return netErrorMsg;
+      }
+    } else if (model.provider === 'perplexity' || modelStr.startsWith('pplx/') || modelStr.startsWith('perplexity/')) {
+      // ═══════════════════════════════════════════════════════════════════
+      // 🌐 PERPLEXITY AI — REAL-TIME WEB SEARCH & CITATIONS (NO FALLBACK)
+      // ═══════════════════════════════════════════════════════════════════
+      const targetModel = modelStr.replace(/^(pplx\/|perplexity\/)/, '');
+      const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      console.log(`[aiChat Perplexity] Direct invocation for ${modelStr} (Strict mode, no fallback)...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/perplexity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptText,
+            messages: conversationHistory,
+            model: targetModel,
+            stream: !!onChunk
+          })
+        });
+
+        if (!res.ok) {
+          let errDetail = `HTTP ${res.status}: ${res.statusText}`;
+          try {
+            const data = await res.json();
+            if (data.error) errDetail = data.error;
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) errDetail = text;
+            } catch {}
+          }
+          const errorMsg = `\n\n❌ [Perplexity Error - ${targetModel}]: ${errDetail}`;
+          if (onChunk) onChunk(errorMsg);
+          return errorMsg;
+        }
+
+        if (onChunk && res.body) {
+          const sseReply = await handleSSEStream(res, onChunk);
+          if (sseReply && sseReply !== 'No response received from the AI model.') {
+            return sseReply;
+          }
+          const emptyMsg = `\n\n❌ [Perplexity Error - ${targetModel}]: No response received from Perplexity engine.`;
+          onChunk(emptyMsg);
+          return emptyMsg;
+        } else {
+          const data = await res.json();
+          const content = data.reply || data.choices?.[0]?.message?.content || '';
+          if (content) {
+            if (onChunk) onChunk(content);
+            return content;
+          }
+          const emptyMsg = `\n\n❌ [Perplexity Error - ${targetModel}]: Empty response received from Perplexity engine.`;
+          if (onChunk) onChunk(emptyMsg);
+          return emptyMsg;
+        }
+      } catch (err: any) {
+        console.error(`[aiChat Perplexity Error]:`, err);
+        const netErrorMsg = `\n\n❌ [Perplexity Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/perplexity'}`;
+        if (onChunk) onChunk(netErrorMsg);
+        return netErrorMsg;
+      }
     } else {
       endpointPath = '/api/chat/completions';
       fetchUrl = `${API_BASE}${endpointPath}`;
@@ -1029,17 +1428,20 @@ export const aiChat = async (
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(`[aiChat Client] Attempt ${attempt}/${maxAttempts} hitting ${fetchUrl} for ${modelStr}...`);
+        
+        const reqBody = JSON.stringify({
+          messages: conversationHistory,
+          model: modelStr,
+          provider: model.provider,
+          stream: !!onChunk
+        });
+
         const res = await fetch(fetchUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            messages: conversationHistory,
-            model: modelStr,
-            provider: model.provider,
-            stream: !!onChunk
-          })
+          body: reqBody
         });
 
         if (res.ok) {

@@ -8,6 +8,8 @@ import { NextResponse } from 'next/server';
 
 function getModelFamily(modelStr: string): string {
   const str = modelStr.toLowerCase();
+  if (str.includes('chatx')) return 'ChatX Frontier';
+  if (str.includes('pplx') || str.includes('perplexity')) return 'Perplexity AI';
   if (str.includes('claude')) return 'Anthropic';
   if (str.includes('gpt') || str.includes('o1') || str.includes('o3')) return 'OpenAI';
   if (str.includes('gemini')) return 'Google';
