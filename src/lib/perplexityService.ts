@@ -23,19 +23,43 @@ export async function executePerplexityStream(
   prompt: string,
   modelName: string,
   onDelta: (chunk: string) => void,
-  onCitations?: (citations: string[]) => void
+  onCitations?: (citations: string[]) => void,
+  forwardHeaders?: Headers | Record<string, string>
 ): Promise<string> {
   const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
   const targetModel = modelName.replace(/^pplx[\/-]/, '').replace(/^perplexity[\/-]/, '').trim() || 'turbo';
 
   // 1. VERCEL SERVERLESS ENVIRONMENT: Fetch native /api/pplx Python function
   if (isVercel) {
-    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const getH = (k: string): string => {
+      if (!forwardHeaders) return '';
+      if (forwardHeaders instanceof Headers) return forwardHeaders.get(k) || '';
+      return (forwardHeaders as Record<string, string>)[k] || '';
+    };
+
+    const incomingHost = getH('host') || getH('x-forwarded-host');
+    let host = incomingHost
+      ? (incomingHost.startsWith('http') ? incomingHost : `https://${incomingHost}`)
+      : (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
+
     const pplxEndpoint = `${host}/api/pplx`;
+
+    const fetchHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    const cookie = getH('cookie');
+    if (cookie) fetchHeaders['Cookie'] = cookie;
+
+    const bypass = getH('x-vercel-protection-bypass') || process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    if (bypass) fetchHeaders['x-vercel-protection-bypass'] = bypass;
+
+    const auth = getH('authorization');
+    if (auth) fetchHeaders['Authorization'] = auth;
 
     const res = await fetch(pplxEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: fetchHeaders,
       body: JSON.stringify({ prompt, model: targetModel })
     });
 

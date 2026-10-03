@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
             (citations) => {
               const sseLine = `data: ${JSON.stringify({ type: 'citations', citations })}\n\n`;
               controller.enqueue(encoder.encode(sseLine));
-            }
+            },
+            req.headers
           );
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();

@@ -1364,8 +1364,13 @@ export const aiChat = async (
 
       console.log(`[aiChat Perplexity] Direct invocation for ${modelStr} (Strict mode, no fallback)...`);
 
+      // In browser on Vercel production, /api/pplx is a same-origin endpoint which automatically carries Vercel preview authentication cookies.
+      const isBrowserProd = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+      const primaryEndpoint = isBrowserProd ? `${API_BASE}/api/pplx` : `${API_BASE}/api/chat/perplexity`;
+      const fallbackEndpoint = isBrowserProd ? `${API_BASE}/api/chat/perplexity` : `${API_BASE}/api/pplx`;
+
       try {
-        const res = await fetch(`${API_BASE}/api/chat/perplexity`, {
+        let res = await fetch(primaryEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1376,11 +1381,27 @@ export const aiChat = async (
           })
         });
 
+        // If primary returned 401 (Vercel deployment protection) or 404, try secondary endpoint
+        if (!res.ok && (res.status === 401 || res.status === 404)) {
+          console.warn(`[aiChat Perplexity] ${primaryEndpoint} returned ${res.status}. Trying fallback: ${fallbackEndpoint}...`);
+          res = await fetch(fallbackEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: promptText,
+              messages: conversationHistory,
+              model: targetModel,
+              stream: !!onChunk
+            })
+          });
+        }
+
         if (!res.ok) {
           let errDetail = `HTTP ${res.status}: ${res.statusText}`;
           try {
             const data = await res.json();
-            if (data.error) errDetail = data.error;
+            if (data.error) errDetail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+            else if (data.message) errDetail = data.message;
           } catch {
             try {
               const text = await res.text();
