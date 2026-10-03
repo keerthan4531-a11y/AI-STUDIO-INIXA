@@ -420,21 +420,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Poolside Laguna, Space Bunny, Liquid) ──
+    // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Liquid, etc.) ──
     const isKiloGatewayModel = 
       selectedModel.startsWith('kilo/') ||
       selectedModel.includes('nemotron') ||
-      selectedModel.includes('space-bunny') ||
-      selectedModel.includes('liquid') ||
-      selectedModel.includes('poolside') ||
-      selectedModel.includes('laguna');
+      selectedModel.includes('liquid');
 
     if (isKiloGatewayModel) {
       let targetKiloModel = selectedModel.replace(/^kilo\//, '');
       if (targetKiloModel.includes('nemotron-3.5') || targetKiloModel.includes('nemotron-3-5')) targetKiloModel = 'nvidia/nemotron-3.5-lightning:free';
       else if (targetKiloModel.includes('nemotron-3-ultra') || targetKiloModel.includes('nemotron-ultra')) targetKiloModel = 'nvidia/nemotron-3-ultra-550b-a55b:free';
-      else if (targetKiloModel.includes('space-bunny')) targetKiloModel = 'stealth/space-bunny-alpha';
-      else if (targetKiloModel.includes('laguna') || targetKiloModel.includes('poolside')) targetKiloModel = 'poolside/laguna-s-2.1:free';
 
       console.log(`[Kilo Gateway Route] Routing model "${selectedModel}" -> "${targetKiloModel}"`);
 
