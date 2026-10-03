@@ -57,6 +57,32 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ SHARKTIDE LIGHTNING (Zero-Auth High-Speed Frontier Models)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'lightning',
+    label: 'Lightning Flash (GPT-OSS 20B)',
+    engine: 'custom',
+    modelStr: 'lightning',
+    badge: 'LIGHTNING',
+    badgeColor: 'amber',
+    icon: 'Zap',
+    iconColor: '#f59e0b',
+    description: 'Lightning Flash — Ultra-fast 1s frontier model (100% Free, Zero Auth)'
+  },
+  {
+    id: 'lightning-text-v2.1',
+    label: 'Lightning 2.1 (Qwen 3.8 27B)',
+    engine: 'custom',
+    modelStr: 'lightning-text-v2.1',
+    badge: 'QWEN 3.8',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Lightning 2.1 — Qwen 3.8 27B high-speed reasoning intelligence (100% Free, Zero Auth)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ GROK 4.6 (xAI Frontier Reasoning)
   // ════════════════════════════════════════════════════════════════
   {

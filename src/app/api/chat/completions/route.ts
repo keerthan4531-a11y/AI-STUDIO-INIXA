@@ -420,6 +420,82 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Sharktide Lightning (Lightning & Lightning 2.1) ──
+    const isLightningModel = 
+      selectedModel === 'lightning' ||
+      selectedModel === 'lightning-text-v2.1' ||
+      selectedModel.startsWith('lightning/') ||
+      selectedModel.startsWith('sharktide/');
+
+    if (isLightningModel) {
+      let targetModel = selectedModel.startsWith('lightning/') 
+        ? selectedModel.replace('lightning/', '') 
+        : (selectedModel.startsWith('sharktide/') ? selectedModel.replace('sharktide/', '') : selectedModel);
+      
+      if (targetModel !== 'lightning' && targetModel !== 'lightning-text-v2.1') {
+        targetModel = targetModel.includes('2') ? 'lightning-text-v2.1' : 'lightning';
+      }
+
+      console.log(`[Lightning Route] Routing model "${selectedModel}" -> "${targetModel}" to sharktide-lightning`);
+
+      try {
+        const upstreamUrl = 'https://sharktide-lightning.hf.space/gen/chat/completions';
+        const sharkRes = await fetch(upstreamUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': stream === true ? 'text/event-stream' : 'application/json'
+          },
+          body: JSON.stringify({
+            model: targetModel,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            max_tokens: body.max_tokens || 2048,
+            temperature: body.temperature || 0.7
+          })
+        });
+
+        if (!sharkRes.ok) {
+          const errText = await sharkRes.text();
+          throw new Error(`Sharktide Lightning error: HTTP ${sharkRes.status} - ${errText}`);
+        }
+
+        if (stream === true && sharkRes.body) {
+          return new Response(sharkRes.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await sharkRes.json();
+        const choice = data.choices?.[0];
+        const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[Lightning Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Lightning error: ${err.message || err}`, reply: `⚠️ Lightning Error: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Liquid, etc.) ──
     const isKiloGatewayModel = 
       selectedModel.startsWith('kilo/') ||
