@@ -675,7 +675,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Route: Kilo Gateway (Nemotron Ultra/Lightning, Laguna, Cohere North, StepFun, Qwen 3.8, Liquid, etc.) ──
+    // ── Route: Kilo Gateway (Nemotron Ultra/Super/Lightning/Nano/Safety, Laguna S/XS, Cohere North, StepFun, Qwen 3.8, Liquid, Ling, Apodex, OpenRouter, Dots, etc.) ──
     const isKiloGatewayModel = 
       selectedModel.startsWith('kilo/') ||
       selectedModel.includes('nemotron') ||
@@ -683,38 +683,126 @@ export async function POST(req: Request) {
       selectedModel.startsWith('cohere/north') ||
       selectedModel.startsWith('stepfun/') ||
       selectedModel.startsWith('inclusionai/') ||
-      selectedModel.includes('laguna-xs-2.1');
+      selectedModel.includes('laguna-xs-2.1') ||
+      selectedModel.startsWith('poolside/laguna') ||
+      selectedModel.startsWith('apodex/') ||
+      selectedModel.startsWith('openrouter/') ||
+      selectedModel.startsWith('dots-studio/') ||
+      selectedModel.startsWith('thinkingmachines/') ||
+      selectedModel.startsWith('qwen/');
 
     if (isKiloGatewayModel) {
       let targetKiloModel = selectedModel.replace(/^kilo\//, '');
       if (!targetKiloModel.endsWith(':free') && !targetKiloModel.endsWith('/free')) {
-        targetKiloModel = `${targetKiloModel}:free`;
+        // Don't append :free if it's inclusionai/ling-3.1-flash (no :free suffix on Kilo)
+        if (!targetKiloModel.includes('ling-3.1-flash')) {
+          targetKiloModel = `${targetKiloModel}:free`;
+        }
       }
 
       console.log(`[Kilo Gateway Route] Routing model "${selectedModel}" -> "${targetKiloModel}" to api.kilo.ai`);
 
+      const kiloUrl = 'https://api.kilo.ai/api/gateway/chat/completions';
+      const kiloReqHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      };
+      if (stream === true) {
+        kiloReqHeaders['Accept'] = 'text/event-stream';
+      }
+
+      const kiloReqBodyStr = JSON.stringify({
+        model: targetKiloModel,
+        messages: formattedMessages.filter((m: any) => m && m.content),
+        stream: stream === true,
+        max_tokens: body.max_tokens || 2048,
+        temperature: body.temperature || 0.7
+      });
+
+      let kiloRes: any = null;
+      let kiloLastError: any = null;
+
+      // Step 1: Try direct connection first
       try {
-        const kiloRes = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
+        const directRes = await fetch(kiloUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-          },
-          body: JSON.stringify({
-            model: targetKiloModel,
-            messages: formattedMessages.filter((m: any) => m && m.content),
-            stream: stream === true,
-            max_tokens: body.max_tokens || 2048,
-            temperature: body.temperature || 0.7
-          })
+          headers: kiloReqHeaders,
+          body: kiloReqBodyStr
         });
 
-        if (!kiloRes.ok) {
-          const errText = await kiloRes.text();
-          throw new Error(`Kilo Gateway HTTP ${kiloRes.status} - ${errText}`);
+        if (directRes.ok) {
+          kiloRes = directRes;
+        } else if (directRes.status === 429) {
+          console.warn(`[Kilo Gateway] Direct IP rate-limited (429). Activating rotating proxy pool to bypass...`);
+          kiloLastError = new Error(`HTTP 429 Rate limited on direct IP`);
+        } else {
+          const errText = await directRes.text();
+          throw new Error(`Kilo Gateway HTTP ${directRes.status} - ${errText}`);
         }
+      } catch (e: any) {
+        kiloLastError = e;
+      }
 
-        if (stream === true && kiloRes.body) {
+      // Step 2: If direct was rate-limited (429) or failed, rotate through Proxy Pool (Unlimited Logic)
+      if (!kiloRes) {
+        await refreshProxyPool();
+        const pool = getProxyPool();
+
+        if (pool && pool.length > 0) {
+          const proxiesToTry: string[] = [];
+          const cached = getCachedWorkingProxy();
+          if (cached) proxiesToTry.push(cached);
+          
+          const maxTries = Math.min(8, pool.length);
+          for (let p = 0; p < maxTries; p++) {
+            const nextP = getNextProxy();
+            if (nextP && !proxiesToTry.includes(nextP)) proxiesToTry.push(nextP);
+          }
+
+          for (const proxyUrl of proxiesToTry) {
+            try {
+              let agent: any;
+              if (proxyUrl.startsWith('socks')) agent = new SocksProxyAgent(proxyUrl);
+              else agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+
+              const pRes: any = await nodeFetch(kiloUrl, {
+                method: 'POST',
+                headers: kiloReqHeaders,
+                body: kiloReqBodyStr,
+                agent,
+                timeout: 15000
+              });
+
+              if (pRes.ok) {
+                setCachedWorkingProxy(proxyUrl);
+                console.log(`[Kilo Gateway] Successfully bypassed rate-limit via proxy: ${proxyUrl}`);
+                kiloRes = pRes;
+                break;
+              } else if (pRes.status === 429) {
+                console.warn(`[Kilo Gateway] Proxy ${proxyUrl} also hit 429, trying next...`);
+              }
+            } catch (pErr) {
+              // Ignore individual proxy connection timeouts and continue
+            }
+          }
+        }
+      }
+
+      if (!kiloRes || !kiloRes.ok) {
+        const errMsg = kiloLastError?.message || 'Kilo Gateway rate limit reached on current IPs and proxy pool exhausted';
+        console.error(`[Kilo Gateway Error] ${errMsg}`);
+        return NextResponse.json(
+          { 
+            error: `Kilo Gateway (${targetKiloModel}) Error: ${errMsg}`, 
+            reply: `⚠️ Error [${targetKiloModel}]: ${errMsg}. Please wait a few moments or retry.` 
+          },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+
+      // Handle streaming response (supports both web fetch and node-fetch)
+      if (stream === true) {
+        if (kiloRes.body?.getReader) {
           return new Response(kiloRes.body, {
             headers: {
               'Content-Type': 'text/event-stream; charset=utf-8',
@@ -725,31 +813,41 @@ export async function POST(req: Request) {
               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
             }
           });
-        }
-
-        const data = await kiloRes.json();
-        const choice = data.choices?.[0];
-        const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
-        return NextResponse.json(
-          { reply: content, choices: data.choices },
-          {
+        } else if (kiloRes.body?.on) {
+          const bodyStream = new ReadableStream({
+            start(controller: ReadableStreamDefaultController) {
+              kiloRes.body.on('data', (chunk: Buffer) => controller.enqueue(chunk));
+              kiloRes.body.on('end', () => controller.close());
+              kiloRes.body.on('error', (err: Error) => controller.error(err));
+            },
+            cancel() { kiloRes.body.destroy(); }
+          });
+          return new Response(bodyStream, {
             headers: {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
               'X-RateLimit-Limit': String(maxRequests),
               'X-RateLimit-Remaining': String(remaining),
               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
             }
-          }
-        );
-      } catch (err: any) {
-        console.error(`[Kilo Gateway Error] ${err.message || err}`);
-        return NextResponse.json(
-          { 
-            error: `Kilo Gateway (${targetKiloModel}) Error: ${err.message || err}`, 
-            reply: `⚠️ Error [${targetKiloModel}]: ${err.message || err}` 
-          },
-          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
-        );
+          });
+        }
       }
+
+      const data = await kiloRes.json();
+      const choice = data.choices?.[0];
+      const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
+      return NextResponse.json(
+        { reply: content, choices: data.choices },
+        {
+          headers: {
+            'X-RateLimit-Limit': String(maxRequests),
+            'X-RateLimit-Remaining': String(remaining),
+            'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+          }
+        }
+      );
     }
 
     // ── Route: Poolside Laguna S 2.1 & Laguna S 2.1 Thinking (Fallback) ──
@@ -1890,22 +1988,76 @@ export async function POST(req: Request) {
         })
       });
     }
-    // Direct Kilo AI Gateway routing (Liquid LFM, Cohere North, Qwen 3.8, StepFun - 100% Free)
-    else if (selectedModel.startsWith('kilo/') || selectedModel.startsWith('liquid/') || selectedModel.startsWith('cohere/')) {
+    // Direct Kilo AI Gateway routing (All Kilo models - Unlimited Logic with Proxy Rotation)
+    else if (selectedModel.startsWith('kilo/') || selectedModel.startsWith('liquid/') || selectedModel.startsWith('cohere/') || selectedModel.startsWith('poolside/') || selectedModel.startsWith('apodex/') || selectedModel.startsWith('openrouter/') || selectedModel.startsWith('dots-studio/') || selectedModel.startsWith('qwen/')) {
       const kiloTarget = selectedModel.replace(/^kilo\//, '');
       console.log(`[Kilo Route] Direct execution for model: ${kiloTarget}`);
-      proxyResponse = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        body: JSON.stringify({
-          model: kiloTarget,
-          messages: chatMessages,
-          stream
-        })
+      
+      const kiloGwUrl = 'https://api.kilo.ai/api/gateway/chat/completions';
+      const kiloGwHeaders = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+      };
+      const kiloGwBody = JSON.stringify({
+        model: kiloTarget,
+        messages: chatMessages,
+        stream
       });
+
+      // Try direct first
+      try {
+        proxyResponse = await fetch(kiloGwUrl, {
+          method: 'POST',
+          headers: kiloGwHeaders,
+          body: kiloGwBody
+        });
+      } catch (directErr) {
+        // Direct failed, will try proxy
+      }
+
+      // If direct failed with 429, use proxy rotation
+      if (!proxyResponse || proxyResponse.status === 429) {
+        console.warn(`[Kilo Route] Direct IP rate-limited. Activating proxy pool bypass...`);
+        await refreshProxyPool();
+        const pool = getProxyPool();
+        if (pool && pool.length > 0) {
+          const proxiesToTry: string[] = [];
+          const cached = getCachedWorkingProxy();
+          if (cached) proxiesToTry.push(cached);
+          const maxTries = Math.min(6, pool.length);
+          for (let p = 0; p < maxTries; p++) {
+            const nextP = getNextProxy();
+            if (nextP && !proxiesToTry.includes(nextP)) proxiesToTry.push(nextP);
+          }
+          for (const proxyUrl of proxiesToTry) {
+            try {
+              let agent: any;
+              if (proxyUrl.startsWith('socks')) agent = new SocksProxyAgent(proxyUrl);
+              else agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+              const pRes: any = await nodeFetch(kiloGwUrl, {
+                method: 'POST',
+                headers: kiloGwHeaders,
+                body: kiloGwBody,
+                agent,
+                timeout: 15000
+              });
+              if (pRes.ok) {
+                setCachedWorkingProxy(proxyUrl);
+                console.log(`[Kilo Route] Bypassed rate-limit via proxy: ${proxyUrl}`);
+                // Convert node-fetch response to standard Response for downstream handling
+                const proxyData = await pRes.json();
+                proxyResponse = new Response(JSON.stringify(proxyData), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+                break;
+              }
+            } catch (pErr) {
+              // Try next proxy
+            }
+          }
+        }
+      }
     }
     // Direct Google Gemini API routing
     else if (selectedModel.startsWith('gemini/')) {
