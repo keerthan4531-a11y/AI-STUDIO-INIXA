@@ -1542,6 +1542,23 @@ export async function POST(req: Request) {
         })
       });
     }
+    // Direct Kilo AI Gateway routing (Liquid LFM, Cohere North, Qwen 3.8, StepFun - 100% Free)
+    else if (selectedModel.startsWith('kilo/') || selectedModel.startsWith('liquid/') || selectedModel.startsWith('cohere/')) {
+      const kiloTarget = selectedModel.replace(/^kilo\//, '');
+      console.log(`[Kilo Route] Direct execution for model: ${kiloTarget}`);
+      proxyResponse = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        body: JSON.stringify({
+          model: kiloTarget,
+          messages: chatMessages,
+          stream
+        })
+      });
+    }
     // Direct Google Gemini API routing
     else if (selectedModel.startsWith('gemini/')) {
       const geminiModel = selectedModel.replace('gemini/', '');

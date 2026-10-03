@@ -124,6 +124,82 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ KILO AI FRONTIER SPEED & CODE (100% Free & Blazing Fast)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'kilo-liquid-lfm-2.5',
+    label: 'Liquid LFM 2.5 (1.0s Speed)',
+    engine: 'custom',
+    modelStr: 'kilo/liquid/lfm-2.5-2.6b:free',
+    provider: 'kilo',
+    badge: 'LIQUID 1.0S',
+    badgeColor: 'teal',
+    icon: 'Zap',
+    iconColor: '#14b8a6',
+    description: 'Liquid AI LFM 2.5 — Ultra-low latency edge reasoning with instant answers (100% Free)'
+  },
+  {
+    id: 'kilo-cohere-north-mini',
+    label: 'Cohere North Mini Code (800ms)',
+    engine: 'custom',
+    modelStr: 'kilo/cohere/north-mini-code:free',
+    provider: 'kilo',
+    badge: 'COHERE 800MS',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Cohere North Mini Code — Blazing 800ms rapid programming & code generation (100% Free)'
+  },
+  {
+    id: 'kilo-qwen-3.8-27b',
+    label: 'Qwen 3.8 27B (Alibaba)',
+    engine: 'custom',
+    modelStr: 'kilo/qwen/qwen3.8-27b:free',
+    provider: 'kilo',
+    badge: 'QWEN 3.8',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Alibaba Qwen 3.8 27B — Deep reasoning, logic & multilingual intelligence (100% Free)'
+  },
+  {
+    id: 'kilo-auto-free',
+    label: 'Kilo Auto (Autonomous AI)',
+    engine: 'custom',
+    modelStr: 'kilo/kilo-auto/free',
+    provider: 'kilo',
+    badge: 'AUTONOMOUS',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#8b5cf6',
+    description: 'Kilo Auto — Autonomous multi-engine smart router delivering optimal responses (100% Free)'
+  },
+  {
+    id: 'kilo-stepfun-3.7-flash',
+    label: 'StepFun 3.7 Flash',
+    engine: 'custom',
+    modelStr: 'kilo/stepfun/step-3.7-flash:free',
+    provider: 'kilo',
+    badge: 'STEPFUN 3.7',
+    badgeColor: 'rose',
+    icon: 'Zap',
+    iconColor: '#f43f5e',
+    description: 'StepFun 3.7 Flash — High-speed reasoning with long-context memory (100% Free)'
+  },
+  {
+    id: 'kilo-dots-3-note',
+    label: 'Dots 3 Note Preview',
+    engine: 'custom',
+    modelStr: 'kilo/dots-studio/dots-3-note-preview:free',
+    provider: 'kilo',
+    badge: 'DOTS 3',
+    badgeColor: 'amber',
+    icon: 'FileText',
+    iconColor: '#f59e0b',
+    description: 'Dots Studio Note 3 — Technical synthesis and structured analysis (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚔️ ARENA AI (Frontier Dual-Model Battle — 100% Free)
   // ════════════════════════════════════════════════════════════════
   {
@@ -1435,6 +1511,69 @@ export const aiChat = async (
       } catch (err: any) {
         console.error(`[aiChat Perplexity Error]:`, err);
         const netErrorMsg = `\n\n❌ [Perplexity Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/perplexity'}`;
+        if (onChunk) onChunk(netErrorMsg);
+        return netErrorMsg;
+      }
+    } else if (model.provider === 'kilo' || modelStr.startsWith('kilo/')) {
+      // ═══════════════════════════════════════════════════════════════════
+      // ⚡ KILO AI GATEWAY — 100% FREE, ULTRA-FAST LIQUID/COHERE/QWEN (NO FALLBACK)
+      // ═══════════════════════════════════════════════════════════════════
+      const targetModel = modelStr.replace(/^kilo\//, '');
+      const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      console.log(`[aiChat Kilo] Direct invocation for ${modelStr} (Strict mode, no fallback)...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/kilo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: targetModel,
+            prompt: promptText,
+            messages: conversationHistory,
+            stream: !!onChunk
+          })
+        });
+
+        if (!res.ok) {
+          let errDetail = `HTTP ${res.status}: ${res.statusText}`;
+          try {
+            const data = await res.json();
+            if (data.error) errDetail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) errDetail = text;
+            } catch {}
+          }
+          const errorMsg = `\n\n❌ [Kilo Error - ${targetModel}]: ${errDetail}`;
+          if (onChunk) onChunk(errorMsg);
+          return errorMsg;
+        }
+
+        if (onChunk && res.body) {
+          const sseReply = await handleSSEStream(res, onChunk);
+          if (sseReply && sseReply !== 'No response received from the AI model.') {
+            return sseReply;
+          }
+          const emptyMsg = `\n\n❌ [Kilo Error - ${targetModel}]: No response received from Kilo engine.`;
+          onChunk(emptyMsg);
+          return emptyMsg;
+        } else {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content || data.reply || '';
+          if (content) {
+            if (onChunk) onChunk(content);
+            return content;
+          }
+          const emptyMsg = `\n\n❌ [Kilo Error - ${targetModel}]: Empty response received from Kilo engine.`;
+          if (onChunk) onChunk(emptyMsg);
+          return emptyMsg;
+        }
+      } catch (err: any) {
+        console.error(`[aiChat Kilo Error]:`, err);
+        const netErrorMsg = `\n\n❌ [Kilo Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/kilo'}`;
         if (onChunk) onChunk(netErrorMsg);
         return netErrorMsg;
       }
