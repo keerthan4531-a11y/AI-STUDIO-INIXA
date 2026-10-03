@@ -35,17 +35,51 @@ async function getTTSKey(): Promise<string> {
   return '';
 }
 
+function splitTextIntoChunks(text: string, maxLen = 160): string[] {
+  const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const sentence of sentences) {
+    const trimmed = sentence.trim();
+    if (!trimmed) continue;
+    if (trimmed.length > maxLen) {
+      const words = trimmed.split(/\s+/);
+      for (const word of words) {
+        if ((current + ' ' + word).trim().length <= maxLen) {
+          current = (current + ' ' + word).trim();
+        } else {
+          if (current) chunks.push(current);
+          current = word;
+        }
+      }
+    } else {
+      if ((current + ' ' + trimmed).trim().length <= maxLen) {
+        current = (current + ' ' + trimmed).trim();
+      } else {
+        if (current) chunks.push(current);
+        current = trimmed;
+      }
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { text, voice = 'nova', model = 'tts-1-hd', speed = 1.0, lang = 'ta-IN' } = body;
+    const { text, voice = 'nova', model = 'tts-1-hd', speed = 1.0, lang } = body;
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
     }
 
-    // Limit text length to prevent abuse
-    const trimmedText = text.slice(0, 4096);
+    // Limit text length to prevent serverless timeout
+    const trimmedText = text.slice(0, 3000);
+
+    const isTamil = /[\u0B80-\u0BFF]/.test(trimmedText);
+    const targetLang = lang ? lang.split('-')[0] : (isTamil ? 'ta' : 'en');
 
     const apiKey = await getTTSKey();
     if (apiKey) {
@@ -72,39 +106,34 @@ export async function POST(req: NextRequest) {
               'Cache-Control': 'no-cache',
             },
           });
-        } else {
-          console.error('Primary TTS failed with status:', ttsResponse.status);
         }
       } catch (err) {
-        console.error('Primary TTS exception:', err);
+        console.warn('Primary TTS failed, using fallback:', err);
       }
     }
 
-    // --- FALLBACK: Google Translate TTS ---
-    console.log('Falling back to Google Translate TTS...');
-    
-    // Chunk text for GTTS limit (~200 chars)
-    const chunks = trimmedText.match(/[^.!?]+[.!?]+/g) || [trimmedText];
-    const validChunks = [];
-    let currentChunk = '';
-    
-    for (const phrase of chunks) {
-      if ((currentChunk + phrase).length < 200) {
-        currentChunk += phrase;
-      } else {
-        if (currentChunk) validChunks.push(currentChunk.trim());
-        currentChunk = phrase;
-      }
+    // --- FALLBACK: High-Reliability Neural Translate TTS ---
+    const validChunks = splitTextIntoChunks(trimmedText, 160);
+    if (validChunks.length === 0) {
+      return NextResponse.json({ error: 'No readable speech chunks' }, { status: 400 });
     }
-    if (currentChunk) validChunks.push(currentChunk.trim());
 
-    // Fetch all chunks concurrently
-    const gttsBuffers = await Promise.all(validChunks.map(async (chunk) => {
-      const gttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang.split('-')[0])}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-      const fallbackRes = await fetch(gttsUrl);
-      if (!fallbackRes.ok) throw new Error('GTTS chunk failed');
-      return fallbackRes.arrayBuffer();
-    }));
+    const browserHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Referer': 'https://translate.google.com/',
+    };
+
+    // Fetch chunks sequentially or in parallel batches
+    const gttsBuffers: ArrayBuffer[] = [];
+    for (const chunk of validChunks) {
+      const gttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(targetLang)}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+      const fallbackRes = await fetch(gttsUrl, { headers: browserHeaders });
+      if (!fallbackRes.ok) {
+        throw new Error(`GTTS returned status ${fallbackRes.status}`);
+      }
+      gttsBuffers.push(await fallbackRes.arrayBuffer());
+    }
 
     // Concatenate ArrayBuffers (MP3 frames can be safely concatenated)
     const totalLength = gttsBuffers.reduce((acc, buf) => acc + buf.byteLength, 0);
@@ -122,11 +151,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('TTS Route Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate speech.' },
+      { error: error?.message || 'Failed to generate speech audio.' },
       { status: 500 }
     );
   }
 }
+

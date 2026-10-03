@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowDown, Plus, X, Copy, Check, RefreshCw, Paintbrush, Brain, Code, Sparkles, Coffee, FileText, Image as ImageIcon, Wand2, Settings, BookOpen, TrendingUp, Volume2, VolumeX, Mic } from 'lucide-react';
+import { ChevronDown, ArrowDown, Plus, X, Copy, Check, RefreshCw, Paintbrush, Brain, Code, Sparkles, Coffee, FileText, Image as ImageIcon, Wand2, Settings, BookOpen, TrendingUp, Volume2, VolumeX, Mic, AlertCircle } from 'lucide-react';
 import { cn } from './GlassCard';
 import { InixaLogo } from './Logos';
 import { MessageContent } from './MessageContent';
@@ -124,6 +124,19 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   // ── Voice Assistant & Speech Integration ──
+  const VOICE_PROFILES: Record<string, { pitch: number; rate: number; gender: 'male' | 'female' | 'neutral' }> = {
+    alloy: { pitch: 1.0, rate: 1.0, gender: 'neutral' },
+    echo: { pitch: 0.85, rate: 0.95, gender: 'male' },
+    nova: { pitch: 1.15, rate: 1.05, gender: 'female' },
+    shimmer: { pitch: 1.25, rate: 1.1, gender: 'female' },
+    onyx: { pitch: 0.72, rate: 0.9, gender: 'male' },
+    coral: { pitch: 1.2, rate: 1.02, gender: 'female' },
+    verse: { pitch: 1.0, rate: 1.1, gender: 'neutral' },
+    sage: { pitch: 0.95, rate: 0.92, gender: 'female' },
+    fable: { pitch: 0.9, rate: 0.95, gender: 'male' },
+    calm: { pitch: 0.88, rate: 0.85, gender: 'neutral' },
+  };
+
   const [selectedVoice, setSelectedVoice] = useState<string>(() => {
     try {
       return localStorage.getItem('inixa_selected_voice') || 'nova';
@@ -135,6 +148,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const isVoiceActiveRef = useRef(false);
   const recognitionRef = useRef<any>(null);
@@ -144,8 +158,33 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
     isVoiceActiveRef.current = isVoiceActive;
   }, [isVoiceActive]);
 
+  // Preload system voices for instant natural synthesis
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const onVoices = () => { window.speechSynthesis.getVoices(); };
+      window.speechSynthesis.onvoiceschanged = onVoices;
+      return () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.onvoiceschanged = null;
+        }
+      };
+    }
+  }, []);
+
+  const triggerVoiceError = (msg: string) => {
+    console.error('[Voice Assistant]', msg);
+    setVoiceError(msg);
+    setIsSpeaking(false);
+    setSpeakingMsgIdx(null);
+    setTimeout(() => {
+      setVoiceError(prev => prev === msg ? null : prev);
+    }, 6000);
+  };
+
   const handleSelectVoice = (voiceId: string) => {
     setSelectedVoice(voiceId);
+    setVoiceError(null);
     try {
       localStorage.setItem('inixa_selected_voice', voiceId);
     } catch {}
@@ -165,24 +204,35 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
   };
 
   const fallbackBrowserSpeech = (cleanText: string, lang: string, continueVoiceLoop: boolean) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      triggerVoiceError(`Speech synthesis is not supported on this browser or device.`);
+      return;
+    }
+
+    try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = lang;
-      utterance.rate = 1.0;
+
+      const profile = VOICE_PROFILES[selectedVoice] || VOICE_PROFILES.nova;
+      utterance.pitch = profile.pitch;
+      utterance.rate = profile.rate;
 
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
         const isTamil = /[\u0B80-\u0BFF]/.test(cleanText);
         if (isTamil) {
-          const taVoice = voices.find(v => v.lang.includes('ta'));
+          const taVoice = voices.find(v => v.lang.startsWith('ta'));
           if (taVoice) utterance.voice = taVoice;
         } else {
-          const isMale = ['echo', 'onyx', 'fable'].includes(selectedVoice);
-          const matchVoice = voices.find(v => isMale 
-            ? (v.name.includes('David') || v.name.includes('Male') || v.name.includes('Guy')) 
-            : (v.name.includes('Zira') || v.name.includes('Female') || v.name.includes('Natural'))
-          );
+          const isMale = profile.gender === 'male';
+          const isFemale = profile.gender === 'female';
+          const matchVoice = voices.find(v => {
+            const name = v.name.toLowerCase();
+            if (isMale) return name.includes('male') || name.includes('david') || name.includes('guy') || name.includes('george') || name.includes('natural');
+            if (isFemale) return name.includes('female') || name.includes('zira') || name.includes('jenny') || name.includes('aria') || name.includes('samantha');
+            return true;
+          });
           if (matchVoice) utterance.voice = matchVoice;
         }
       }
@@ -194,21 +244,25 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
           setTimeout(() => startSpeechRecognition(true), 400);
         }
       };
-      utterance.onerror = () => {
+
+      utterance.onerror = (e) => {
         setIsSpeaking(false);
         setSpeakingMsgIdx(null);
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+          triggerVoiceError(`Voice playback error for "${selectedVoice}" (${e.error || 'speech failed'}). Check audio permissions.`);
+        }
       };
 
       window.speechSynthesis.speak(utterance);
-    } else {
-      setIsSpeaking(false);
-      setSpeakingMsgIdx(null);
+    } catch (err: any) {
+      triggerVoiceError(`Voice synthesis failed: ${err?.message || 'Audio initialization error'}`);
     }
   };
 
   const speakModelResponse = async (text: string, msgIdx?: number) => {
     if (!text) return;
     stopSpeaking();
+    setVoiceError(null);
     setIsSpeaking(true);
     if (msgIdx !== undefined) setSpeakingMsgIdx(msgIdx);
 
@@ -236,7 +290,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: cleanText.slice(0, 1000),
+          text: cleanText.slice(0, 1500),
           voice: selectedVoice,
           lang
         })
@@ -247,6 +301,12 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audioPlayerRef.current = audio;
+
+        const profile = VOICE_PROFILES[selectedVoice];
+        if (profile) {
+          audio.playbackRate = profile.rate;
+        }
+
         audio.onended = () => {
           setIsSpeaking(false);
           setSpeakingMsgIdx(null);
@@ -254,14 +314,25 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
             setTimeout(() => startSpeechRecognition(true), 400);
           }
         };
+
         audio.onerror = () => {
           fallbackBrowserSpeech(cleanText, lang, isVoiceActiveRef.current);
         };
-        await audio.play();
-        return;
+
+        try {
+          await audio.play();
+          return;
+        } catch (playErr: any) {
+          console.warn('Audio play() failed, falling back to browser synthesis:', playErr);
+          fallbackBrowserSpeech(cleanText, lang, isVoiceActiveRef.current);
+          return;
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.warn('TTS API error response:', errorData);
       }
-    } catch (err) {
-      console.warn('TTS API error, falling back to browser synthesis:', err);
+    } catch (err: any) {
+      console.warn('TTS API fetch failed, falling back to browser synthesis:', err);
     }
 
     fallbackBrowserSpeech(cleanText, lang, isVoiceActiveRef.current);
@@ -1044,6 +1115,30 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                 Analyzing Document...
               </div>
             )}
+
+            {/* Voice Error Notification */}
+            <AnimatePresence>
+              {voiceError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-red-950/85 border border-red-500/40 text-red-200 text-xs shadow-2xl backdrop-blur-md"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span className="font-medium truncate">{voiceError}</span>
+                  </div>
+                  <button 
+                    onClick={() => setVoiceError(null)} 
+                    className="p-1 hover:text-white rounded text-red-300 transition-colors shrink-0"
+                    title="Dismiss"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <BoltStyleChatInput 
               ref={inputRef as any}

@@ -1479,10 +1479,16 @@ export async function POST(req: Request) {
       });
     }
 
-    // Direct OxAlpha routing (Strict direct - no fallback, Fresh Session Reset)
-    else if (selectedModel.startsWith('oxalpha/') || selectedModel.startsWith('oxalpha') || selectedModel === 'ox-alpha') {
+    // Direct OxAlpha routing (z-ai/glm-5.3-flash, Fresh Session Reset with Kilo fallback)
+    else if (
+      selectedModel.startsWith('oxalpha/') || 
+      selectedModel.startsWith('oxalpha') || 
+      selectedModel === 'ox-alpha' || 
+      selectedModel === 'GLM-5.3-Flash' || 
+      selectedModel.toLowerCase().includes('glm-5.3')
+    ) {
       const oxModel = selectedModel.replace('oxalpha/', '');
-      console.log(`[OxAlpha Route] Direct OxAlpha execution for model: ${oxModel}`);
+      console.log(`[OxAlpha Route] OxAlpha execution for model: ${oxModel}`);
 
       // Filter and clean messages (OxAlpha only allows user & assistant)
       let cleanMessages = chatMessages.map((m: any) => ({
@@ -1568,7 +1574,28 @@ export async function POST(req: Request) {
         }
       } catch (e: any) {
         console.error(`[OxAlpha Route] Direct OxAlpha connection failed: ${e.message}`);
-        proxyResponse = new Response(JSON.stringify({ error: { message: `OxAlpha connection error: ${e.message}` } }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // If OxAlpha failed, auto-fallback to Kilo AI so 502 Bad Gateway is never returned
+      if (!proxyResponse || !proxyResponse.ok) {
+        console.warn(`[OxAlpha Route] OxAlpha failed (${proxyResponse?.status}), falling back to Kilo AI frontier model...`);
+        try {
+          const kiloFallback = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'kilo-auto/free',
+              messages: formattedMessages,
+              stream: stream === true,
+              max_tokens: 8000,
+            })
+          });
+          if (kiloFallback.ok) {
+            proxyResponse = kiloFallback;
+          }
+        } catch (kErr) {
+          console.error('[OxAlpha Route] Fallback to Kilo failed:', kErr);
+        }
       }
     }
     // Direct ChatX AI routing (100% Free & Unlimited Guest Mode)
@@ -1847,11 +1874,32 @@ export async function POST(req: Request) {
       }
     }
 
+    if (!proxyResponse || !proxyResponse.ok) {
+      console.warn(`[Route Fallback] Upstream failed with status ${proxyResponse?.status || 'unknown'}. Attempting resilient fallback to Kilo AI...`);
+      try {
+        const kiloRes = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'kilo-auto/free',
+            messages: formattedMessages,
+            stream: stream === true,
+            max_tokens: 8000,
+          })
+        });
+        if (kiloRes.ok) {
+          proxyResponse = kiloRes;
+        }
+      } catch (kErr) {
+        console.error('[Route Fallback] Kilo resilient fallback failed:', kErr);
+      }
+    }
+
     if (!proxyResponse.ok) {
       const errorText = await proxyResponse.text();
-      console.error('Cloudflare Proxy error:', proxyResponse.status, errorText);
+      console.error('Provider error:', proxyResponse.status, errorText);
 
-      // Parse error details from Cloudflare Proxy
+      // Parse error details
       let errorMessage = 'AI provider error. ';
       try {
         const errorJson = JSON.parse(errorText);
@@ -1862,10 +1910,8 @@ export async function POST(req: Request) {
         errorMessage += errorText.slice(0, 200);
       }
 
-      // Return 502 (Bad Gateway) — the upstream provider failed, not our route
-      // Return 502 (Bad Gateway) — the upstream provider failed, not our route
       return NextResponse.json(
-        { error: errorMessage, reply: `⚠️ ${errorMessage}\n\nPlease check your Cloudflare Worker logs.` },
+        { error: errorMessage, reply: `⚠️ ${errorMessage}\n\nPlease try another free model or re-send your prompt.` },
         {
           status: 502,
           headers: {
