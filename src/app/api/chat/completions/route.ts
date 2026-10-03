@@ -420,7 +420,74 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Route: Poolside Laguna S 2.1 & Laguna S 2.1 Thinking ──
+    // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Poolside Laguna, Space Bunny, Liquid) ──
+    const isKiloGatewayModel = 
+      selectedModel.startsWith('kilo/') ||
+      selectedModel.includes('nemotron') ||
+      selectedModel.includes('space-bunny') ||
+      selectedModel.includes('liquid') ||
+      selectedModel.includes('poolside') ||
+      selectedModel.includes('laguna');
+
+    if (isKiloGatewayModel) {
+      let targetKiloModel = selectedModel.replace(/^kilo\//, '');
+      if (targetKiloModel.includes('nemotron-3.5') || targetKiloModel.includes('nemotron-3-5')) targetKiloModel = 'nvidia/nemotron-3.5-lightning:free';
+      else if (targetKiloModel.includes('nemotron-3-ultra') || targetKiloModel.includes('nemotron-ultra')) targetKiloModel = 'nvidia/nemotron-3-ultra-550b-a55b:free';
+      else if (targetKiloModel.includes('space-bunny')) targetKiloModel = 'stealth/space-bunny-alpha';
+      else if (targetKiloModel.includes('laguna') || targetKiloModel.includes('poolside')) targetKiloModel = 'poolside/laguna-s-2.1:free';
+
+      console.log(`[Kilo Gateway Route] Routing model "${selectedModel}" -> "${targetKiloModel}"`);
+
+      try {
+        const kiloRes = await fetch('https://api.kilo.ai/api/gateway/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          body: JSON.stringify({
+            model: targetKiloModel,
+            messages: chatMessages,
+            stream: stream === true
+          })
+        });
+
+        if (!kiloRes.ok) {
+          const errText = await kiloRes.text();
+          throw new Error(`Kilo Gateway error: HTTP ${kiloRes.status} - ${errText}`);
+        }
+
+        if (stream === true && kiloRes.body) {
+          return new Response(kiloRes.body, {
+            headers: {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          });
+        }
+
+        const data = await kiloRes.json();
+        const content = data.choices?.[0]?.message?.content || data.reply || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[Kilo Gateway Error] ${err.message || err}`);
+      }
+    }
+
+    // ── Route: Poolside Laguna S 2.1 & Laguna S 2.1 Thinking (Fallback) ──
     const isPoolsideModel = 
       selectedModel.startsWith('poolside/') || 
       selectedModel.startsWith('laguna') || 

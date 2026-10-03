@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowDown, Plus, X, Copy, Check, RefreshCw, Paintbrush, Brain, Code, Sparkles, Coffee, FileText, Image as ImageIcon, Wand2, Settings, BookOpen, TrendingUp } from 'lucide-react';
+import { ChevronDown, ArrowDown, Plus, X, Copy, Check, RefreshCw, Paintbrush, Brain, Code, Sparkles, Coffee, FileText, Image as ImageIcon, Wand2, Settings, BookOpen, TrendingUp, Volume2, VolumeX, Mic } from 'lucide-react';
 import { cn } from './GlassCard';
 import { InixaLogo } from './Logos';
 import { MessageContent } from './MessageContent';
@@ -122,6 +122,239 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [suggestedFollowups, setSuggestedFollowups] = useState<string[]>([]);
   const [isEnhancing, setIsEnhancing] = useState(false);
+
+  // ── Voice Assistant & Speech Integration ──
+  const [selectedVoice, setSelectedVoice] = useState<string>(() => {
+    try {
+      return localStorage.getItem('inixa_selected_voice') || 'nova';
+    } catch {
+      return 'nova';
+    }
+  });
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingMsgIdx, setSpeakingMsgIdx] = useState<number | null>(null);
+
+  const isVoiceActiveRef = useRef(false);
+  const recognitionRef = useRef<any>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    isVoiceActiveRef.current = isVoiceActive;
+  }, [isVoiceActive]);
+
+  const handleSelectVoice = (voiceId: string) => {
+    setSelectedVoice(voiceId);
+    try {
+      localStorage.setItem('inixa_selected_voice', voiceId);
+    } catch {}
+    vibrate(15);
+  };
+
+  const stopSpeaking = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+    setSpeakingMsgIdx(null);
+  };
+
+  const fallbackBrowserSpeech = (cleanText: string, lang: string, continueVoiceLoop: boolean) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = lang;
+      utterance.rate = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const isTamil = /[\u0B80-\u0BFF]/.test(cleanText);
+        if (isTamil) {
+          const taVoice = voices.find(v => v.lang.includes('ta'));
+          if (taVoice) utterance.voice = taVoice;
+        } else {
+          const isMale = ['echo', 'onyx', 'fable'].includes(selectedVoice);
+          const matchVoice = voices.find(v => isMale 
+            ? (v.name.includes('David') || v.name.includes('Male') || v.name.includes('Guy')) 
+            : (v.name.includes('Zira') || v.name.includes('Female') || v.name.includes('Natural'))
+          );
+          if (matchVoice) utterance.voice = matchVoice;
+        }
+      }
+
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setSpeakingMsgIdx(null);
+        if (continueVoiceLoop && isVoiceActiveRef.current) {
+          setTimeout(() => startSpeechRecognition(true), 400);
+        }
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        setSpeakingMsgIdx(null);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      setIsSpeaking(false);
+      setSpeakingMsgIdx(null);
+    }
+  };
+
+  const speakModelResponse = async (text: string, msgIdx?: number) => {
+    if (!text) return;
+    stopSpeaking();
+    setIsSpeaking(true);
+    if (msgIdx !== undefined) setSpeakingMsgIdx(msgIdx);
+
+    // Strip thinking tags, code blocks, URLs, markdown formatting for smooth natural speech
+    const cleanText = text
+      .replace(/<think>[\s\S]*?<\/think>/g, '')
+      .replace(/```[\s\S]*?```/g, 'Code block omitted.')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[#*_~>\[\]\(\)]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) {
+      setIsSpeaking(false);
+      setSpeakingMsgIdx(null);
+      return;
+    }
+
+    const isTamil = /[\u0B80-\u0BFF]/.test(cleanText);
+    const lang = isTamil ? 'ta-IN' : 'en-US';
+
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: cleanText.slice(0, 1000),
+          voice: selectedVoice,
+          lang
+        })
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audioPlayerRef.current = audio;
+        audio.onended = () => {
+          setIsSpeaking(false);
+          setSpeakingMsgIdx(null);
+          if (isVoiceActiveRef.current) {
+            setTimeout(() => startSpeechRecognition(true), 400);
+          }
+        };
+        audio.onerror = () => {
+          fallbackBrowserSpeech(cleanText, lang, isVoiceActiveRef.current);
+        };
+        await audio.play();
+        return;
+      }
+    } catch (err) {
+      console.warn('TTS API error, falling back to browser synthesis:', err);
+    }
+
+    fallbackBrowserSpeech(cleanText, lang, isVoiceActiveRef.current);
+  };
+
+  const startSpeechRecognition = (autoSend = false) => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert('Speech Recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
+      setIsVoiceActive(false);
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+
+      rec.onstart = () => {
+        setIsListening(true);
+        vibrate(20);
+      };
+
+      rec.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setInput(transcript);
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        console.warn('Speech recognition error:', e.error);
+        setIsListening(false);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+        if (autoSend && isVoiceActiveRef.current) {
+          setTimeout(() => {
+            setInput(currentVal => {
+              if (currentVal.trim()) {
+                handleSend(currentVal.trim());
+                return '';
+              }
+              return currentVal;
+            });
+          }, 350);
+        }
+      };
+
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (e) {
+      console.error('Failed to start speech recognition:', e);
+      setIsListening(false);
+    }
+  };
+
+  const stopSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
+  const toggleMicDictation = () => {
+    vibrate(25);
+    if (isListening) {
+      stopSpeechRecognition();
+    } else {
+      startSpeechRecognition(false);
+    }
+  };
+
+  const toggleVoiceMode = () => {
+    vibrate(30);
+    if (isVoiceActive) {
+      setIsVoiceActive(false);
+      stopSpeechRecognition();
+      stopSpeaking();
+    } else {
+      setIsVoiceActive(true);
+      startSpeechRecognition(true);
+    }
+  };
 
   useEffect(() => {
     setWebSearchEnabled(searchModels.includes(currentModel.id));
@@ -404,6 +637,11 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
          ...(localSearchSources.length > 0 ? { sources: localSearchSources } : {}) 
       }]);
 
+      // Automatically speak AI reply if Voice Assistant mode is active
+      if (isVoiceActiveRef.current) {
+        speakModelResponse(finalAnswer);
+      }
+
       // Generate follow-up suggestions from the AI response
       const cleanedResult = (finalAnswer || '').trim();
       if (cleanedResult.length > 50) {
@@ -664,12 +902,22 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                     </div>
 
                     {/* Actions */}
-                    <div className="pl-9 flex items-center gap-1.5 mt-3 opacity-0 hover:opacity-100 transition-opacity">
-                      <button onClick={() => copyToClipboard(textContent, i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/20 hover:text-white transition-all" title="Copy">
+                    <div className="pl-9 flex items-center gap-1.5 mt-3 opacity-60 hover:opacity-100 transition-opacity">
+                      <button onClick={() => copyToClipboard(textContent, i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-all" title="Copy">
                         {copiedIdx === i ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => regenerateMessage(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/20 hover:text-indigo-400 transition-all" title="Regenerate">
+                      <button onClick={() => regenerateMessage(i)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-indigo-400 transition-all" title="Regenerate">
                         <RefreshCw className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => speakingMsgIdx === i ? stopSpeaking() : speakModelResponse(textContent, i)} 
+                        className={cn(
+                          "p-1.5 rounded-lg transition-all",
+                          speakingMsgIdx === i ? "bg-blue-500/20 text-blue-400" : "hover:bg-white/5 text-white/30 hover:text-white"
+                        )} 
+                        title={speakingMsgIdx === i ? "Stop Speaking" : `Read Aloud with ${selectedVoice}`}
+                      >
+                        {speakingMsgIdx === i ? <VolumeX className="w-4 h-4 text-blue-400 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -802,7 +1050,7 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
               value={input}
               onValueChange={setInput}
               isLoading={loading}
-              placeholder="What do you want to build?"
+              placeholder="Ask ChatGPT or choose a model..."
               showSearch={webSearchEnabled}
               onToggleSearch={() => { setWebSearchEnabled(!webSearchEnabled); vibrate(20); }}
               showThink={deepThinkEnabled}
@@ -811,6 +1059,14 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
               onSend={(msg) => handleSend(msg)}
               currentModelName={currentModel.label}
               onModelSelectorClick={() => setShowModelSelector(true)}
+              isVoiceActive={isVoiceActive}
+              onToggleVoice={toggleVoiceMode}
+              isListening={isListening}
+              onToggleMic={toggleMicDictation}
+              selectedVoice={selectedVoice}
+              onSelectVoice={handleSelectVoice}
+              isSpeaking={isSpeaking}
+              onStopSpeaking={stopSpeaking}
             />
 
             {/* Quick pills on landing - including Student Toolkit items */}

@@ -89,7 +89,8 @@ export const AI_MODELS: AIModel[] = [
     id: 'poolside-laguna-s-2.1',
     label: 'Laguna S 2.1 (Poolside)',
     engine: 'custom',
-    modelStr: 'poolside/laguna-s-2.1',
+    modelStr: 'kilo/poolside/laguna-s-2.1:free',
+    provider: 'kilo',
     badge: 'LAGUNA 2.1',
     badgeColor: 'blue',
     icon: 'Sparkles',
@@ -100,7 +101,8 @@ export const AI_MODELS: AIModel[] = [
     id: 'poolside-laguna-s-2.1-thinking',
     label: 'Laguna S 2.1 Thinking (Poolside)',
     engine: 'custom',
-    modelStr: 'poolside/laguna-s-2.1-thinking',
+    modelStr: 'kilo/poolside/laguna-s-2.1:free',
+    provider: 'kilo',
     badge: 'THINKING',
     badgeColor: 'violet',
     icon: 'Brain',
@@ -115,12 +117,41 @@ export const AI_MODELS: AIModel[] = [
     id: 'space-bunny-alpha',
     label: 'Space Bunny Alpha (Stealth)',
     engine: 'custom',
-    modelStr: 'space-bunny-alpha',
+    modelStr: 'kilo/stealth/space-bunny-alpha',
+    provider: 'kilo',
     badge: 'TOP-CLASS',
     badgeColor: 'pink',
     icon: 'Sparkles',
     iconColor: '#ec4899',
     description: 'Space Bunny Alpha — Stealth Frontier Reasoning Model with Chain-of-Thought (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🟢 NVIDIA NEMOTRON AI (Frontier Reasoning & Coding — 100% Free)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'nvidia-nemotron-3.5-lightning',
+    label: 'Nemotron 3.5 Lightning (NVIDIA)',
+    engine: 'custom',
+    modelStr: 'kilo/nvidia/nemotron-3.5-lightning:free',
+    provider: 'kilo',
+    badge: 'NVIDIA FAST',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'NVIDIA Nemotron 3.5 Lightning — Ultra-fast frontier reasoning & code intelligence (100% Free)'
+  },
+  {
+    id: 'nvidia-nemotron-3-ultra',
+    label: 'Nemotron 3 Ultra 550B (NVIDIA)',
+    engine: 'custom',
+    modelStr: 'kilo/nvidia/nemotron-3-ultra-550b-a55b:free',
+    provider: 'kilo',
+    badge: 'NVIDIA 550B',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'NVIDIA Nemotron 3 Ultra 550B — Deep multi-step reasoning flagship model (100% Free)'
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -197,6 +228,76 @@ export const AI_MODELS: AIModel[] = [
     icon: 'FileText',
     iconColor: '#f59e0b',
     description: 'Dots Studio Note 3 — Technical synthesis and structured analysis (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🚀 COHERE & OPEN FRONTIER MODELS (100% Free Verified)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'cohere-command-r-plus',
+    label: 'Command R+ (Cohere)',
+    engine: 'custom',
+    modelStr: 'command-r-plus-08-2024',
+    badge: 'COMMAND R+',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Cohere Command R+ — Frontier multilingual reasoning & structured synthesis (100% Free)'
+  },
+  {
+    id: 'cohere-command-a',
+    label: 'Command A (Cohere)',
+    engine: 'custom',
+    modelStr: 'command-a-03-2025',
+    badge: 'COMMAND A',
+    badgeColor: 'teal',
+    icon: 'Zap',
+    iconColor: '#14b8a6',
+    description: 'Cohere Command A — Blazing fast agentic instruction following & reasoning (100% Free)'
+  },
+  {
+    id: 'qwen-2.5-coder-32b',
+    label: 'Qwen 2.5 Coder 32B',
+    engine: 'custom',
+    modelStr: 'qwen-2.5-coder-32b',
+    badge: 'CODER 32B',
+    badgeColor: 'blue',
+    icon: 'Code',
+    iconColor: '#3b82f6',
+    description: 'Alibaba Qwen 2.5 Coder 32B — Leading open code generation and software development (100% Free)'
+  },
+  {
+    id: 'deepseek-distill-qwen-32b',
+    label: 'DeepSeek R1 Distill 32B',
+    engine: 'custom',
+    modelStr: 'deepseek-distill-qwen-32b',
+    badge: 'THINKING',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'DeepSeek R1 Distill Qwen 32B — Chain-of-Thought mathematical and logical reasoning (100% Free)'
+  },
+  {
+    id: 'brave-deep-research',
+    label: 'Brave Deep Research',
+    engine: 'custom',
+    modelStr: 'brave-deep-research',
+    badge: 'RESEARCH',
+    badgeColor: 'amber',
+    icon: 'Globe',
+    iconColor: '#f59e0b',
+    description: 'Brave Deep Research — In-depth multi-source real-time autonomous research (100% Free)'
+  },
+  {
+    id: 'glm-5.3-flash',
+    label: 'GLM 5.3 Flash',
+    engine: 'custom',
+    modelStr: 'GLM-5.3-Flash',
+    badge: 'GLM 5.3',
+    badgeColor: 'rose',
+    icon: 'Zap',
+    iconColor: '#f43f5e',
+    description: 'GLM 5.3 Flash — High-efficiency rapid multilingual intelligence (100% Free)'
   },
 
   // ════════════════════════════════════════════════════════════════
