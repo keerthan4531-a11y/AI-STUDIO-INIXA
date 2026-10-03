@@ -496,6 +496,96 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: LLM7 Verified Frontier Models (Strict Exact Model Routing, No Fallback) ──
+    const isLLM7Model = 
+      selectedModel === 'codestral-latest' ||
+      selectedModel === 'mistral-nemo' ||
+      selectedModel === 'mistral-Nemo-Instruct-2407' ||
+      selectedModel === 'deepseek-v4-flash-0731' ||
+      selectedModel === 'DeepSeek-V4-Flash-0731' ||
+      selectedModel === 'minimax-m2.7' ||
+      selectedModel === 'minimax-2.7' ||
+      selectedModel === 'glm-5.3-flash' ||
+      selectedModel === 'GLM-5.3-Flash' ||
+      selectedModel.startsWith('llm7/');
+
+    if (isLLM7Model) {
+      let targetLLM7Model = selectedModel.replace(/^llm7\//, '');
+      
+      // Map to exact canonical model IDs recognized by LLM7
+      if (targetLLM7Model.toLowerCase().includes('codestral')) {
+        targetLLM7Model = 'codestral-latest';
+      } else if (targetLLM7Model.toLowerCase().includes('nemo')) {
+        targetLLM7Model = 'mistral-Nemo-Instruct-2407';
+      } else if (targetLLM7Model.toLowerCase().includes('deepseek')) {
+        targetLLM7Model = 'DeepSeek-V4-Flash-0731';
+      } else if (targetLLM7Model.toLowerCase().includes('minimax')) {
+        targetLLM7Model = 'minimax-m2.7';
+      } else if (targetLLM7Model.toLowerCase().includes('glm')) {
+        targetLLM7Model = 'GLM-5.3-Flash';
+      }
+
+      console.log(`[LLM7 Route] Routing exact model "${selectedModel}" -> "${targetLLM7Model}" to api.llm7.io`);
+
+      try {
+        const llm7Res = await fetch('https://api.llm7.io/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer unused',
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': stream === true ? 'text/event-stream' : 'application/json'
+          },
+          body: JSON.stringify({
+            model: targetLLM7Model,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            max_tokens: body.max_tokens || 2048,
+            temperature: body.temperature || 0.7
+          })
+        });
+
+        if (!llm7Res.ok) {
+          const errText = await llm7Res.text();
+          throw new Error(`LLM7 HTTP ${llm7Res.status} - ${errText}`);
+        }
+
+        if (stream === true && llm7Res.body) {
+          return new Response(llm7Res.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await llm7Res.json();
+        const choice = data.choices?.[0];
+        const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[LLM7 Error] ${err.message || err}`);
+        // Strict no-fallback: show exact error to user
+        return NextResponse.json(
+          { error: `LLM7 (${targetLLM7Model}) Error: ${err.message || err}`, reply: `⚠️ Error [${targetLLM7Model}]: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
     // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Liquid, etc.) ──
     const isKiloGatewayModel = 
       selectedModel.startsWith('kilo/') ||

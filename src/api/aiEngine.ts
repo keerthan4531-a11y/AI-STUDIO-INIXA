@@ -83,6 +83,65 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
+  // ⚡ LLM7 FRONTIER MODELS (Strict Verified Free Models)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'codestral-latest',
+    label: 'Codestral Latest (Mistral AI)',
+    engine: 'custom',
+    modelStr: 'codestral-latest',
+    badge: 'FAST 1s',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Codestral Latest — Ultra-fast Mistral coding model (~1s latency, 100% Free)'
+  },
+  {
+    id: 'mistral-Nemo-Instruct-2407',
+    label: 'Mistral Nemo 12B (Mistral AI)',
+    engine: 'custom',
+    modelStr: 'mistral-Nemo-Instruct-2407',
+    badge: 'MISTRAL',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Mistral Nemo 12B — State-of-the-art multilingual reasoning model (100% Free)'
+  },
+  {
+    id: 'DeepSeek-V4-Flash-0731',
+    label: 'DeepSeek V4 Flash (0731)',
+    engine: 'custom',
+    modelStr: 'DeepSeek-V4-Flash-0731',
+    badge: 'DEEPSEEK',
+    badgeColor: 'cyan',
+    icon: 'Sparkles',
+    iconColor: '#06b6d4',
+    description: 'DeepSeek V4 Flash — High-efficiency frontier reasoning chat model (100% Free)'
+  },
+  {
+    id: 'minimax-m2.7',
+    label: 'MiniMax M2.7',
+    engine: 'custom',
+    modelStr: 'minimax-m2.7',
+    badge: 'MINIMAX',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'MiniMax M2.7 — Advanced language & dialogue generation model (100% Free)'
+  },
+  {
+    id: 'GLM-5.3-Flash',
+    label: 'GLM 5.3 Flash (Zhipu AI)',
+    engine: 'custom',
+    modelStr: 'GLM-5.3-Flash',
+    badge: 'GLM 5.3',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#f59e0b',
+    description: 'GLM 5.3 Flash — Zhipu high-speed reasoning & bilingual intelligence (100% Free)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // ⚡ GROK 4.6 (xAI Frontier Reasoning)
   // ════════════════════════════════════════════════════════════════
   {
