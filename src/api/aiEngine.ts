@@ -285,18 +285,6 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#f59e0b',
     description: 'Brave Deep Research — In-depth multi-source real-time autonomous research (100% Free)'
   },
-  {
-    id: 'glm-5.3-flash',
-    label: 'GLM 5.3 Flash',
-    engine: 'custom',
-    modelStr: 'oxalpha/z-ai/glm-5.3-flash',
-    provider: 'oxalpha',
-    badge: 'GLM 5.3',
-    badgeColor: 'rose',
-    icon: 'Zap',
-    iconColor: '#f43f5e',
-    description: 'GLM 5.3 Flash — High-efficiency rapid multilingual intelligence (100% Free)'
-  },
 
   // ════════════════════════════════════════════════════════════════
   // ⚔️ ARENA AI (Frontier Dual-Model Battle — 100% Free)
@@ -1729,6 +1717,16 @@ export const aiChat = async (
             let reply = content;
             if (reasoning) reply = `<think>\n${reasoning}\n</think>\n${content}`;
             if (reply) return reply;
+          }
+        } else {
+          try {
+            const errData = await res.json();
+            const errMsg = errData.reply || errData.error || `HTTP ${res.status}`;
+            console.error(`[aiChat Client] Server returned error:`, errMsg);
+            return typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg);
+          } catch {
+            const textErr = await res.text().catch(() => '');
+            return `⚠️ Error: Server returned HTTP ${res.status} ${textErr ? `(${textErr.slice(0, 150)})` : ''}`;
           }
         }
       } catch (err) {

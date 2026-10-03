@@ -1474,13 +1474,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // Direct OxAlpha routing (z-ai/glm-5.3-flash, Fresh Session Reset with Kilo fallback)
+    // Direct OxAlpha routing (Ox Alpha Stealth)
     else if (
       selectedModel.startsWith('oxalpha/') || 
       selectedModel.startsWith('oxalpha') || 
-      selectedModel === 'ox-alpha' || 
-      selectedModel === 'GLM-5.3-Flash' || 
-      selectedModel.toLowerCase().includes('glm-5.3')
+      selectedModel === 'ox-alpha'
     ) {
       const oxModel = selectedModel.replace('oxalpha/', '');
       console.log(`[OxAlpha Route] OxAlpha execution for model: ${oxModel}`);
