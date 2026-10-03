@@ -496,7 +496,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Route: LLM7 Verified Frontier Models (Strict Exact Model Routing, No Fallback) ──
+    // ── Route: LLM7 Verified Frontier Models (Strict Exact Model Routing + Proxy Pool IP-Bypass) ──
     const isLLM7Model = 
       selectedModel === 'codestral-latest' ||
       selectedModel === 'mistral-nemo' ||
@@ -527,30 +527,106 @@ export async function POST(req: Request) {
 
       console.log(`[LLM7 Route] Routing exact model "${selectedModel}" -> "${targetLLM7Model}" to api.llm7.io`);
 
+      const llm7Url = 'https://api.llm7.io/v1/chat/completions';
+      const reqHeaders = {
+        'Authorization': 'Bearer unused',
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': stream === true ? 'text/event-stream' : 'application/json'
+      };
+
+      const reqBodyStr = JSON.stringify({
+        model: targetLLM7Model,
+        messages: formattedMessages.filter((m: any) => m && m.content),
+        stream: stream === true,
+        max_tokens: body.max_tokens || 2048,
+        temperature: body.temperature || 0.7
+      });
+
+      let llm7Res: any = null;
+      let lastError: any = null;
+
+      // Step 1: Try direct connection first
       try {
-        const llm7Res = await fetch('https://api.llm7.io/v1/chat/completions', {
+        const directRes = await fetch(llm7Url, {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer unused',
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Accept': stream === true ? 'text/event-stream' : 'application/json'
-          },
-          body: JSON.stringify({
-            model: targetLLM7Model,
-            messages: formattedMessages.filter((m: any) => m && m.content),
-            stream: stream === true,
-            max_tokens: body.max_tokens || 2048,
-            temperature: body.temperature || 0.7
-          })
+          headers: reqHeaders,
+          body: reqBodyStr
         });
 
-        if (!llm7Res.ok) {
-          const errText = await llm7Res.text();
-          throw new Error(`LLM7 HTTP ${llm7Res.status} - ${errText}`);
+        if (directRes.ok) {
+          llm7Res = directRes;
+        } else if (directRes.status === 429) {
+          console.warn(`[LLM7 Route] Direct IP rate-limited (429). Activating rotating proxy pool to bypass...`);
+          lastError = new Error(`HTTP 429 Rate limited on direct IP`);
+        } else {
+          const errText = await directRes.text();
+          throw new Error(`LLM7 HTTP ${directRes.status} - ${errText}`);
         }
+      } catch (e: any) {
+        lastError = e;
+      }
 
-        if (stream === true && llm7Res.body) {
+      // Step 2: If direct was rate-limited (429) or failed, rotate through Proxy Pool
+      if (!llm7Res) {
+        await refreshProxyPool();
+        const pool = getProxyPool();
+
+        if (pool && pool.length > 0) {
+          const proxiesToTry = [];
+          const cached = getCachedWorkingProxy();
+          if (cached) proxiesToTry.push(cached);
+          
+          const maxTries = Math.min(8, pool.length);
+          for (let p = 0; p < maxTries; p++) {
+            const nextP = getNextProxy();
+            if (nextP && !proxiesToTry.includes(nextP)) proxiesToTry.push(nextP);
+          }
+
+          for (const proxyUrl of proxiesToTry) {
+            try {
+              let agent: any;
+              if (proxyUrl.startsWith('socks')) agent = new SocksProxyAgent(proxyUrl);
+              else agent = proxyUrl.startsWith('https') ? new HttpsProxyAgent(proxyUrl) : new HttpProxyAgent(proxyUrl);
+
+              const pRes: any = await nodeFetch(llm7Url, {
+                method: 'POST',
+                headers: reqHeaders,
+                body: reqBodyStr,
+                agent,
+                timeout: 10000
+              });
+
+              if (pRes.ok) {
+                setCachedWorkingProxy(proxyUrl);
+                console.log(`[LLM7 Route] Successfully bypassed rate-limit via proxy: ${proxyUrl}`);
+                llm7Res = pRes;
+                break;
+              } else if (pRes.status === 429) {
+                console.warn(`[LLM7 Route] Proxy ${proxyUrl} also hit 429, trying next...`);
+              }
+            } catch (pErr) {
+              // Ignore individual proxy connection timeouts and continue
+            }
+          }
+        }
+      }
+
+      if (!llm7Res || !llm7Res.ok) {
+        const errMsg = lastError?.message || 'LLM7 rate limit reached on current IPs and proxy pool exhausted';
+        console.error(`[LLM7 Error] ${errMsg}`);
+        return NextResponse.json(
+          { 
+            error: `LLM7 (${targetLLM7Model}) Error: ${errMsg}`, 
+            reply: `⚠️ Error [${targetLLM7Model}]: ${errMsg}. Please wait a few moments or retry.` 
+          },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+
+      if (stream === true) {
+        if (llm7Res.body?.getReader) {
+          // Standard web fetch Response
           return new Response(llm7Res.body, {
             headers: {
               'Content-Type': 'text/event-stream',
@@ -561,29 +637,42 @@ export async function POST(req: Request) {
               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
             },
           });
-        }
-
-        const data = await llm7Res.json();
-        const choice = data.choices?.[0];
-        const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
-        return NextResponse.json(
-          { reply: content, choices: data.choices },
-          {
+        } else if (llm7Res.body?.on) {
+          // Node-fetch stream Response
+          const bodyStream = new ReadableStream({
+            start(controller) {
+              llm7Res.body.on('data', (chunk: Buffer) => controller.enqueue(chunk));
+              llm7Res.body.on('end', () => controller.close());
+              llm7Res.body.on('error', (err: Error) => controller.error(err));
+            },
+            cancel() { llm7Res.body.destroy(); }
+          });
+          return new Response(bodyStream, {
             headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
               'X-RateLimit-Limit': String(maxRequests),
               'X-RateLimit-Remaining': String(remaining),
               'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
-            }
-          }
-        );
-      } catch (err: any) {
-        console.error(`[LLM7 Error] ${err.message || err}`);
-        // Strict no-fallback: show exact error to user
-        return NextResponse.json(
-          { error: `LLM7 (${targetLLM7Model}) Error: ${err.message || err}`, reply: `⚠️ Error [${targetLLM7Model}]: ${err.message || err}` },
-          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
-        );
+            },
+          });
+        }
       }
+
+      const data = await llm7Res.json();
+      const choice = data.choices?.[0];
+      const content = choice?.message?.content || choice?.message?.reasoning || data.reply || '';
+      return NextResponse.json(
+        { reply: content, choices: data.choices },
+        {
+          headers: {
+            'X-RateLimit-Limit': String(maxRequests),
+            'X-RateLimit-Remaining': String(remaining),
+            'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+          }
+        }
+      );
     }
 
     // ── Route: Kilo Gateway (NVIDIA Nemotron 3.5, Nemotron 3 Ultra, Liquid, etc.) ──
