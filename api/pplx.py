@@ -228,7 +228,6 @@ def stream_perplexity_generator(query: str, model_name: str):
         fallback_providers = [
             ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
             ("Cloudflare", g4f.Provider.Cloudflare, "gpt-6-astra"),
-            ("Yqcloud", g4f.Provider.Yqcloud, "gpt-4"),
         ]
         for p_name, prov, m_name in fallback_providers:
             try:

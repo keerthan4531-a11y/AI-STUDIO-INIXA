@@ -2,9 +2,10 @@ import json
 import asyncio
 import sys
 import os
+import re
 import tempfile
-
 import pathlib
+
 # Crucial for Vercel Serverless environment where /home is read-only
 if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not sys.platform.startswith("win"):
     os.environ["HOME"] = "/tmp"
@@ -28,9 +29,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import g4f
-from g4f.client import AsyncClient
+from g4f.client import Client, AsyncClient
 
-app = FastAPI(title="GPT-6 Astra High-Speed Serverless API", version="1.0.0")
+app = FastAPI(title="GPT-6 Astra Strict Serverless API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,11 +41,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ROUTES = [
-    ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
+# STRICT: Only genuine GPT-6 Astra routes are permitted. NO generic fallback models!
+STRICT_GPT6_ROUTES = [
     ("Cloudflare", g4f.Provider.Cloudflare, "gpt-6-astra"),
-    ("Yqcloud", g4f.Provider.Yqcloud, "gpt-4"),
+    ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
 ]
+
+def _sync_fetch(provider, model_name: str, messages: list) -> str:
+    client = Client(provider=provider)
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=messages
+    )
+    return resp.choices[0].message.content or ""
 
 async def stream_gpt6_astra(prompt: str, messages: list = None) -> AsyncGenerator[str, None]:
     if not messages:
@@ -53,44 +62,33 @@ async def stream_gpt6_astra(prompt: str, messages: list = None) -> AsyncGenerato
     last_err = ""
     worked = False
 
-    for name, provider, model_name in ROUTES:
+    for name, provider, model_name in STRICT_GPT6_ROUTES:
         try:
-            client = AsyncClient(provider=provider)
-            res = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                stream=True
-            )
+            # 1. Try sync fetch in thread for maximum stability with Cloudflare / Perplexity
+            text = await asyncio.to_thread(_sync_fetch, provider, model_name, messages)
+            text = text.strip()
 
-            buffer = ""
-            chunks = []
-            failed_route = False
-
-            async for chunk in res:
-                delta = chunk.choices[0].delta.content or ""
-                if isinstance(delta, str) and delta:
-                    buffer += delta
-                    # Check for sign-in or rate-limit blocks
-                    if "sign up and repeat" in buffer.lower() or "sign in to continue" in buffer.lower():
-                        failed_route = True
-                        break
-                    
-                    # Output both Next.js inixa format and OpenAI format for maximum compatibility
-                    line = f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta, 'choices': [{'delta': {'content': delta}}]})}\n\n"
-                    chunks.append(line)
-                    yield line
-
-            if not failed_route and buffer.strip():
+            if text and "sign up and repeat" not in text.lower() and "sign in to continue" not in text.lower():
                 worked = True
+                # Stream the words to the client
+                words = re.split(r'(\s+)', text)
+                chunk_acc = ""
+                for w in words:
+                    chunk_acc += w
+                    if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
+                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc, 'choices': [{'delta': {'content': chunk_acc}}]})}\n\n"
+                        chunk_acc = ""
+                if chunk_acc:
+                    yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc, 'choices': [{'delta': {'content': chunk_acc}}]})}\n\n"
                 break
             else:
-                last_err = f"{name} returned empty or blocked response"
+                last_err = f"{name} returned blocked or empty response: {text[:60]}"
         except Exception as e:
-            last_err = f"{name} error: {str(e)}"
+            last_err = f"{name} failed: {str(e)}"
             continue
 
     if not worked:
-        err_msg = f"\n\n❌ [GPT-6 Astra Error]: All routes exhausted. Last reason: {last_err or 'Unknown'}"
+        err_msg = f"\n\n❌ [GPT-6 Astra Strict Error]: All genuine GPT-6 Astra routes unavailable. ({last_err or 'Unknown error'}). No other fallback models will be used."
         yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_msg, 'choices': [{'delta': {'content': err_msg}}]})}\n\n"
 
     yield "data: [DONE]\n\n"
@@ -100,39 +98,30 @@ async def generate_gpt6_non_stream(prompt: str, messages: list = None) -> dict:
         messages = [{"role": "user", "content": prompt}]
     
     last_err = ""
-    for name, provider, model_name in ROUTES:
+    for name, provider, model_name in STRICT_GPT6_ROUTES:
         try:
-            client = AsyncClient(provider=provider)
-            res = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                stream=True
-            )
-            chunks = []
-            async for chunk in res:
-                delta = chunk.choices[0].delta.content or ""
-                if isinstance(delta, str) and delta:
-                    chunks.append(delta)
-            
-            full = "".join(chunks).strip()
-            if full and "sign up and repeat" not in full.lower() and "sign in to continue" not in full.lower():
+            text = await asyncio.to_thread(_sync_fetch, provider, model_name, messages)
+            text = text.strip()
+            if text and "sign up and repeat" not in text.lower() and "sign in to continue" not in text.lower():
                 return {
                     "id": f"chatcmpl-gpt6-astra-{int(asyncio.get_event_loop().time() * 1000)}",
                     "object": "chat.completion",
                     "model": "gpt-6-astra",
                     "provider": name,
-                    "reply": full,
+                    "reply": text,
                     "choices": [{
                         "index": 0,
-                        "message": {"role": "assistant", "content": full},
+                        "message": {"role": "assistant", "content": text},
                         "finish_reason": "stop"
                     }]
                 }
+            else:
+                last_err = f"{name} returned empty or blocked response"
         except Exception as e:
             last_err = str(e)
             continue
     
-    raise Exception(f"All routes exhausted for GPT-6 Astra: {last_err}")
+    raise Exception(f"All genuine GPT-6 Astra routes unavailable: {last_err}")
 
 @app.get("/api/gpt6")
 @app.get("/api/gpt6/health")
@@ -140,8 +129,9 @@ async def health():
     return {
         "status": "ok",
         "model": "GPT-6 Astra",
-        "description": "OpenAI GPT-6 Astra — Free Access Without API Key",
-        "routes": ["Perplexity (gpt6_astra)", "Cloudflare (gpt-6-astra)", "Yqcloud (gpt-4)"]
+        "strict_mode": True,
+        "description": "OpenAI GPT-6 Astra — Strict verified GPT-6 Astra routes only",
+        "routes": ["Cloudflare (gpt-6-astra)", "Perplexity (gpt6_astra)"]
     }
 
 @app.post("/api/gpt6")
