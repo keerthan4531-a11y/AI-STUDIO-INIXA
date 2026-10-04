@@ -36,11 +36,11 @@ API_URL = f"{BASE_URL}/rest/sse/perplexity_ask?version=2.17&source=android"
 
 # Models extracted from Perplexity Android reverse engineering (lordmacu/perplexity-proxy)
 MODELS_MAP = {
-    # Perplexity Native - 'experimental' is the active Sonar 2 model working without login
-    "default": "experimental",
-    "turbo": "experimental",
-    "sonar": "experimental",
-    "pplx-turbo": "experimental",
+    # Perplexity Native
+    "default": "turbo",
+    "turbo": "turbo",
+    "sonar": "turbo",
+    "pplx-turbo": "turbo",
     "experimental": "experimental",
     "pplx_pro": "pplx_pro",
     "research": "pplx_alpha",
@@ -109,7 +109,7 @@ def _android_headers(device_id: str) -> dict:
 
 def stream_perplexity_generator(query: str, model_name: str):
     cleaned_model = model_name.lower().replace("pplx/", "").replace("perplexity/", "").strip()
-    target_model = MODELS_MAP.get(cleaned_model, cleaned_model or "experimental")
+    target_model = MODELS_MAP.get(cleaned_model, cleaned_model or "turbo")
     
     session = _build_session()
     last_err = ""
@@ -162,6 +162,7 @@ def stream_perplexity_generator(query: str, model_name: str):
             citations = []
             accumulated = ""
             blocked = False
+            final_data = None
 
             for chunk in r.iter_content(chunk_size=None):
                 if not chunk:
@@ -170,41 +171,71 @@ def stream_perplexity_generator(query: str, model_name: str):
 
                 while "\r\n\r\n" in buf:
                     seg, buf = buf.split("\r\n\r\n", 1)
+                    ev_type, data_str = None, ""
                     for line in seg.split("\r\n"):
-                        if line.startswith("data:"):
-                            raw = line[5:].strip()
-                            if not raw:
-                                continue
-                            try:
-                                data = json.loads(raw)
-                                if data.get("final_sse_message"):
-                                    # Extract sources/citations from final message
-                                    for block in data.get("blocks", []):
-                                        if "web_result_block" in block:
-                                            for item in block["web_result_block"].get("web_results", []):
-                                                u = item.get("url")
-                                                if u and u not in citations:
-                                                    citations.append(u)
-                                else:
-                                    for block in data.get("blocks", []):
-                                        usage = block.get("intended_usage", "")
-                                        if "ask_text_0_markdown" in usage and "markdown_block" in block:
-                                            delta = "".join(c for c in block["markdown_block"].get("chunks", []) if isinstance(c, str))
-                                            if delta:
-                                                if "sign up and repeat" in delta.lower() or "sign in to continue" in delta.lower():
-                                                    blocked = True
-                                                    break
-                                                accumulated += delta
-                                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
-                            except Exception:
-                                pass
+                        if line.startswith("event:"):
+                            ev_type = line[6:].strip()
+                        elif line.startswith("data:"):
+                            data_str = line[5:].strip()
+
+                    if ev_type != "message" or not data_str:
+                        continue
+
+                    try:
+                        data = json.loads(data_str)
+                    except Exception:
+                        continue
+
+                    if data.get("final_sse_message"):
+                        final_data = data
+                        for block in data.get("blocks", []):
+                            if "web_result_block" in block:
+                                for item in block["web_result_block"].get("web_results", []):
+                                    u = item.get("url")
+                                    if u and u not in citations:
+                                        citations.append(u)
+                        continue
+
+                    for block in data.get("blocks", []):
+                        usage = block.get("intended_usage", "")
+                        if "ask_text_0_markdown" in usage and "markdown_block" in block:
+                            delta = "".join(c for c in block["markdown_block"].get("chunks", []) if isinstance(c, str))
+                            if delta:
+                                is_sign_in = any(s in delta.lower() for s in [
+                                    "sign up and repeat", "sign in to continue", "inscrivez-vous", 
+                                    "daftar dan ulangi", "inscríbete y repite", "melde dich an"
+                                ])
+                                if is_sign_in:
+                                    blocked = True
+                                    break
+                                accumulated += delta
+                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
+
                     if blocked:
                         break
                 if blocked:
                     break
 
-            if blocked or "sign up and repeat" in accumulated.lower() or "sign in to continue" in accumulated.lower():
-                last_err = "Perplexity required sign-in"
+            if not accumulated and final_data and not blocked:
+                for block in final_data.get("blocks", []):
+                    usage = block.get("intended_usage", "")
+                    if "markdown_block" in block:
+                        mb = block["markdown_block"]
+                        block_text = "".join(c for c in mb.get("chunks", []) if isinstance(c, str))
+                        if ("ask_text_0_markdown" in usage or "ask_text" in usage) and block_text:
+                            is_sign_in = any(s in block_text.lower() for s in [
+                                "sign up and repeat", "sign in to continue", "inscrivez-vous", 
+                                "daftar dan ulangi", "inscríbete y repite", "melde dich an"
+                            ])
+                            if is_sign_in:
+                                blocked = True
+                            else:
+                                accumulated = block_text
+                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': block_text})}\n\n"
+                                break
+
+            if blocked or any(s in accumulated.lower() for s in ["sign up and repeat", "sign in to continue", "inscrivez-vous", "daftar dan ulangi"]):
+                last_err = 'Perplexity requires sign-in for this specific query ("Sign up and repeat your request"). Try rephrasing directly.'
                 accumulated = ""
                 continue
 

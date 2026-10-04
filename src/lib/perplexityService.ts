@@ -12,7 +12,7 @@ import path from 'path';
 
 export const PPLX_MODELS = [
   { id: 'pplx-gpt6-astra', modelId: 'gpt6_astra', name: 'GPT-6 Astra (Perplexity Web)', provider: 'OpenAI' },
-  { id: 'pplx-turbo', modelId: 'experimental', name: 'Perplexity Turbo (Sonar Web)', provider: 'Perplexity AI' },
+  { id: 'pplx-turbo', modelId: 'turbo', name: 'Perplexity Turbo (Sonar Web)', provider: 'Perplexity AI' },
   { id: 'pplx-gpt56-sol', modelId: 'gpt56_sol', name: 'GPT-5.6 Sol (Perplexity Web)', provider: 'OpenAI' },
   { id: 'pplx-sonnet5', modelId: 'claude50sonnet', name: 'Claude Sonnet 5 (Perplexity Web)', provider: 'Anthropic' },
   { id: 'pplx-opus5', modelId: 'claude50opus', name: 'Claude Opus 5 (Perplexity Web)', provider: 'Anthropic' },
@@ -30,7 +30,7 @@ export async function executePerplexityStream(
   forwardHeaders?: Headers | Record<string, string>
 ): Promise<string> {
   const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
-  const targetModel = modelName.replace(/^pplx[\/-]/, '').replace(/^perplexity[\/-]/, '').trim() || 'experimental';
+  const targetModel = modelName.replace(/^pplx[\/-]/, '').replace(/^perplexity[\/-]/, '').trim() || 'turbo';
 
   // 1. VERCEL SERVERLESS ENVIRONMENT
   if (isVercel) {
@@ -121,7 +121,9 @@ export async function executePerplexityStream(
     const pythonCmd = process.platform === 'win32' ? 'py' : 'python3';
     let py: any;
     try {
-      py = spawn(pythonCmd, ['-u', scriptPath, inputJson]);
+      py = spawn(pythonCmd, ['-u', scriptPath]);
+      py.stdin.write(inputJson);
+      py.stdin.end();
     } catch (e: any) {
       return reject(new Error(`[Perplexity Error - ${targetModel}]: Failed to launch Python: ${e.message}`));
     }

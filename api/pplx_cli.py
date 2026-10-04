@@ -16,8 +16,20 @@ except ImportError:
     from api.pplx import stream_perplexity_generator
 
 def main():
+    if hasattr(sys.stdin, 'reconfigure'):
+        sys.stdin.reconfigure(encoding='utf-8')
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8')
+
     try:
-        raw_input = sys.argv[1] if len(sys.argv) > 1 else sys.stdin.read()
+        raw_input = ""
+        if len(sys.argv) > 1 and sys.argv[1].strip().startswith('{'):
+            raw_input = sys.argv[1]
+        else:
+            raw_input = sys.stdin.read()
+
         if not raw_input:
             print("Error: No input provided", file=sys.stderr)
             sys.exit(1)
