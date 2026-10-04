@@ -1,6 +1,20 @@
 import json
 import asyncio
 import sys
+import os
+import tempfile
+
+# Crucial for Vercel Serverless environment where /home is read-only
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not sys.platform.startswith("win"):
+    os.environ["HOME"] = "/tmp"
+    os.environ["TMPDIR"] = "/tmp"
+
+try:
+    import g4f.cookies
+    g4f.cookies.CookiesConfig.cookies_dir = "/tmp/.g4f/cookies"
+except Exception:
+    pass
+
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
