@@ -2,11 +2,12 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 /**
- * Universal Perplexity AI Service:
- * - On Vercel: tries /api/pplx first, then seamlessly falls back to serverless Web AI proxy
- * - In Local Dev: spawns local Python bridge (api/pplx_cli.py) with lordmacu/perplexity-proxy Android REST SSE
+ * Universal Perplexity AI Service (Strict Mode - Zero Fallbacks):
+ * - Routes EXCLUSIVELY to Perplexity Native Android REST SSE (lordmacu/perplexity-proxy)
+ * - On Vercel: hits /api/pplx
+ * - In Local Dev: spawns local Python bridge (api/pplx_cli.py)
  * - Real-time SSE streaming and citation extraction
- * - Zero Chrome/Chromium dependencies (prevents "Chromium executable not found" errors)
+ * - STRICT POLICY: If Perplexity fails, displays exact error immediately. Zero model swapping or fallback to other models!
  */
 
 export const PPLX_MODELS = [
@@ -20,61 +21,6 @@ export const PPLX_MODELS = [
   { id: 'pplx-kimi3', modelId: 'kimik3', name: 'Kimi K3 (Perplexity Web)', provider: 'Moonshot' },
   { id: 'pplx-glm52', modelId: 'glm_5_2', name: 'GLM 5.2 (Perplexity Web)', provider: 'ZAI' },
 ];
-
-async function streamFromWebProxyFallback(
-  prompt: string,
-  modelName: string,
-  onDelta: (chunk: string) => void,
-  onCitations?: (citations: string[]) => void
-): Promise<string> {
-  const res = await fetch('https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gpt-6',
-      messages: [
-        { role: 'system', content: `You are Sonar Web Assistant powered by Perplexity architecture (${modelName}). Answer accurately with current real-time information.` },
-        { role: 'user', content: prompt }
-      ],
-      stream: true
-    })
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Fallback Gateway HTTP ${res.status}: ${errText.slice(0, 150)}`);
-  }
-
-  const reader = res.body!.getReader();
-  const decoder = new TextDecoder();
-  let accumulated = '';
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.startsWith('data:')) {
-        const raw = line.slice(5).trim();
-        if (raw === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(raw);
-          const chunk = parsed.choices?.[0]?.delta?.content || parsed.delta || '';
-          if (chunk) {
-            accumulated += chunk;
-            onDelta(chunk);
-          }
-        } catch {}
-      }
-    }
-  }
-
-  return accumulated.trim();
-}
 
 export async function executePerplexityStream(
   prompt: string,
@@ -101,72 +47,74 @@ export async function executePerplexityStream(
 
     const pplxEndpoint = `${host}/api/pplx`;
 
-    try {
-      const fetchHeaders: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
+    const fetchHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
 
-      const cookie = getH('cookie');
-      if (cookie) fetchHeaders['Cookie'] = cookie;
+    const cookie = getH('cookie');
+    if (cookie) fetchHeaders['Cookie'] = cookie;
 
-      const bypass = getH('x-vercel-protection-bypass') || process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-      if (bypass) fetchHeaders['x-vercel-protection-bypass'] = bypass;
+    const bypass = getH('x-vercel-protection-bypass') || process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    if (bypass) fetchHeaders['x-vercel-protection-bypass'] = bypass;
 
-      const auth = getH('authorization');
-      if (auth) fetchHeaders['Authorization'] = auth;
+    const auth = getH('authorization');
+    if (auth) fetchHeaders['Authorization'] = auth;
 
-      const res = await fetch(pplxEndpoint, {
-        method: 'POST',
-        headers: fetchHeaders,
-        body: JSON.stringify({ prompt, model: targetModel })
-      });
+    const res = await fetch(pplxEndpoint, {
+      method: 'POST',
+      headers: fetchHeaders,
+      body: JSON.stringify({ prompt, model: targetModel })
+    });
 
-      if (res.ok && res.body) {
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedText = '';
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.startsWith('data:')) {
-              const dataStr = line.slice(5).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.type === 'citations' && parsed.citations && onCitations) {
-                  onCitations(parsed.citations);
-                }
-                const delta = parsed.delta || parsed.content || parsed.text || '';
-                if (delta) {
-                  accumulatedText += delta;
-                  onDelta(delta);
-                }
-              } catch {}
-            }
-          }
-        }
-
-        if (accumulatedText.trim()) {
-          return accumulatedText.trim();
-        }
-      }
-    } catch (err: any) {
-      console.warn('[executePerplexityStream Vercel native failed, trying serverless fallback]:', err.message);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`[Perplexity Error - ${targetModel}]: HTTP ${res.status}: ${errText.slice(0, 200)}`);
     }
 
-    // Serverless high-uptime fallback
-    return streamFromWebProxyFallback(prompt, targetModel, onDelta, onCitations);
+    if (!res.body) {
+      throw new Error(`[Perplexity Error - ${targetModel}]: No response body returned from Perplexity server.`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedText = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const dataStr = line.slice(5).trim();
+          if (dataStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.type === 'citations' && parsed.citations && onCitations) {
+              onCitations(parsed.citations);
+            }
+            const delta = parsed.delta || parsed.content || parsed.text || '';
+            if (delta) {
+              accumulatedText += delta;
+              onDelta(delta);
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (!accumulatedText.trim()) {
+      throw new Error(`[Perplexity Error - ${targetModel}]: Perplexity returned empty output.`);
+    }
+
+    return accumulatedText.trim();
   }
 
   // 2. LOCAL ENVIRONMENT: Execute local python runner (api/pplx_cli.py)
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const scriptPath = path.join(process.cwd(), 'api', 'pplx_cli.py');
     const inputJson = JSON.stringify({ prompt, model: targetModel });
 
@@ -175,12 +123,7 @@ export async function executePerplexityStream(
     try {
       py = spawn(pythonCmd, ['-u', scriptPath, inputJson]);
     } catch (e: any) {
-      try {
-        const fallbackRes = await streamFromWebProxyFallback(prompt, targetModel, onDelta, onCitations);
-        return resolve(fallbackRes);
-      } catch (err: any) {
-        return reject(new Error(`Failed to launch Python: ${e.message}`));
-      }
+      return reject(new Error(`[Perplexity Error - ${targetModel}]: Failed to launch Python: ${e.message}`));
     }
 
     let accumulatedText = '';
@@ -215,33 +158,18 @@ export async function executePerplexityStream(
       stderrText += chunk.toString();
     });
 
-    py.on('close', async (code: number) => {
+    py.on('close', (code: number) => {
       if (code !== 0 && !accumulatedText.trim()) {
-        try {
-          const fallbackRes = await streamFromWebProxyFallback(prompt, targetModel, onDelta, onCitations);
-          resolve(fallbackRes);
-        } catch {
-          reject(new Error(stderrText || `Python process failed with exit code ${code}`));
-        }
+        reject(new Error(stderrText || `[Perplexity Error - ${targetModel}]: Process exited with code ${code}`));
       } else if (!accumulatedText.trim()) {
-        try {
-          const fallbackRes = await streamFromWebProxyFallback(prompt, targetModel, onDelta, onCitations);
-          resolve(fallbackRes);
-        } catch {
-          reject(new Error(`Perplexity model ${targetModel} returned empty response.`));
-        }
+        reject(new Error(`[Perplexity Error - ${targetModel}]: Perplexity returned empty response.`));
       } else {
         resolve(accumulatedText.trim());
       }
     });
 
-    py.on('error', async (err: any) => {
-      try {
-        const fallbackRes = await streamFromWebProxyFallback(prompt, targetModel, onDelta, onCitations);
-        resolve(fallbackRes);
-      } catch {
-        reject(new Error(`Failed to run Perplexity Python process: ${err.message}`));
-      }
+    py.on('error', (err: any) => {
+      reject(new Error(`[Perplexity Error - ${targetModel}]: Failed to run Perplexity Python process: ${err.message}`));
     });
   });
 }

@@ -219,43 +219,8 @@ def stream_perplexity_generator(query: str, model_name: str):
             last_err = str(e)
             time.sleep(0.3)
 
-    # Secondary robust fallback: High-speed serverless web AI endpoint (NO CHROMIUM NEEDED!)
-    try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(
-                "https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions",
-                json={
-                    "model": "gpt-6",
-                    "messages": [
-                        {"role": "system", "content": "You are Sonar Web Assistant powered by Perplexity architecture. Answer accurately with facts and citations."},
-                        {"role": "user", "content": query}
-                    ],
-                    "stream": True
-                },
-                headers={"Content-Type": "application/json"}
-            )
-            if resp.status_code == 200:
-                worked = True
-                buffer = ""
-                for line in resp.iter_lines():
-                    if line.startswith("data:"):
-                        raw = line[5:].strip()
-                        if raw == "[DONE]":
-                            continue
-                        try:
-                            parsed = json.loads(raw)
-                            delta = parsed.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                            if delta:
-                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
-                        except Exception:
-                            pass
-                yield "data: [DONE]\n\n"
-                return
-    except Exception as e:
-        last_err = f"Proxy fallback error: {str(e)}"
-
     if not worked:
-        err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'Perplexity engine temporarily busy.'}"
+        err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'Perplexity engine temporarily busy. No fallback models will be substituted.'}"
         yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_delta})}\n\n"
         yield "data: [DONE]\n\n"
 

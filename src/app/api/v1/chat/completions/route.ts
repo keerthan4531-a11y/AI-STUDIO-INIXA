@@ -92,18 +92,15 @@ export async function POST(request: Request) {
       body: JSON.stringify(proxyReqBody),
     });
 
-    // 6. Fallback Logic: If primary model fails, fallback to Qwen Max
+    // Strictly NO fallback: if primary model fails, return the error directly
     if (!proxyRes.ok) {
-      console.log(`[V1 API] Primary model "${body.model}" failed (Status: ${proxyRes.status}). Falling back to Qwen 3.7 Max...`);
-      const fallbackBody = { ...proxyReqBody, model: 'qwen-free/qwen-max' };
-      
-      proxyRes = await fetch(targetUrl, {
-        method: 'POST',
+      const errText = await proxyRes.text();
+      return new Response(errText, {
+        status: proxyRes.status,
         headers: {
           'Content-Type': 'application/json',
-          'Origin': 'https://ai-studio-inixa.vercel.app',
-        },
-        body: JSON.stringify(fallbackBody),
+          ...rateLimitHeaders
+        }
       });
     }
 

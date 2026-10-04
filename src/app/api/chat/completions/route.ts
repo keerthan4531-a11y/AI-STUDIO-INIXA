@@ -61,8 +61,8 @@ async function getAllScrapedKeys(targetModel?: string): Promise<ScrapedKeyEntry[
     if (modelKeys.length > 0) {
       return modelKeys;
     }
-    // fallback to generic keys if specific model not found
-    return cachedScrapedKeys;
+    // Strictly NO fallback: do NOT return other models' keys if specific model not found
+    return [];
   }
   
   return cachedScrapedKeys;
@@ -87,8 +87,8 @@ async function getScrapedKey(targetModel?: string): Promise<string> {
     if (modelKeys.length > 0) {
       return modelKeys[Math.floor(Math.random() * modelKeys.length)].key;
     }
+    return ''; // Strictly NO fallback to other keys
   }
-  // Fallback: return any random key
   return cachedScrapedKeys[Math.floor(Math.random() * cachedScrapedKeys.length)].key;
 }
 
@@ -245,19 +245,7 @@ export async function POST(req: Request) {
 
     console.log(`[Route] Original selectedModel = "${selectedModel}"`);
 
-    // ── Fallback for deprecated Pollinations models ──
-    // Pollinations recently restricted anonymous API access to ONLY 'openai-fast' (GPT-OSS).
-    // Any other model selected on Pollinations will either fail or return GPT.
-    // We reroute these to equivalent working free endpoints.
-    if (selectedModel.startsWith('poll/')) {
-      if (selectedModel.includes('deepseek')) {
-        selectedModel = 'auto/deepseek-chat';
-        console.log(`[Fallback] Rerouted Pollinations DeepSeek to auto/deepseek-chat`);
-      } else if (selectedModel.includes('sonar') || selectedModel.includes('grok')) {
-        selectedModel = 'ddg/gpt-4o-mini';
-        console.log(`[Fallback] Rerouted Pollinations model to ddg/gpt-4o-mini`);
-      }
-    }
+
 
     console.log(`[Route] Final selectedModel = "${selectedModel}"`);
 
@@ -1813,25 +1801,11 @@ export async function POST(req: Request) {
 
         throw new Error('Empty response from DDG');
       } catch (e: any) {
-        console.warn(`[DDG Fallback] DDG failed: ${e.message || e}. Falling back to Cloudflare Worker proxy...`);
-
-        if (selectedModel.toLowerCase().includes('gpt')) {
-          return NextResponse.json(
-            { error: `GPT model failed: ${e.message || e}`, reply: `⚠️ GPT Error: The model failed to respond. No fallback available.` },
-            { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
-          );
-        }
-
-        // Determine the best fallback model based on the requested model string
-        let fallbackModel = 'gemini/gemini-2.5-flash'; // stable default fallback
-        if (ddgModelStr.includes('llama')) {
-          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
-        } else if (ddgModelStr.includes('mistral') || ddgModelStr.includes('mixtral')) {
-          fallbackModel = 'sb/Meta-Llama-3.3-70B-Instruct';
-        }
-
-        console.log(`[DDG Fallback] Rerouted request model from "${selectedModel}" to "${fallbackModel}"`);
-        selectedModel = fallbackModel;
+        console.error(`[DDG Error] Model ${selectedModel} failed:`, e.message || e);
+        return NextResponse.json(
+          { error: `Model ${selectedModel} failed: ${e.message || e}`, reply: `⚠️ ${selectedModel} Error: The model failed to respond. Please try again.` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
       }
     }
 
@@ -1845,7 +1819,7 @@ export async function POST(req: Request) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'openai', // The legacy endpoint only accepts 'openai', 'openai-large', etc.
+            model: pollModelStr,
             messages: formattedMessages,
             stream: stream === true,
           }),
@@ -2386,55 +2360,7 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!proxyResponse.ok) {
-      if (selectedModel === 'claude-opus-4-7') {
-        console.log(`[Fallback] Opus failed with ${proxyResponse.status}. Racing all available working models...`);
 
-        if (cachedScrapedKeys.length === 0) {
-          await getAllScrapedKeys('dummy'); // Populate cache
-        }
-
-        if (cachedScrapedKeys.length > 0) {
-          const controllers = cachedScrapedKeys.map(() => new AbortController());
-          const fetchPromises = cachedScrapedKeys.map(({ key, model }, i) => {
-            const reqHeaders = { 
-              'Content-Type': 'application/json', 
-              'Authorization': `Bearer ${key}`,
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'application/json'
-            };
-            return fetch('https://aiapiv2.pekpik.com/v1/chat/completions', {
-              method: 'POST',
-              headers: reqHeaders,
-              body: JSON.stringify({
-                model: model,
-                messages: formattedMessages,
-                stream: stream === true,
-                max_tokens: 8000,
-                temperature: 0.7
-              }),
-              signal: controllers[i].signal
-            }).then(res => {
-              if (res.ok) return { res, index: i, model };
-              throw `Status ${res.status}`;
-            });
-          });
-
-          try {
-            const winner = await Promise.any(fetchPromises);
-            proxyResponse = winner.res;
-            selectedModel = winner.model;
-            controllers.forEach((c, i) => {
-              if (i !== winner.index) c.abort();
-            });
-            console.log(`[Fallback] Race won by model ${winner.model} with key index ${winner.index}!`);
-          } catch (e: any) {
-            const errMsg = e.errors ? e.errors.join(' | ') : (e.message || e);
-            console.error(`[Fallback] All scraped models failed fallback for Opus: ${errMsg}`);
-          }
-        }
-      }
-    }
 
     if (!proxyResponse || !proxyResponse.ok) {
       const status = proxyResponse?.status || 502;
