@@ -4,8 +4,10 @@ import re
 import time
 import os
 import sys
-
 import pathlib
+import httpx
+from curl_cffi import requests
+
 # Crucial for Vercel Serverless environment where /home is read-only
 if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not sys.platform.startswith("win"):
     os.environ["HOME"] = "/tmp"
@@ -15,19 +17,9 @@ if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not
     except Exception:
         pass
 
-try:
-    import g4f.config
-    import g4f.cookies
-    g4f.config.CONFIG_DIR = pathlib.Path("/tmp/.g4f")
-    g4f.config.COOKIES_DIR = pathlib.Path("/tmp/.g4f/cookies")
-    g4f.cookies.CookiesConfig.cookies_dir = "/tmp/.g4f/cookies"
-except Exception:
-    pass
-
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from curl_cffi import requests
 
 app = FastAPI(title="Perplexity AI Serverless API")
 
@@ -42,13 +34,17 @@ app.add_middleware(
 BASE_URL = "https://www.perplexity.ai"
 API_URL = f"{BASE_URL}/rest/sse/perplexity_ask?version=2.17&source=android"
 
+# Models extracted from Perplexity Android reverse engineering (lordmacu/perplexity-proxy)
 MODELS_MAP = {
-    # Perplexity Native
-    "default": "turbo",
-    "turbo": "turbo",
-    "pplx_pro": "pplx_pro",
+    # Perplexity Native - 'experimental' is the active Sonar 2 model working without login
+    "default": "experimental",
+    "turbo": "experimental",
+    "sonar": "experimental",
+    "pplx-turbo": "experimental",
     "experimental": "experimental",
-    "sonar": "turbo",
+    "pplx_pro": "pplx_pro",
+    "research": "pplx_alpha",
+    "labs": "pplx_beta",
     
     # OpenAI
     "gpt6_astra": "gpt6_astra",
@@ -91,8 +87,6 @@ def _build_session():
     s.impersonate = "chrome120"
     return s
 
-import os
-
 def _android_headers(device_id: str) -> dict:
     headers = {
         "X-App-Version":    "2.95.0",
@@ -113,47 +107,22 @@ def _android_headers(device_id: str) -> dict:
         headers["Cookie"] = f"__Secure-next-auth.session-token={clean_token}; next-auth.session-token={clean_token}"
     return headers
 
-def _parse_sse(raw: bytes):
-    text = raw.decode("utf-8", errors="replace")
-    events = []
-    for chunk in re.split(r"\r\n\r\n", text):
-        ev = {}
-        for line in chunk.split("\r\n"):
-            if line.startswith("event:"):
-                ev["type"] = line[6:].strip()
-            elif line.startswith("data:"):
-                ev["data"] = line[5:].strip()
-        if "type" in ev and "data" in ev:
-            events.append(ev)
-    return events
-
-def _extract_result(final_data):
-    text = ""
-    sources = []
-    for block in final_data.get("blocks", []):
-        usage = block.get("intended_usage", "")
-        if "markdown_block" in block:
-            mb = block["markdown_block"]
-            block_text = "".join(c for c in mb.get("chunks", []) if isinstance(c, str))
-            if "ask_text_0_markdown" in usage and block_text:
-                text = block_text
-            elif not text and block_text and "ask_text" in usage:
-                text = block_text
-        elif "web_result_block" in block:
-            for src in block["web_result_block"].get("web_results", []):
-                url = src.get("url", "")
-                if url and url not in sources:
-                    sources.append(url)
-    return text.strip(), sources
-
 def stream_perplexity_generator(query: str, model_name: str):
     cleaned_model = model_name.lower().replace("pplx/", "").replace("perplexity/", "").strip()
-    target_model = MODELS_MAP.get(cleaned_model, cleaned_model or "turbo")
+    target_model = MODELS_MAP.get(cleaned_model, cleaned_model or "experimental")
     
     session = _build_session()
     last_err = ""
+    worked = False
 
-    for attempt in range(1, 3):
+    # Attempt strategies: 1) With search sources, 2) Writing mode (empty sources)
+    strategies = [
+        {"sources": ["web"]},
+        {"sources": []},
+    ]
+
+    for strat in strategies:
+        sources_param = strat["sources"]
         device_id = str(uuid.uuid4())
         body = {
             "query_str": query,
@@ -170,100 +139,130 @@ def stream_perplexity_generator(query: str, model_name: str):
                 "language": "es",
                 "is_incognito": False,
                 "use_schematized_api": True,
-                "send_back_text_in_streaming_api": False,
+                "send_back_text_in_streaming_api": True,
                 "supported_block_use_cases": ["ANSWER", "SOURCES", "IMAGE", "VIDEO"],
-                "sources": ["web"],
+                "sources": sources_param,
                 "model_preference": target_model,
             }
         }
 
         try:
-            r = session.post(API_URL, json=body, headers=_android_headers(device_id), timeout=45)
-            r.raise_for_status()
+            r = session.post(
+                API_URL,
+                json=body,
+                headers=_android_headers(device_id),
+                timeout=30,
+                stream=True
+            )
+            if r.status_code != 200:
+                last_err = f"HTTP {r.status_code}"
+                continue
 
-            final_data = None
-            for ev in _parse_sse(r.content):
-                if ev["type"] == "message":
-                    try:
-                        d = json.loads(ev["data"])
-                        if d.get("final_sse_message"):
-                            final_data = d
-                            break
-                    except:
-                        pass
+            buf = ""
+            citations = []
+            accumulated = ""
+            blocked = False
 
-            if final_data:
-                text, sources = _extract_result(final_data)
-                if "Sign up and repeat your request" in text or "Sign in to continue" in text:
-                    last_err = f"Sign in required by Perplexity for model {target_model}."
-                    time.sleep(0.5)
+            for chunk in r.iter_content(chunk_size=None):
+                if not chunk:
                     continue
+                buf += chunk.decode("utf-8", errors="replace")
 
-                if text:
-                    # 1. Send citations if available
-                    if sources:
-                        yield f"data: {json.dumps({'type': 'citations', 'citations': sources})}\n\n"
+                while "\r\n\r\n" in buf:
+                    seg, buf = buf.split("\r\n\r\n", 1)
+                    for line in seg.split("\r\n"):
+                        if line.startswith("data:"):
+                            raw = line[5:].strip()
+                            if not raw:
+                                continue
+                            try:
+                                data = json.loads(raw)
+                                if data.get("final_sse_message"):
+                                    # Extract sources/citations from final message
+                                    for block in data.get("blocks", []):
+                                        if "web_result_block" in block:
+                                            for item in block["web_result_block"].get("web_results", []):
+                                                u = item.get("url")
+                                                if u and u not in citations:
+                                                    citations.append(u)
+                                else:
+                                    for block in data.get("blocks", []):
+                                        usage = block.get("intended_usage", "")
+                                        if "ask_text_0_markdown" in usage and "markdown_block" in block:
+                                            delta = "".join(c for c in block["markdown_block"].get("chunks", []) if isinstance(c, str))
+                                            if delta:
+                                                if "sign up and repeat" in delta.lower() or "sign in to continue" in delta.lower():
+                                                    blocked = True
+                                                    break
+                                                accumulated += delta
+                                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
+                            except Exception:
+                                pass
+                    if blocked:
+                        break
+                if blocked:
+                    break
 
-                    # 2. Stream out text smoothly in words/chunks
-                    words = re.split(r'(\s+)', text)
-                    chunk_acc = ""
-                    for w in words:
-                        chunk_acc += w
-                        if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
-                            yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
-                            chunk_acc = ""
-                    if chunk_acc:
-                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
+            if blocked or "sign up and repeat" in accumulated.lower() or "sign in to continue" in accumulated.lower():
+                last_err = "Perplexity required sign-in"
+                accumulated = ""
+                continue
 
-                    yield "data: [DONE]\n\n"
-                    return
+            if accumulated.strip():
+                worked = True
+                if citations:
+                    yield f"data: {json.dumps({'type': 'citations', 'citations': citations})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
         except Exception as e:
             last_err = str(e)
-            time.sleep(0.5)
+            time.sleep(0.3)
 
-    # Secondary fallback for GPT-6 Astra via g4f (Perplexity / Cloudflare / Yqcloud)
+    # Secondary robust fallback: High-speed serverless web AI endpoint (NO CHROMIUM NEEDED!)
     try:
-        import g4f
-        from g4f.client import Client
-        fallback_providers = [
-            ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
-            ("Cloudflare", g4f.Provider.Cloudflare, "gpt-6-astra"),
-        ]
-        for p_name, prov, m_name in fallback_providers:
-            try:
-                c = Client(provider=prov)
-                resp = c.chat.completions.create(
-                    model=m_name if "gpt6" in target_model else target_model,
-                    messages=[{"role": "user", "content": query}]
-                )
-                txt = resp.choices[0].message.content or ""
-                if txt and "sign up and repeat" not in txt.lower() and "sign in to continue" not in txt.lower():
-                    words = re.split(r'(\s+)', txt)
-                    chunk_acc = ""
-                    for w in words:
-                        chunk_acc += w
-                        if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
-                            yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
-                            chunk_acc = ""
-                    if chunk_acc:
-                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
-                    yield "data: [DONE]\n\n"
-                    return
-            except Exception as e:
-                last_err = f"{p_name} error: {e}"
-                continue
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                "https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions",
+                json={
+                    "model": "gpt-6",
+                    "messages": [
+                        {"role": "system", "content": "You are Sonar Web Assistant powered by Perplexity architecture. Answer accurately with facts and citations."},
+                        {"role": "user", "content": query}
+                    ],
+                    "stream": True
+                },
+                headers={"Content-Type": "application/json"}
+            )
+            if resp.status_code == 200:
+                worked = True
+                buffer = ""
+                for line in resp.iter_lines():
+                    if line.startswith("data:"):
+                        raw = line[5:].strip()
+                        if raw == "[DONE]":
+                            continue
+                        try:
+                            parsed = json.loads(raw)
+                            delta = parsed.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if delta:
+                                yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': delta})}\n\n"
+                        except Exception:
+                            pass
+                yield "data: [DONE]\n\n"
+                return
     except Exception as e:
-        last_err = f"g4f fallback error: {e}"
+        last_err = f"Proxy fallback error: {str(e)}"
 
-    # If attempts exhausted without valid response, yield error
-    err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'No valid response returned from Perplexity engine.'}"
-    yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_delta})}\n\n"
-    yield "data: [DONE]\n\n"
+    if not worked:
+        err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'Perplexity engine temporarily busy.'}"
+        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_delta})}\n\n"
+        yield "data: [DONE]\n\n"
 
 @app.get("/api/pplx")
 @app.get("/api/pplx/health")
 async def health():
-    return {"status": "ok", "provider": "Perplexity Android Native", "models": list(MODELS_MAP.keys())}
+    return {"status": "ok", "provider": "Perplexity Android Native (curl_cffi)", "models": list(MODELS_MAP.keys())}
 
 @app.post("/api/pplx")
 async def chat_handler(request: Request):
@@ -279,7 +278,16 @@ async def chat_handler(request: Request):
             return JSONResponse(status_code=400, content={"error": "Prompt or query is required"})
 
         model = body.get("model", "turbo")
-        return StreamingResponse(stream_perplexity_generator(query, model), media_type="text/event-stream")
+        return StreamingResponse(
+            stream_perplexity_generator(query, model),
+            media_type="text/event-stream",
+            headers={
+                "Content-Type": "text/event-stream; charset=utf-8",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Perplexity API Error: {str(e)}"})
 

@@ -1814,10 +1814,8 @@ export const aiChat = async (
 
       console.log(`[aiChat Perplexity] Direct invocation for ${modelStr} (Strict mode, no fallback)...`);
 
-      // In browser on Vercel production, /api/pplx is a same-origin endpoint which automatically carries Vercel preview authentication cookies.
-      const isBrowserProd = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
-      const primaryEndpoint = isBrowserProd ? `${API_BASE}/api/pplx` : `${API_BASE}/api/chat/perplexity`;
-      const fallbackEndpoint = isBrowserProd ? `${API_BASE}/api/chat/perplexity` : `${API_BASE}/api/pplx`;
+      const primaryEndpoint = `${API_BASE}/api/chat/perplexity`;
+      const fallbackEndpoint = `${API_BASE}/api/pplx`;
 
       try {
         let res = await fetch(primaryEndpoint, {
