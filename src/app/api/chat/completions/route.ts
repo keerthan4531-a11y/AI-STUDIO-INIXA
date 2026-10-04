@@ -260,6 +260,74 @@ export async function POST(req: Request) {
 
     console.log(`[Route] Final selectedModel = "${selectedModel}"`);
 
+    // ── Route: GPT-6 Astra (Frontier Superintelligence — Free Access) ──
+    const isGPT6Astra = 
+      selectedModel === 'gpt-6-astra' ||
+      selectedModel === 'gpt-6' ||
+      selectedModel === 'gpt6-astra' ||
+      selectedModel === 'gpt6_astra' ||
+      selectedModel === 'gpt6' ||
+      selectedModel.startsWith('gpt6/') ||
+      selectedModel.startsWith('gpt-6-astra/');
+
+    if (isGPT6Astra) {
+      console.log(`[GPT-6 Astra Route] Handling request for model: ${selectedModel}`);
+      const lastUserMsg = [...formattedMessages].reverse().find((m: any) => m && m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      const host = req.headers.get('host') || 'localhost:3000';
+      const protocol = req.headers.get('x-forwarded-proto') || 'http';
+      const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
+      const targetEndpoint = isVercel ? `${protocol}://${host}/api/gpt6` : `${protocol}://${host}/api/chat/gpt6`;
+
+      try {
+        const gpt6Res = await fetch(targetEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(req.headers.get('cookie') ? { 'Cookie': req.headers.get('cookie')! } : {})
+          },
+          body: JSON.stringify({
+            prompt: promptText,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true
+          })
+        });
+
+        if (stream === true && gpt6Res.body) {
+          return new Response(gpt6Res.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await gpt6Res.json();
+        const content = data.reply || data.choices?.[0]?.message?.content || '';
+        return NextResponse.json(
+          { reply: content, choices: data.choices || [{ message: { role: 'assistant', content } }] },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[GPT-6 Astra Route Error]:`, err);
+        return NextResponse.json(
+          { error: `GPT-6 Astra error: ${err.message || err}`, reply: `⚠️ GPT-6 Astra Error: ${err.message || 'Unable to fetch response.'}` },
+          { status: 502 }
+        );
+      }
+    }
+
     // ── Route: ChatGPT Proxy (GPT-5.6 Luna) ──
     const isLunaModel = 
       selectedModel === 'gpt-5-6' || 

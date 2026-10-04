@@ -487,6 +487,46 @@ export async function POST(req: Request) {
       }
     }
 
+    // 2.4. GPT-6 Astra (Frontier Superintelligence)
+    if (model.includes("astra") || model.includes("gpt-6") || model.includes("gpt6")) {
+      try {
+        const host = req.headers.get("host") || "localhost:3000";
+        const protocol = req.headers.get("x-forwarded-proto") || "http";
+        const isVercel = process.env.VERCEL === "1" || !!process.env.VERCEL_URL;
+        const targetEndpoint = isVercel ? `${protocol}://${host}/api/gpt6` : `${protocol}://${host}/api/chat/gpt6`;
+
+        const lastUserMsg = body.messages ? [...body.messages].reverse().find((m: any) => m && m.role === 'user') : null;
+        const promptText = lastUserMsg?.content || body.message || body.prompt || "";
+
+        const gpt6Res = await fetch(targetEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(req.headers.get("cookie") ? { Cookie: req.headers.get("cookie")! } : {})
+          },
+          body: JSON.stringify({
+            prompt: promptText,
+            messages: body.messages || [{ role: "user", content: promptText }],
+            stream: stream === true
+          })
+        });
+
+        if (stream === true && gpt6Res.body) {
+          return new Response(gpt6Res.body, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive"
+            }
+          });
+        }
+        const data = await gpt6Res.json();
+        return NextResponse.json({ reply: data.reply || data.choices?.[0]?.message?.content || "", choices: data.choices });
+      } catch (e: any) {
+        console.error(`[GPT-6 Astra G4F Route] Error:`, e);
+      }
+    }
+
     // 2.5. ChatGPT Proxy (GPT-5.6 Luna & GPT-5.5 & Auto)
     if (model.includes("luna") || model.includes("gpt-5.6") || model.includes("gpt-5-6") || model.includes("gpt-5.5") || model.includes("gpt-5-5") || model.startsWith("chatgpt/")) {
       const actualLunaModel = model.includes("mini") ? "gpt-5-6-mini" : (model.includes("5.5") || model.includes("5-5")) ? "gpt-5-5" : "gpt-5-6";

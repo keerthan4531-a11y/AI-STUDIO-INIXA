@@ -2,35 +2,21 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 /**
- * Universal Perplexity Service:
- * - On Vercel: hits the native Python serverless endpoint /api/pplx (powered by curl_cffi)
- * - In Local Dev: spawns local Python bridge (api/pplx_cli.py) via py/python
- * - Strictly NO fallback: true errors are streamed directly to the UI
+ * Universal GPT-6 Astra Service:
+ * - On Vercel: hits the native Python serverless endpoint /api/gpt6
+ * - In Local Dev: spawns local Python bridge (api/gpt6_cli.py) via py/python
+ * - Real-time streaming SSE and OpenAI format support
  */
 
-export const PPLX_MODELS = [
-  { id: 'pplx-gpt6-astra', modelId: 'gpt6_astra', name: 'GPT-6 Astra (Perplexity Web)', provider: 'OpenAI' },
-  { id: 'pplx-turbo', modelId: 'turbo', name: 'Perplexity Turbo', provider: 'Perplexity AI' },
-  { id: 'pplx-gpt56-sol', modelId: 'gpt56_sol', name: 'GPT-5.6 Sol (Perplexity Web)', provider: 'OpenAI' },
-  { id: 'pplx-sonnet5', modelId: 'claude50sonnet', name: 'Claude Sonnet 5 (Perplexity Web)', provider: 'Anthropic' },
-  { id: 'pplx-opus5', modelId: 'claude50opus', name: 'Claude Opus 5 (Perplexity Web)', provider: 'Anthropic' },
-  { id: 'pplx-gemini31', modelId: 'gemini31pro_high', name: 'Gemini 3.1 Pro (Perplexity Web)', provider: 'Google' },
-  { id: 'pplx-grok45', modelId: 'grok45low', name: 'Grok 4.5 (Perplexity Web)', provider: 'xAI' },
-  { id: 'pplx-kimi3', modelId: 'kimik3', name: 'Kimi K3 (Perplexity Web)', provider: 'Moonshot' },
-  { id: 'pplx-glm52', modelId: 'glm_5_2', name: 'GLM 5.2 (Perplexity Web)', provider: 'ZAI' },
-];
-
-export async function executePerplexityStream(
+export async function executeGPT6Stream(
   prompt: string,
-  modelName: string,
   onDelta: (chunk: string) => void,
-  onCitations?: (citations: string[]) => void,
+  messages?: any[],
   forwardHeaders?: Headers | Record<string, string>
 ): Promise<string> {
   const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
-  const targetModel = modelName.replace(/^pplx[\/-]/, '').replace(/^perplexity[\/-]/, '').trim() || 'turbo';
 
-  // 1. VERCEL SERVERLESS ENVIRONMENT: Fetch native /api/pplx Python function
+  // 1. VERCEL SERVERLESS ENVIRONMENT: Fetch native /api/gpt6 Python function
   if (isVercel) {
     const getH = (k: string): string => {
       if (!forwardHeaders) return '';
@@ -39,11 +25,11 @@ export async function executePerplexityStream(
     };
 
     const incomingHost = getH('host') || getH('x-forwarded-host');
-    let host = incomingHost
+    const host = incomingHost
       ? (incomingHost.startsWith('http') ? incomingHost : `https://${incomingHost}`)
       : (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'));
 
-    const pplxEndpoint = `${host}/api/pplx`;
+    const gpt6Endpoint = `${host}/api/gpt6`;
 
     const fetchHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -58,10 +44,10 @@ export async function executePerplexityStream(
     const auth = getH('authorization');
     if (auth) fetchHeaders['Authorization'] = auth;
 
-    const res = await fetch(pplxEndpoint, {
+    const res = await fetch(gpt6Endpoint, {
       method: 'POST',
       headers: fetchHeaders,
-      body: JSON.stringify({ prompt, model: targetModel })
+      body: JSON.stringify({ prompt, messages, stream: true })
     });
 
     if (!res.ok) {
@@ -87,10 +73,7 @@ export async function executePerplexityStream(
           if (dataStr === '[DONE]') continue;
           try {
             const parsed = JSON.parse(dataStr);
-            if (parsed.type === 'citations' && parsed.citations && onCitations) {
-              onCitations(parsed.citations);
-            }
-            const delta = parsed.delta || parsed.content || parsed.text || '';
+            const delta = parsed.delta || parsed.choices?.[0]?.delta?.content || parsed.content || '';
             if (delta) {
               accumulatedText += delta;
               onDelta(delta);
@@ -101,17 +84,16 @@ export async function executePerplexityStream(
     }
 
     if (!accumulatedText.trim()) {
-      throw new Error(`Perplexity model ${targetModel} did not return any output.`);
+      throw new Error('GPT-6 Astra did not return any output.');
     }
     return accumulatedText.trim();
   }
 
-  // 2. LOCAL ENVIRONMENT: Execute local python runner (api/pplx_cli.py)
+  // 2. LOCAL ENVIRONMENT: Execute local python runner (api/gpt6_cli.py)
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(process.cwd(), 'api', 'pplx_cli.py');
-    const inputJson = JSON.stringify({ prompt, model: targetModel });
+    const scriptPath = path.join(process.cwd(), 'api', 'gpt6_cli.py');
+    const inputJson = JSON.stringify({ prompt, messages });
 
-    // Determine python command: 'py' (Windows standard) or 'python3' / 'python'
     const pythonCmd = process.platform === 'win32' ? 'py' : 'python3';
     const py = spawn(pythonCmd, ['-u', scriptPath, inputJson]);
 
@@ -130,10 +112,7 @@ export async function executePerplexityStream(
           if (dataStr === '[DONE]') continue;
           try {
             const parsed = JSON.parse(dataStr);
-            if (parsed.type === 'citations' && parsed.citations && onCitations) {
-              onCitations(parsed.citations);
-            }
-            const delta = parsed.delta || parsed.content || parsed.text || '';
+            const delta = parsed.delta || parsed.choices?.[0]?.delta?.content || parsed.content || '';
             if (delta) {
               accumulatedText += delta;
               onDelta(delta);
@@ -151,7 +130,7 @@ export async function executePerplexityStream(
       if (code !== 0 && !accumulatedText.trim()) {
         reject(new Error(stderrText || `Python process failed with exit code ${code}`));
       } else if (!accumulatedText.trim()) {
-        reject(new Error(`Perplexity model ${targetModel} returned empty response.`));
+        reject(new Error('GPT-6 Astra returned empty response.'));
       } else {
         resolve(accumulatedText.trim());
       }

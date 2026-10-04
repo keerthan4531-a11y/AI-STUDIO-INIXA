@@ -31,7 +31,22 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
 
   // ════════════════════════════════════════════════════════════════
-  // 🌟 GPT-5.6 LUNA (Default Flagship — OpenAI Proxy)
+  // 🔥 GPT-6 ASTRA (Next-Gen Flagship — 100% Free, Zero-Auth)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'gpt-6-astra',
+    label: 'GPT-6 Astra',
+    engine: 'custom',
+    modelStr: 'gpt-6-astra',
+    badge: '🔥 GPT-6 ASTRA',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#a855f7',
+    description: 'GPT-6 Astra — OpenAI Next-Gen Frontier Superintelligence & Deep Reasoning (100% Free, Zero-Auth)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // 🌟 GPT-5.6 LUNA (OpenAI Proxy)
   // ════════════════════════════════════════════════════════════════
   {
     id: 'gpt-5.6-luna',
@@ -495,10 +510,21 @@ export const AI_MODELS: AIModel[] = [
     modelStr: 'pplx/turbo',
     provider: 'perplexity',
     badge: 'LIVE WEB',
-    badgeColor: 'teal',
     icon: 'Globe',
     iconColor: '#14b8a6',
     description: 'Perplexity Turbo — Ultra-fast real-time web search with citations & verified sources (100% Free)'
+  },
+  {
+    id: 'pplx-gpt6-astra',
+    label: 'GPT-6 Astra (Perplexity Web)',
+    engine: 'custom',
+    modelStr: 'pplx/gpt6_astra',
+    provider: 'perplexity',
+    badge: 'GPT-6 WEB',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#a855f7',
+    description: 'OpenAI GPT-6 Astra augmented with live Perplexity web search & citations (100% Free)'
   },
   {
     id: 'pplx-gpt56-sol',
@@ -1214,7 +1240,7 @@ export const AI_MODELS: AIModel[] = [
 ];
 
 
-// Clear saved model on page load/refresh so it always defaults to GPT-5.6 Luna
+// Default to GPT-6 Astra
 if (typeof window !== 'undefined') {
   try {
     localStorage.removeItem('inixa_ai_model');
@@ -1231,7 +1257,7 @@ export const getSelectedModel = (): AIModel => {
       }
     } catch (e) { }
   }
-  return AI_MODELS.find(m => m.id === 'gpt-5.6-luna') || AI_MODELS[0];
+  return AI_MODELS.find(m => m.id === 'gpt-6-astra') || AI_MODELS[0];
 };
 
 export const setSelectedModel = (id: string) => {
@@ -1697,6 +1723,85 @@ export const aiChat = async (
       } catch (err: any) {
         console.error(`[aiChat ChatX Error]:`, err);
         const netErrorMsg = `\n\n❌ [ChatX Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/chatx'}`;
+        if (onChunk) onChunk(netErrorMsg);
+        return netErrorMsg;
+      }
+    } else if (model.id === 'gpt-6-astra' || modelStr === 'gpt-6-astra' || modelStr === 'gpt-6' || modelStr.startsWith('gpt-6-astra')) {
+      // ═══════════════════════════════════════════════════════════════════
+      // 🔥 GPT-6 ASTRA — FRONTIER SUPERINTELLIGENCE (MULTI-ROUTE FALLBACK)
+      // ═══════════════════════════════════════════════════════════════════
+      const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      console.log(`[aiChat GPT-6 Astra] Direct invocation for ${modelStr}...`);
+
+      const isBrowserProd = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+      const primaryEndpoint = isBrowserProd ? `${API_BASE}/api/gpt6` : `${API_BASE}/api/chat/gpt6`;
+      const fallbackEndpoint = isBrowserProd ? `${API_BASE}/api/chat/gpt6` : `${API_BASE}/api/gpt6`;
+
+      try {
+        let res = await fetch(primaryEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptText,
+            messages: conversationHistory,
+            stream: !!onChunk
+          })
+        });
+
+        if (!res.ok && (res.status === 401 || res.status === 404)) {
+          console.warn(`[aiChat GPT-6 Astra] ${primaryEndpoint} returned ${res.status}. Trying fallback: ${fallbackEndpoint}...`);
+          res = await fetch(fallbackEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: promptText,
+              messages: conversationHistory,
+              stream: !!onChunk
+            })
+          });
+        }
+
+        if (!res.ok) {
+          let errDetail = `HTTP ${res.status}: ${res.statusText}`;
+          try {
+            const data = await res.json();
+            if (data.error) errDetail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+            else if (data.message) errDetail = data.message;
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) errDetail = text;
+            } catch {}
+          }
+          const errorMsg = `\n\n❌ [GPT-6 Astra Error]: ${errDetail}`;
+          if (onChunk) onChunk(errorMsg);
+          return errorMsg;
+        }
+
+        if (onChunk && res.body) {
+          const sseReply = await handleSSEStream(res, onChunk);
+          if (sseReply && sseReply !== 'No response received from the AI model.') {
+            return sseReply;
+          }
+          const emptyMsg = `\n\n❌ [GPT-6 Astra Error]: No response received from GPT-6 Astra engine.`;
+          onChunk(emptyMsg);
+          return emptyMsg;
+        } else {
+          const data = await res.json();
+          const content = data.reply || data.choices?.[0]?.message?.content || '';
+          if (content) {
+            if (onChunk) onChunk(content);
+            return content;
+          }
+          const emptyMsg = `\n\n❌ [GPT-6 Astra Error]: Empty response received from engine.`;
+          if (onChunk) onChunk(emptyMsg);
+          return emptyMsg;
+        }
+      } catch (err: any) {
+        console.error(`[aiChat GPT-6 Astra Error]:`, err);
+        const netErrorMsg = `\n\n❌ [GPT-6 Astra Connection Error]: ${err.message || 'Failed to connect to GPT-6 endpoint'}`;
         if (onChunk) onChunk(netErrorMsg);
         return netErrorMsg;
       }

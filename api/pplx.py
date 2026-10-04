@@ -29,6 +29,9 @@ MODELS_MAP = {
     "sonar": "turbo",
     
     # OpenAI
+    "gpt6_astra": "gpt6_astra",
+    "gpt-6-astra": "gpt6_astra",
+    "gpt6": "gpt6_astra",
     "gpt56_sol": "gpt56_sol",
     "gpt-5.6-sol": "gpt56_sol",
     "gpt56_terra": "gpt56_terra",
@@ -196,7 +199,42 @@ def stream_perplexity_generator(query: str, model_name: str):
             last_err = str(e)
             time.sleep(0.5)
 
-    # If attempts exhausted without valid response, yield strict error
+    # Secondary fallback for GPT-6 Astra via g4f (Perplexity / Cloudflare / Yqcloud)
+    try:
+        import g4f
+        from g4f.client import Client
+        fallback_providers = [
+            ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
+            ("Cloudflare", g4f.Provider.Cloudflare, "gpt-6-astra"),
+            ("Yqcloud", g4f.Provider.Yqcloud, "gpt-4"),
+        ]
+        for p_name, prov, m_name in fallback_providers:
+            try:
+                c = Client(provider=prov)
+                resp = c.chat.completions.create(
+                    model=m_name if "gpt6" in target_model else target_model,
+                    messages=[{"role": "user", "content": query}]
+                )
+                txt = resp.choices[0].message.content or ""
+                if txt and "sign up and repeat" not in txt.lower() and "sign in to continue" not in txt.lower():
+                    words = re.split(r'(\s+)', txt)
+                    chunk_acc = ""
+                    for w in words:
+                        chunk_acc += w
+                        if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
+                            yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
+                            chunk_acc = ""
+                    if chunk_acc:
+                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc})}\n\n"
+                    yield "data: [DONE]\n\n"
+                    return
+            except Exception as e:
+                last_err = f"{p_name} error: {e}"
+                continue
+    except Exception as e:
+        last_err = f"g4f fallback error: {e}"
+
+    # If attempts exhausted without valid response, yield error
     err_delta = f"\n\n❌ [Perplexity Error - {target_model}]: {last_err or 'No valid response returned from Perplexity engine.'}"
     yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_delta})}\n\n"
     yield "data: [DONE]\n\n"
