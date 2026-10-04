@@ -5,13 +5,21 @@ import time
 import os
 import sys
 
+import pathlib
 # Crucial for Vercel Serverless environment where /home is read-only
 if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not sys.platform.startswith("win"):
     os.environ["HOME"] = "/tmp"
     os.environ["TMPDIR"] = "/tmp"
+    try:
+        pathlib.Path.home = staticmethod(lambda: pathlib.Path("/tmp"))
+    except Exception:
+        pass
 
 try:
+    import g4f.config
     import g4f.cookies
+    g4f.config.CONFIG_DIR = pathlib.Path("/tmp/.g4f")
+    g4f.config.COOKIES_DIR = pathlib.Path("/tmp/.g4f/cookies")
     g4f.cookies.CookiesConfig.cookies_dir = "/tmp/.g4f/cookies"
 except Exception:
     pass

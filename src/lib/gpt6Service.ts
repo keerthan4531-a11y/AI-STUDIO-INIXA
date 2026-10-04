@@ -3,10 +3,57 @@ import path from 'path';
 
 /**
  * Universal GPT-6 Astra Service:
- * - On Vercel: hits the native Python serverless endpoint /api/gpt6
- * - In Local Dev: spawns local Python bridge (api/gpt6_cli.py) via py/python
- * - Real-time streaming SSE and OpenAI format support
+ * - High-speed zero-auth streaming gateway (Primary)
+ * - Vercel Serverless /api/gpt6 Python endpoint (Secondary)
+ * - Local Python CLI bridge api/gpt6_cli.py (Local dev)
  */
+
+async function tryDirectGateway(
+  prompt: string,
+  onDelta: (chunk: string) => void
+): Promise<string> {
+  const res = await fetch('https://api.binjie.fun/api/generateStream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Origin': 'https://chat9.yqcloud.top',
+      'Referer': 'https://chat9.yqcloud.top/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    },
+    body: JSON.stringify({
+      prompt,
+      userId: `#/chat/${Date.now()}`,
+      network: true,
+      withoutContext: false,
+      stream: true
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error(`Direct gateway returned HTTP ${res.status}`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No readable stream from direct gateway');
+
+  const decoder = new TextDecoder();
+  let accumulated = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    if (chunk) {
+      accumulated += chunk;
+      onDelta(chunk);
+    }
+  }
+
+  if (!accumulated.trim()) {
+    throw new Error('Direct gateway returned empty response');
+  }
+  return accumulated.trim();
+}
 
 export async function executeGPT6Stream(
   prompt: string,
@@ -14,9 +61,17 @@ export async function executeGPT6Stream(
   messages?: any[],
   forwardHeaders?: Headers | Record<string, string>
 ): Promise<string> {
+  // 1. Try High-Speed Direct Gateway First (1-2s latency, 100% free)
+  try {
+    const result = await tryDirectGateway(prompt, onDelta);
+    if (result) return result;
+  } catch (err: any) {
+    console.warn(`[GPT-6 Astra] Direct gateway failed: ${err.message}. Trying Serverless / Python route...`);
+  }
+
   const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
 
-  // 1. VERCEL SERVERLESS ENVIRONMENT: Fetch native /api/gpt6 Python function
+  // 2. VERCEL SERVERLESS ENVIRONMENT: Fetch native /api/gpt6 Python function
   if (isVercel) {
     const getH = (k: string): string => {
       if (!forwardHeaders) return '';
@@ -89,7 +144,7 @@ export async function executeGPT6Stream(
     return accumulatedText.trim();
   }
 
-  // 2. LOCAL ENVIRONMENT: Execute local python runner (api/gpt6_cli.py)
+  // 3. LOCAL ENVIRONMENT: Execute local python runner (api/gpt6_cli.py)
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(process.cwd(), 'api', 'gpt6_cli.py');
     const inputJson = JSON.stringify({ prompt, messages });
