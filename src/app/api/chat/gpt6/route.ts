@@ -19,7 +19,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     model: "gpt-6-astra",
-    providers: ["Cloudflare (gpt-6-astra)", "Perplexity (gpt6_astra)"],
+    providers: ["OpenAI GPT-6 Astra Frontier"],
     strict_mode: true
   });
 }

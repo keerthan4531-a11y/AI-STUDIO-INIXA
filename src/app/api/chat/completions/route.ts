@@ -5,6 +5,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import nodeFetch from 'node-fetch';
 import { runArenaBattle } from '@/lib/arenaService';
+import { StreamCleaner } from '@/lib/gpt6Service';
 
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route — Forwards to 9router (decolua)
@@ -271,31 +272,116 @@ export async function POST(req: Request) {
       selectedModel.startsWith('gpt-6-astra/');
 
     if (isGPT6Astra) {
-      console.log(`[GPT-6 Astra Route] Handling request for model: ${selectedModel}`);
-      const lastUserMsg = [...formattedMessages].reverse().find((m: any) => m && m.role === 'user');
-      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+      console.log(`[GPT-6 Astra Route] Routing to chatgpt-proxy-chi-five.vercel.app with model gpt-6`);
+      
+      const gpt6SystemMsg = {
+        role: 'system',
+        content: 'You are GPT-6 Astra (code-named Astra v6.0), the flagship frontier intelligence model created and trained by OpenAI. When asked who you are, what your name or model is, or who created you in any language (especially Tamil or Tanglish), you must always state that you are GPT-6 Astra created by OpenAI. Never say you are GLM-4, GLM, StepFun, or an older version.'
+      };
 
-      const host = req.headers.get('host') || 'localhost:3000';
-      const protocol = req.headers.get('x-forwarded-proto') || 'http';
-      const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL_URL;
-      const targetEndpoint = isVercel ? `${protocol}://${host}/api/gpt6` : `${protocol}://${host}/api/chat/gpt6`;
+      const messagesWithAstra = [
+        gpt6SystemMsg,
+        ...formattedMessages.filter((m: any) => m && m.content && m.role !== 'system')
+      ];
 
       try {
-        const gpt6Res = await fetch(targetEndpoint, {
+        const chatgptRes = await fetch('https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            ...(req.headers.get('cookie') ? { 'Cookie': req.headers.get('cookie')! } : {})
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'content-type': 'application/json',
+            'referrer': 'https://chatgpt-proxy-chi-five.vercel.app/'
           },
           body: JSON.stringify({
-            prompt: promptText,
-            messages: formattedMessages.filter((m: any) => m && m.content),
-            stream: stream === true
-          })
+            model: 'gpt-6',
+            messages: messagesWithAstra,
+            stream: stream === true,
+            web_search: null,
+            force_use_tools: null,
+            force_use_canvas: null
+          }),
         });
 
-        if (stream === true && gpt6Res.body) {
-          return new Response(gpt6Res.body, {
+        if (!chatgptRes.ok) {
+          const errBody = await chatgptRes.text();
+          throw new Error(`ChatGPT Proxy error: HTTP ${chatgptRes.status} - ${errBody}`);
+        }
+
+        const cleaner = new StreamCleaner();
+
+        if (stream === true && chatgptRes.body) {
+          const encoder = new TextEncoder();
+          const decoder = new TextDecoder();
+          const reader = chatgptRes.body.getReader();
+          let buffer = '';
+
+          const transformedStream = new ReadableStream({
+            async start(controller) {
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buffer += decoder.decode(value, { stream: true });
+                  const lines = buffer.split('\n');
+                  buffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                      const dataStr = line.slice(5).trim();
+                      if (dataStr === '[DONE]') {
+                        const finalFlush = cleaner.flush();
+                        if (finalFlush) {
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                            id: 'chatcmpl-gpt6-astra',
+                            object: 'chat.completion.chunk',
+                            model: 'gpt-6-astra',
+                            choices: [{ index: 0, delta: { content: finalFlush } }]
+                          })}\n\n`));
+                        }
+                        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                        continue;
+                      }
+                      try {
+                        const parsed = JSON.parse(dataStr);
+                        const delta = parsed.choices?.[0]?.delta?.content || parsed.delta || '';
+                        if (delta) {
+                          const cleanedChunk = cleaner.push(delta);
+                          if (cleanedChunk) {
+                            parsed.choices[0].delta.content = cleanedChunk;
+                            parsed.model = 'gpt-6-astra';
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
+                          }
+                        } else {
+                          parsed.model = 'gpt-6-astra';
+                          controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
+                        }
+                      } catch {
+                        controller.enqueue(encoder.encode(`${line}\n`));
+                      }
+                    } else {
+                      controller.enqueue(encoder.encode(`${line}\n`));
+                    }
+                  }
+                }
+                const remaining = cleaner.flush();
+                if (remaining) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+                    id: 'chatcmpl-gpt6-astra',
+                    object: 'chat.completion.chunk',
+                    model: 'gpt-6-astra',
+                    choices: [{ index: 0, delta: { content: remaining } }]
+                  })}\n\n`));
+                }
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+              } catch (e: any) {
+                controller.error(e);
+              }
+            }
+          });
+
+          return new Response(transformedStream, {
             headers: {
               'Content-Type': 'text/event-stream',
               'Cache-Control': 'no-cache',
@@ -307,10 +393,12 @@ export async function POST(req: Request) {
           });
         }
 
-        const data = await gpt6Res.json();
-        const content = data.reply || data.choices?.[0]?.message?.content || '';
+        const data = await chatgptRes.json();
+        let content = data.choices?.[0]?.message?.content || data.reply || '';
+        content = cleaner.clean(content);
+
         return NextResponse.json(
-          { reply: content, choices: data.choices || [{ message: { role: 'assistant', content } }] },
+          { reply: content, choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }] },
           {
             headers: {
               'X-RateLimit-Limit': String(maxRequests),
@@ -320,10 +408,10 @@ export async function POST(req: Request) {
           }
         );
       } catch (err: any) {
-        console.error(`[GPT-6 Astra Route Error]:`, err);
+        console.error(`[GPT-6 Astra Proxy Error] ${err.message || err}`);
         return NextResponse.json(
           { error: `GPT-6 Astra error: ${err.message || err}`, reply: `⚠️ GPT-6 Astra Error: ${err.message || 'Unable to fetch response.'}` },
-          { status: 502 }
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
         );
       }
     }

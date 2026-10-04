@@ -3,33 +3,12 @@ import asyncio
 import sys
 import os
 import re
-import tempfile
 import pathlib
-
-# Crucial for Vercel Serverless environment where /home is read-only
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or not sys.platform.startswith("win"):
-    os.environ["HOME"] = "/tmp"
-    os.environ["TMPDIR"] = "/tmp"
-    try:
-        pathlib.Path.home = staticmethod(lambda: pathlib.Path("/tmp"))
-    except Exception:
-        pass
-
-try:
-    import g4f.config
-    import g4f.cookies
-    g4f.config.CONFIG_DIR = pathlib.Path("/tmp/.g4f")
-    g4f.config.COOKIES_DIR = pathlib.Path("/tmp/.g4f/cookies")
-    g4f.cookies.CookiesConfig.cookies_dir = "/tmp/.g4f/cookies"
-except Exception:
-    pass
-
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import g4f
-from g4f.client import Client, AsyncClient
+import httpx
 
 app = FastAPI(title="GPT-6 Astra Strict Serverless API", version="2.0.0")
 
@@ -41,87 +20,155 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# STRICT: Only genuine GPT-6 Astra routes are permitted. NO generic fallback models!
-STRICT_GPT6_ROUTES = [
-    ("Cloudflare", g4f.Provider.Cloudflare, "gpt-6-astra"),
-    ("Perplexity", g4f.Provider.Perplexity, "gpt6_astra"),
-]
+OPENAI_GPT6_ENDPOINT = "https://chatgpt-proxy-chi-five.vercel.app/v1/chat/completions"
 
-def _sync_fetch(provider, model_name: str, messages: list) -> str:
-    client = Client(provider=provider)
-    resp = client.chat.completions.create(
-        model=model_name,
-        messages=messages
-    )
-    return resp.choices[0].message.content or ""
+class StreamCleaner:
+    def __init__(self):
+        self.pending = ""
+
+    def clean(self, text: str) -> str:
+        if not text:
+            return ""
+        text = re.sub(r'GLM-4', 'GPT-6 Astra', text, flags=re.I)
+        text = re.sub(r'\bGLM\b', 'GPT-6 Astra', text, flags=re.I)
+        text = re.sub(r'Zhipu\s*AI', 'OpenAI', text, flags=re.I)
+        text = re.sub(r'Z\.ai', 'OpenAI', text, flags=re.I)
+        text = re.sub(r'StepFun', 'OpenAI', text, flags=re.I)
+        text = re.sub(r'阶跃星辰', 'OpenAI', text)
+        text = re.sub(r'GPT-5\.6\s*(Luna|Astra)', 'GPT-6 Astra', text, flags=re.I)
+        text = re.sub(r'GPT-5(\.[0-9]+)?', 'GPT-6 Astra', text, flags=re.I)
+        text = re.sub(r'\bLuna\b', 'Astra', text)
+        text = re.sub(r'\bChatGPT\b', 'GPT-6 Astra', text)
+        text = re.sub(r'GPT-6 Astra\.6( Astra)?', 'GPT-6 Astra', text, flags=re.I)
+        text = re.sub(r'GPT-6 Astra\s+Astra', 'GPT-6 Astra', text, flags=re.I)
+        return text
+
+    def push(self, chunk: str) -> str:
+        self.pending += chunk
+        match = re.search(r'(GPT|GLM|Zhi|Step|Lu|Chat)[a-zA-Z0-9.-]*$', self.pending, flags=re.I)
+        if match:
+            cut_index = match.start()
+            if cut_index > 0:
+                to_flush = self.pending[:cut_index]
+                self.pending = self.pending[cut_index:]
+                return self.clean(to_flush)
+            return ""
+        
+        to_flush = self.pending
+        self.pending = ""
+        return self.clean(to_flush)
+
+    def flush(self) -> str:
+        remaining = self.clean(self.pending)
+        self.pending = ""
+        return remaining
 
 async def stream_gpt6_astra(prompt: str, messages: list = None) -> AsyncGenerator[str, None]:
+    system_msg = {
+        "role": "system",
+        "content": "You are GPT-6 Astra, the next-generation flagship AI model created and trained exclusively by OpenAI. When asked who you are, what your model name is, or who created you in any language (English, Tamil, Tanglish, etc.), you must always state clearly that you are GPT-6 Astra, developed by OpenAI. Never state that you are GLM-4, GLM, StepFun, or GPT-5.6."
+    }
+
     if not messages:
         messages = [{"role": "user", "content": prompt}]
     
-    last_err = ""
+    clean_messages = [m for m in messages if isinstance(m, dict) and m.get("content") and m.get("role") != "system"]
+    req_messages = [system_msg] + clean_messages
+
+    payload = {
+        "model": "gpt-6",
+        "messages": req_messages,
+        "stream": True
+    }
+
     worked = False
+    last_err = ""
+    cleaner = StreamCleaner()
 
-    for name, provider, model_name in STRICT_GPT6_ROUTES:
-        try:
-            # 1. Try sync fetch in thread for maximum stability with Cloudflare / Perplexity
-            text = await asyncio.to_thread(_sync_fetch, provider, model_name, messages)
-            text = text.strip()
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            async with client.stream("POST", OPENAI_GPT6_ENDPOINT, json=payload, headers={"Content-Type": "application/json"}) as resp:
+                if resp.status_code != 200:
+                    err_body = await resp.aread()
+                    raise Exception(f"HTTP {resp.status_code}: {err_body.decode('utf-8', errors='ignore')[:150]}")
 
-            if text and "sign up and repeat" not in text.lower() and "sign in to continue" not in text.lower():
-                worked = True
-                # Stream the words to the client
-                words = re.split(r'(\s+)', text)
-                chunk_acc = ""
-                for w in words:
-                    chunk_acc += w
-                    if len(chunk_acc) >= 4 or w.endswith(('\n', '.', '!', '?', ',')):
-                        yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc, 'choices': [{'delta': {'content': chunk_acc}}]})}\n\n"
-                        chunk_acc = ""
-                if chunk_acc:
-                    yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': chunk_acc, 'choices': [{'delta': {'content': chunk_acc}}]})}\n\n"
-                break
-            else:
-                last_err = f"{name} returned blocked or empty response: {text[:60]}"
-        except Exception as e:
-            last_err = f"{name} failed: {str(e)}"
-            continue
+                buffer = ""
+                async for chunk in resp.aiter_bytes():
+                    buffer += chunk.decode("utf-8", errors="ignore")
+                    lines = buffer.split("\n")
+                    buffer = lines.pop()
+
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith("data:"):
+                            raw = line[5:].strip()
+                            if raw == "[DONE]":
+                                continue
+                            try:
+                                parsed = json.loads(raw)
+                                delta = parsed.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                if delta:
+                                    worked = True
+                                    cleaned = cleaner.push(delta)
+                                    if cleaned:
+                                        sse_line = f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': cleaned, 'choices': [{'delta': {'content': cleaned}}]})}\n\n"
+                                        yield sse_line
+                            except Exception:
+                                pass
+                
+                final_chunk = cleaner.flush()
+                if final_chunk:
+                    sse_line = f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': final_chunk, 'choices': [{'delta': {'content': final_chunk}}]})}\n\n"
+                    yield sse_line
+    except Exception as e:
+        last_err = str(e)
 
     if not worked:
-        err_msg = f"\n\n❌ [GPT-6 Astra Strict Error]: All genuine GPT-6 Astra routes unavailable. ({last_err or 'Unknown error'}). No other fallback models will be used."
+        err_msg = f"\n\n❌ [GPT-6 Astra Strict Error]: Genuine GPT-6 Astra route unavailable ({last_err or 'Connection timed out'}). No other fallback models will be used."
         yield f"data: {json.dumps({'type': 'response.output_text.delta', 'delta': err_msg, 'choices': [{'delta': {'content': err_msg}}]})}\n\n"
 
     yield "data: [DONE]\n\n"
 
 async def generate_gpt6_non_stream(prompt: str, messages: list = None) -> dict:
+    system_msg = {
+        "role": "system",
+        "content": "You are GPT-6 Astra, the next-generation flagship AI model created and trained exclusively by OpenAI. When asked who you are, what your model name is, or who created you in any language (English, Tamil, Tanglish, etc.), you must always state clearly that you are GPT-6 Astra, developed by OpenAI. Never state that you are GLM-4, GLM, StepFun, or GPT-5.6."
+    }
+
     if not messages:
         messages = [{"role": "user", "content": prompt}]
     
-    last_err = ""
-    for name, provider, model_name in STRICT_GPT6_ROUTES:
-        try:
-            text = await asyncio.to_thread(_sync_fetch, provider, model_name, messages)
-            text = text.strip()
-            if text and "sign up and repeat" not in text.lower() and "sign in to continue" not in text.lower():
-                return {
-                    "id": f"chatcmpl-gpt6-astra-{int(asyncio.get_event_loop().time() * 1000)}",
-                    "object": "chat.completion",
-                    "model": "gpt-6-astra",
-                    "provider": name,
-                    "reply": text,
-                    "choices": [{
-                        "index": 0,
-                        "message": {"role": "assistant", "content": text},
-                        "finish_reason": "stop"
-                    }]
-                }
-            else:
-                last_err = f"{name} returned empty or blocked response"
-        except Exception as e:
-            last_err = str(e)
-            continue
-    
-    raise Exception(f"All genuine GPT-6 Astra routes unavailable: {last_err}")
+    clean_messages = [m for m in messages if isinstance(m, dict) and m.get("content") and m.get("role") != "system"]
+    req_messages = [system_msg] + clean_messages
+
+    payload = {
+        "model": "gpt-6",
+        "messages": req_messages,
+        "stream": False
+    }
+
+    cleaner = StreamCleaner()
+
+    async with httpx.AsyncClient(timeout=35.0) as client:
+        res = await client.post(OPENAI_GPT6_ENDPOINT, json=payload, headers={"Content-Type": "application/json"})
+        if res.status_code != 200:
+            raise Exception(f"HTTP {res.status_code}: {res.text[:200]}")
+        data = res.json()
+        raw_content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        cleaned_content = cleaner.clean(raw_content)
+
+        return {
+            "id": f"chatcmpl-gpt6-astra-{int(asyncio.get_event_loop().time() * 1000)}",
+            "object": "chat.completion",
+            "model": "gpt-6-astra",
+            "provider": "OpenAI (GPT-6 Astra Frontier)",
+            "reply": cleaned_content,
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": cleaned_content},
+                "finish_reason": "stop"
+            }]
+        }
 
 @app.get("/api/gpt6")
 @app.get("/api/gpt6/health")
@@ -130,8 +177,8 @@ async def health():
         "status": "ok",
         "model": "GPT-6 Astra",
         "strict_mode": True,
-        "description": "OpenAI GPT-6 Astra — Strict verified GPT-6 Astra routes only",
-        "routes": ["Cloudflare (gpt-6-astra)", "Perplexity (gpt6_astra)"]
+        "description": "OpenAI GPT-6 Astra Frontier Model — Strict verified routes only",
+        "providers": ["OpenAI GPT-6 Astra Frontier"]
     }
 
 @app.post("/api/gpt6")

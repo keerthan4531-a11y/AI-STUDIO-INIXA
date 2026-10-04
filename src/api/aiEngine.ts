@@ -1735,9 +1735,8 @@ export const aiChat = async (
 
       console.log(`[aiChat GPT-6 Astra] Direct invocation for ${modelStr}...`);
 
-      const isBrowserProd = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
-      const primaryEndpoint = isBrowserProd ? `${API_BASE}/api/gpt6` : `${API_BASE}/api/chat/gpt6`;
-      const fallbackEndpoint = isBrowserProd ? `${API_BASE}/api/chat/gpt6` : `${API_BASE}/api/gpt6`;
+      const primaryEndpoint = `${API_BASE}/api/chat/gpt6`;
+      const fallbackEndpoint = `${API_BASE}/api/gpt6`;
 
       try {
         let res = await fetch(primaryEndpoint, {
