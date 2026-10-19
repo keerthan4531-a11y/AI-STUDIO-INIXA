@@ -1,185 +1,189 @@
-# Inixa Studio
+<div align="center">
 
-**Unified AI Intelligence Workspace** — Chat, Image, Video, Music, Research, Coding & more in one place.
+# ⚡ Inixa Studio
 
-Version **8.5 Production**  
-Live: [ai-studio-inixa.vercel.app](https://ai-studio-inixa.vercel.app)
+### The Unified AI Intelligence Workspace
 
----
+**Chat · Image · Video · Music · Research · Code — all in one place**
 
-## Overview
+[![Live Demo](https://img.shields.io/badge/Live-ai--studio--inixa.vercel.app-indigo?style=for-the-badge&logo=vercel)](https://ai-studio-inixa.vercel.app)
+[![Version](https://img.shields.io/badge/Version-8.5_Production-blueviolet?style=for-the-badge)](https://github.com/keerthan4531-a11y/AI-STUDIO-INIXA)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![Capacitor](https://img.shields.io/badge/Android-Capacitor_8-3DD68C?style=for-the-badge&logo=android)](https://capacitorjs.com)
 
-Inixa Studio is a full-featured AI creative platform built with modern web technologies. It combines multi-model conversational AI, document intelligence, generative media tools, research agents, and a coding workspace into a single polished interface — available on web and Android.
+<br/>
 
----
+**One workspace. Every AI superpower.**
 
-## Features
+[🚀 Open Live App](https://ai-studio-inixa.vercel.app) · [📦 View Source](https://github.com/keerthan4531-a11y/AI-STUDIO-INIXA)
 
-| Module | Description |
-|--------|-------------|
-| **Neural Chat** | Multi-model chat (Grok, GPT, Claude, Gemini and more) with streaming responses |
-| **Arena** | Side-by-side dual LLM comparison |
-| **Deep Research** | Automated multi-step research agent with web access |
-| **Web Auto-Pilot** | Browser automation agent (Beta) |
-| **PDF Chat (RAG)** | Upload and query documents with retrieval-augmented generation |
-| **NOTE-IX** | AI-powered notes studio |
-| **Imagine** | High-quality text-to-image generation |
-| **Video** | Text-to-video generation |
-| **Neural Music** | AI music generation (Suno-style) |
-| **Voice** | Voice assistant with TTS / transcription |
-| **Vibe Studio** | Desktop coding workspace with live previews |
-| **Claude Code** | CLI setup & integration helpers |
-| **API Console** | Developer tools and API key management |
-| **Artifacts** | Interactive code sandboxes, charts & previews |
-| **Android App** | Native Capacitor wrapper + APK distribution |
-
-Additional ecosystem apps:
-- **Echo Music** — Ad-free, offline-capable music player (APK)
-- **Inixa AI Companion** — Mobile version of the studio (APK)
+</div>
 
 ---
 
-## Tech Stack
+## ✨ What is Inixa?
 
-**Frontend**
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS + Framer Motion
-- Radix UI primitives
+Inixa Studio is a **premium all-in-one AI platform** that brings together conversational intelligence, generative media, deep research, and coding tools into a single beautifully designed interface.
 
-**AI & Backend**
-- Vercel AI SDK
-- Multiple model providers & free LLM proxies
-- Document parsing (PDF, DOCX, etc.)
-- Web search / scrape utilities
-- Presenton integration (presentations)
-
-**Mobile**
-- Capacitor 8 (Android)
-- App ID: `com.inixa.app`
-
-**Infra / Tooling**
-- Docker Compose (free LLM API proxies)
-- Firebase config present
-- Vercel deployment ready
+Built for creators, students, developers and power users who want **everything AI** without jumping between 10 different apps.
 
 ---
 
-## Project Structure (High Level)
+## 🧠 Core Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 💬 Intelligence
+- **Neural Chat** — Multi-model streaming (Grok, GPT, Claude, Gemini…)
+- **Arena** — Side-by-side dual LLM battles
+- **Deep Research** — Autonomous multi-step research agent
+- **Web Auto-Pilot** — Browser automation (Beta)
+- **PDF Chat (RAG)** — Talk to your documents
+- **NOTE-IX** — AI-powered notes studio
+
+</td>
+<td width="50%">
+
+### 🎨 Creation
+- **Imagine** — High-fidelity text-to-image
+- **Video** — Text-to-video generation
+- **Neural Music** — AI music studio (Suno-style)
+- **Voice** — Voice assistant + TTS
+- **Artifacts** — Live code sandboxes & charts
+- **Vibe Studio** — Elite desktop coding workspace
+
+</td>
+</tr>
+</table>
+
+### 🛠️ Developer & Mobile
+- **API Console** — Keys, stats & developer tools
+- **Claude Code** — CLI setup helpers
+- **Android APK** — Native Capacitor app ready to install
+- **Echo Music** — Bonus ad-free music player APK
+
+---
+
+## 🖼 Preview
+
+> Dark glass UI · Smooth animations · Desktop + Mobile optimized
 
 ```
+┌─────────────────────────────────────────────────────┐
+│  Inixa  │  Chat  Arena  Research  Imagine  Video … │
+├─────────┴───────────────────────────────────────────┤
+│                                                     │
+│     ✨  Multi-model chat with streaming replies     │
+│     🎨  Image & Video generation side-by-side       │
+│     🎵  Neural Music + Voice tools                  │
+│     📄  PDF RAG · Deep Research · Auto-Pilot        │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technologies |
+|-------|--------------|
+| **Frontend** | Next.js 16 · React 19 · TypeScript · Tailwind CSS · Framer Motion · Radix UI |
+| **AI** | Vercel AI SDK · Multi-provider routing · Document parsing · Web search/scrape |
+| **Mobile** | Capacitor 8 (`com.inixa.app`) |
+| **Infra** | Vercel · Docker Compose (free LLM proxies) · Firebase config |
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone
+git clone https://github.com/keerthan4531-a11y/AI-STUDIO-INIXA.git
+cd AI-STUDIO-INIXA
+
+# 2. Install
+npm install
+
+# 3. Run
+npm run dev
+```
+
+Open **[http://localhost:3000](http://localhost:3000)** and start creating.
+
+<details>
+<summary><b>📦 More commands</b></summary>
+
+```bash
+# Production build
+npm run build && npm start
+
+# Android (after web build)
+npx cap sync android
+npx cap open android
+
+# Optional: free LLM proxy stack
+docker compose up -d
+```
+
+</details>
+
+---
+
+## 📂 Project Structure
+
+```text
 AI-STUDIO-INIXA/
 ├── src/
-│   ├── app/                 # Next.js App Router pages & API routes
-│   │   ├── (chat)/
-│   │   ├── api/             # chat, generate-image, suno, tts, web-search, etc.
-│   │   ├── admin/
+│   ├── app/                  # Pages + API routes
+│   │   ├── api/              # chat · image · video · music · research …
 │   │   └── ...
-│   ├── components/          # UI + feature modules
+│   ├── components/           # UI + Agents
 │   │   ├── ChatInterface.tsx
-│   │   ├── Generators.tsx   # Image & Video
+│   │   ├── Generators.tsx
 │   │   ├── MusicStudio.tsx
 │   │   ├── DeepResearchAgent.tsx
 │   │   ├── AutoPilotAgent.tsx
-│   │   ├── Sidebar.tsx
-│   │   ├── vibe/            # Vibe Code Studio
+│   │   ├── vibe/             # Vibe Code Studio
 │   │   └── ...
-│   ├── api/                 # Client-side AI engine helpers
-│   ├── lib/
-│   └── utils/
-├── android/                 # Capacitor Android project
-├── api/                     # Standalone Python helpers (gpt6, pplx, etc.)
-├── inixa-veo-backend/
-├── docker-compose.yml       # Free LLM proxy services
+│   ├── lib/ & utils/
+├── android/                  # Capacitor Android project
+├── docker-compose.yml        # Free LLM proxies + Presenton
 ├── capacitor.config.ts
 └── package.json
 ```
 
 ---
 
-## Getting Started
+## 📱 Mobile Apps
 
-### Prerequisites
-- Node.js 18+
-- npm / yarn / pnpm / bun
-- (Optional) Docker — for local free LLM proxy stack
+| App | Description | Size |
+|-----|-------------|------|
+| **Inixa AI Companion** | Full studio wrapped as native Android app | ~4 MB |
+| **Echo Music** | Ad-free, offline music player with lossless engine | ~82 MB |
 
-### Install & Run
-
-```bash
-# Clone
-git clone https://github.com/keerthan4531-a11y/AI-STUDIO-INIXA.git
-cd AI-STUDIO-INIXA
-
-# Install dependencies
-npm install
-
-# Development (Next.js + Vibe engine)
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Build
-
-```bash
-npm run build
-npm start
-```
-
-### Android (Capacitor)
-
-```bash
-# After building the web assets
-npx cap sync android
-npx cap open android
-```
-
-The production web app is pointed at `https://ai-studio-inixa.vercel.app` in `capacitor.config.ts`.
-
-### Docker (Optional Free LLM Proxies)
-
-```bash
-docker compose up -d
-```
-
-See `docker-compose.yml` for services (Qwen, Kimi, GLM, Step, Spark, Metaso, Presenton).
+Both available as direct APKs from the in-app **About** section.
 
 ---
 
-## Environment / Configuration Notes
+## ⚠️ Notes
 
-- Model selection and some keys are managed at runtime / via UI.
-- Local storage is used heavily for sessions, user data and chat history.
-- Free / proxy-based model access is used in several places — reliability depends on upstream providers.
-- Review `.gitignore` and never commit real secrets or tokens.
-
----
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Next.js + Vibe engine concurrently |
-| `npm run build` | Production build |
-| `npm start` | Start production server |
-| `npm run lint` | ESLint |
-| `npm run vibe-engine` | Run Vibe Studio backend only |
+- Some models rely on free / proxy providers — availability can vary.
+- Local storage is used for sessions and chat history.
+- Never commit real API keys or tokens.
+- Experimental features (Auto-Pilot etc.) may require extra setup.
 
 ---
 
-## Author
+<div align="center">
 
-Built by **keerthan** ([@keerthan4531-a11y](https://github.com/keerthan4531-a11y))  
-AI/ML Engineer · Full Stack Developer
+### Built with ⚡ by **keerthan**
 
----
+[GitHub](https://github.com/keerthan4531-a11y) · [Live App](https://ai-studio-inixa.vercel.app)
 
-## License
+**Inixa Studio** — One workspace. Every AI superpower.
 
-Private / All rights reserved (unless otherwise stated by the author).
-
----
-
-> **Note:** This README documents the current production feature set of Inixa Studio. Some experimental modules (Auto-Pilot, certain free providers) may change or require additional setup.
+</div>
