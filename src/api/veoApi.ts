@@ -1,69 +1,29 @@
-// veoApi.ts — v11.0 (Cloudflare Worker backend)
-//
-// v11 UPGRADES:
-//   • Switched to Cloudflare Worker backend (faster, same-network as veoaifree.com)
-//   • Exponential backoff polling (12s → 45s) with ±7.5% jitter
-//   • _mock detection — shorter wait if VEO rate-limited
-//   • Reduced initial wait to 75s
-//   • Cleaner error messages per failure type
-
-import { Capacitor, CapacitorHttp } from '@capacitor/core';
-
-let IS_CAP = false;
-try { IS_CAP = Capacitor.isNativePlatform(); } catch { }
-
-const CLOUD_BACKEND = 'https://inixa-veo-backend.vercel.app';
-
-// ── Timing tuned from VEO's actual behavior ──────────────────
-const INITIAL_WAIT = 75;       // seconds before first poll (was 85)
-const BASE_POLL_INTERVAL = 12_000; // start at 12s, grows exponentially
-const MAX_POLL_INTERVAL = 45_000; // cap at 45s
-const MAX_POLLS = 20;     // 20 polls × avg 25s ≈ 8 min window
-const BACKOFF_FACTOR = 1.4;    // 12 → 16.8 → 23.5 → 33 → 45
+// veoApi.ts — Aritek Sora v1.9.3 High-Speed Real Video Generator Client
 
 export type AspectRatio =
   | 'VIDEO_ASPECT_RATIO_PORTRAIT'
   | 'VIDEO_ASPECT_RATIO_LANDSCAPE'
   | 'VIDEO_ASPECT_RATIO_SQUARE';
 
-// ── HTTP helper ──────────────────────────────────────────────────────────────
+export type VideoModelType =
+  | 'auto'
+  | 'aritek-sora'
+  | 'sora-2'
+  | 't2v-ultra';
 
-async function post(endpoint: string, body: unknown, signal?: AbortSignal): Promise<any> {
-  const url = CLOUD_BACKEND + endpoint;
-
-  if (IS_CAP) {
-    const r = await CapacitorHttp.post({
-      url,
-      headers: { 'Content-Type': 'application/json' },
-      data: body,
-      connectTimeout: 120_000,
-      readTimeout: 120_000,
-    });
-    return typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
-  }
-
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  });
-
-  if (!r.ok) {
-    const text = await r.text().catch(() => '');
-    throw new Error(`Backend ${r.status}: ${text.slice(0, 80)}`);
-  }
-  return r.json();
+export interface GenerateVideoOptions {
+  model?: VideoModelType | string;
+  referenceImg?: string | null;
+  duration?: number;
+  negativePrompt?: string;
+  seed?: number;
 }
 
-// ── Delay with jitter (avoids thundering herd) ───────────────────────────────
-
-function jitteredDelay(baseMs: number): number {
-  const jitter = baseMs * 0.15 * (Math.random() - 0.5); // ±7.5%
-  return Math.round(baseMs + jitter);
+export interface GenerateVideoResult {
+  url: string;
+  engineUsed?: string;
+  durationSeconds?: number;
 }
-
-// ── Main export ──────────────────────────────────────────────────────────────
 
 export async function generateVideo(
   prompt: string,
@@ -72,107 +32,83 @@ export async function generateVideo(
   onStatus: (msg: string) => void,
   onProgress: (pct: number) => void,
   signal?: AbortSignal,
-): Promise<{ url: string }> {
+  options?: GenerateVideoOptions,
+): Promise<GenerateVideoResult> {
 
-  // ── Step 1: Kick off generation ──────────────────────────────────────────
-  onStatus('🎬 Connecting to VEO Engine...');
-  onProgress(3);
+  onStatus('🎬 Connecting to Aritek Sora v1.9.3 Video Engine...');
+  onProgress(10);
 
-  const genData = await post('/api/generate', { prompt, aspectRatio }, signal);
-  if (!genData?.success) throw new Error(genData?.error || 'Generation request failed');
-
-  const taskId = genData.taskId as string;
-  const sceneData = genData.sceneData as string;
-  const sceneHash = genData.sceneHash as string | undefined;
-  const isMock = !!genData._mock;
-
-  console.log('[VEO v10] taskId:', taskId, '| sceneData:', sceneData?.length ?? 0, 'B | mock:', isMock);
-
-  // v10: If server returned a mock (rate limited), use shorter wait
-  const waitTime = isMock ? 30 : INITIAL_WAIT;
-
-  // ── Step 2: Initial wait ─────────────────────────────────────────────────
-  onStatus('🎨 VEO is rendering your video...');
-  onProgress(8);
-
-  const phases = [
-    { label: 'Initializing Neural Core', end: 0.15 },
-    { label: 'Loading VEO 3.1 Model', end: 0.30 },
-    { label: 'Allocating GPU Resources', end: 0.50 },
-    { label: 'Processing Video Frames', end: 0.75 },
-    { label: 'Applying Cinematic Effects', end: 1.00 },
-  ];
-
-  for (let i = 0; i < waitTime; i++) {
-    if (signal?.aborted) throw new Error('Cancelled');
-    const ratio = i / waitTime;
-    const pct = 8 + ratio * 40; // 8% → 48%
-    const phase = phases.find(p => ratio < p.end) || phases[phases.length - 1];
-    onStatus(`⚙️ ${phase.label}... (${i + 1}/${waitTime}s)`);
-    onProgress(pct);
-    await new Promise(r => setTimeout(r, 1000));
-  }
-
-  // ── Step 3: Exponential backoff polling ──────────────────────────────────
-  let pollInterval = BASE_POLL_INTERVAL;
-  let consecutiveEmpty = 0;
-
-  for (let i = 0; i < MAX_POLLS; i++) {
-    if (signal?.aborted) throw new Error('Cancelled');
-
-    const pct = Math.min(48 + (i / MAX_POLLS) * 50, 98);
-    onStatus(`⏳ Checking render status... (poll ${i + 1}/${MAX_POLLS})`);
-    onProgress(pct);
-
-    let pollData: any;
-    try {
-      pollData = await post('/api/poll', { taskId, sceneData, sceneHash }, signal);
-    } catch (e: any) {
-      console.warn('[VEO v10] Poll network error:', e.message);
-      await new Promise(r => setTimeout(r, jitteredDelay(pollInterval)));
-      pollInterval = Math.min(pollInterval * BACKOFF_FACTOR, MAX_POLL_INTERVAL);
-      continue;
+  let progress = 10;
+  const progressTimer = setInterval(() => {
+    if (signal?.aborted) {
+      clearInterval(progressTimer);
+      return;
     }
-
-    const status = pollData?.status as string;
-    console.log(
-      `[VEO v10] Poll ${i + 1} →`, status,
-      pollData?._retried ? '(retried)' : '',
-      pollData?._rateLimit ? '(RL)' : '',
-    );
-
-    // ── SUCCESS ────────────────────────────────────────────────────────────
-    if (status === 'completed' && pollData?.videoUrl) {
-      onProgress(100);
-      onStatus('✅ Video ready!');
-      const rawUrl = (pollData.videoUrl as string).replace(/\/videos\//g, '/video/');
-      return { url: rawUrl };
+    if (progress < 30) {
+      progress += 6;
+      onStatus('⚡ Generating Zero-Auth Token & Rotating Device-Id...');
+    } else if (progress < 60) {
+      progress += 5;
+      onStatus('🏎️ Synthesizing High-Speed Diffusion Video Frames...');
+    } else if (progress < 85) {
+      progress += 4;
+      onStatus('✨ Applying Sora Temporal Motion & AAC Audio...');
+    } else if (progress < 95) {
+      progress += 2;
+      onStatus('🎞️ Finalizing & Streaming 4K MP4 Video...');
     }
+    onProgress(Math.min(progress, 96));
+  }, 400);
 
-    // ── HARD ERROR — don't retry ───────────────────────────────────────────
-    if (status === 'error') {
-      const errCode = pollData?.error || '';
-      if (errCode === 'sceneData_invalid' || errCode === 'sceneData_corrupted') {
-        throw new Error('Video data was lost in transit. Please try generating again.');
+  try {
+    const response = await fetch('/api/generate-video', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt,
+        aspectRatio,
+        model: options?.model || 'aritek-sora',
+        duration: options?.duration || 5,
+        negativePrompt: options?.negativePrompt,
+      }),
+      signal,
+    });
+
+    clearInterval(progressTimer);
+
+    if (!response.ok) {
+      let errorMsg = 'Video generation failed';
+      try {
+        const errJson = await response.json();
+        if (errJson?.error) errorMsg = errJson.error;
+      } catch {
+        const errText = await response.text().catch(() => '');
+        if (errText) errorMsg = errText.slice(0, 100);
       }
-      throw new Error(pollData?.message || pollData?.error || 'Video generation failed');
+      throw new Error(errorMsg);
     }
 
-    // ── Still rendering — apply backoff ────────────────────────────────────
-    if (pollData?._retried) {
-      // Server already did a retry and still empty → double the wait
-      consecutiveEmpty++;
-      if (consecutiveEmpty >= 3) {
-        // 3 consecutive empties after retry = likely stuck
-        console.warn('[VEO v10] 3 consecutive empty polls — VEO may have dropped task');
-      }
-    } else {
-      consecutiveEmpty = 0;
+    const data = await response.json();
+    if (!data?.videoUrl) {
+      throw new Error(data?.error || 'No video was returned from the engine');
     }
 
-    await new Promise(r => setTimeout(r, jitteredDelay(pollInterval)));
-    pollInterval = Math.min(pollInterval * BACKOFF_FACTOR, MAX_POLL_INTERVAL);
+    onProgress(100);
+    onStatus('✅ Real MP4 Video Generated Successfully!');
+
+    return {
+      url: data.videoUrl,
+      engineUsed: data.engineUsed || 'aritek-sora',
+      durationSeconds: data.durationSeconds || 5,
+    };
+
+  } catch (err: any) {
+    clearInterval(progressTimer);
+    if (signal?.aborted) {
+      throw new Error('Generation cancelled');
+    }
+    throw err;
   }
-
-  throw new Error('Timeout — VEO took too long. Please try again.');
 }

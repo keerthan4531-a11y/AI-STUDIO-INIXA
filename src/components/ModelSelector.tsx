@@ -11,11 +11,12 @@ export function ModelIcon({ model, active }: { model: AIModel; active: boolean }
   const size = 20;
   const color = active ? "white" : (model.iconColor || "currentColor");
   
+  if (model.label.toLowerCase().includes('muse')) return <MetaLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('grok')) return <GrokLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('gemini')) return <GeminiLogo size={size} />;
   if (model.label.toLowerCase().includes('claude')) return <ClaudeLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('gpt') || model.label.toLowerCase().includes('openai')) return <OpenAILogo size={size} color={color} />;
-  if (model.label.toLowerCase().includes('meta') || model.label.toLowerCase().includes('llama')) return <MetaLogo size={size} color={color} />;
+  if (model.label.toLowerCase().includes('meta') || model.label.toLowerCase().includes('llama') || model.label.toLowerCase().includes('sam')) return <MetaLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('baidu') || model.label.toLowerCase().includes('ernie')) return <BaiduLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('deepseek')) return <DeepSeekLogo size={size} color={color} />;
   if (model.label.toLowerCase().includes('kimi')) return <KimiLogo size={size} />;
@@ -49,6 +50,8 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
   
   const filteredModels = AI_MODELS.filter(m => {
     if (filter === 'all') return true;
+    if (filter === 'muse') return m.id.startsWith('muse-') || m.id.startsWith('sam-');
+    if (filter === 'agnes') return m.id.startsWith('agnes-');
     if (m.id.startsWith('gpt-6-astra') || m.id.startsWith('gpt-5.6-luna') || m.id.startsWith('grok-4.6')) return true;
     if (filter === 'puter') return m.engine === 'puter';
     if (filter === 'chinese') return m.badge === 'CHINESE' || m.badge === 'AGGREGATOR' || m.badge === 'COZE' || m.engine.endsWith('-free') || m.engine === 'parallel-chat' || m.engine === 'coze-proxy';
@@ -89,6 +92,8 @@ export function ModelSelector({ currentModel, onSelect, onClose }: {
         <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto hide-scrollbar bg-white/[0.02] border-b border-white/[0.05]">
           {[
             { id: 'all', label: 'All Models' },
+            { id: 'muse', label: 'Meta Muse 2026' },
+            { id: 'agnes', label: 'Agnes AI' },
             { id: 'chinese', label: 'Chinese Proxies' },
             { id: 'puter', label: 'Puter Elite' },
             { id: 'premium', label: 'Premium' },

@@ -63,7 +63,8 @@ export const CHATX_MODEL_ALIASES: Record<string, string> = {
   'grok_fast': 'grok_fast',
   'grok_main': 'grok_main',
   'grok-4.3': 'grok_fast',
-  'grok-4.6': 'grok_main',
+  'grok-4.6': 'grok_fast',
+  'grok-4.6-thinking': 'grok_main',
   'grok-fast': 'grok_fast',
   'grok-main': 'grok_main',
 
@@ -167,8 +168,10 @@ export async function executeChatXStream(
             }
           }
         }
-      } catch (err) {
-        console.warn('[ChatX Service] Stream parsing notice:', err);
+      } catch (err: any) {
+        if (!err?.message?.includes('getResponseBody')) {
+          console.warn('[ChatX Service] Stream parsing notice:', err?.message || err);
+        }
       }
     }
   };

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { 
-  Paperclip, Globe, BrainCog, ChevronDown, ArrowUp, Square, Mic, MicOff, Volume2, VolumeX, Check
+  Paperclip, Globe, BrainCog, ChevronDown, ArrowUp, Square, Mic, MicOff, Volume2, VolumeX, Check, Zap
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../GlassCard'
@@ -44,9 +44,11 @@ interface BoltStyleChatInputProps {
   showSearch?: boolean;
   showThink?: boolean;
   showCanvas?: boolean;
+  showAgent?: boolean;
   onToggleSearch?: () => void;
   onToggleThink?: () => void;
   onToggleCanvas?: () => void;
+  onToggleAgent?: () => void;
   onFileUploadClick?: () => void;
   
   // Model
@@ -74,8 +76,10 @@ export const BoltStyleChatInput = React.forwardRef((props: BoltStyleChatInputPro
     onValueChange,
     showSearch,
     showThink,
+    showAgent,
     onToggleSearch,
     onToggleThink,
+    onToggleAgent,
     onFileUploadClick,
     currentModelName = "Default Model",
     onModelSelectorClick,
@@ -218,6 +222,27 @@ export const BoltStyleChatInput = React.forwardRef((props: BoltStyleChatInputPro
             >
               <BrainCog className="size-4" />
               <span className="text-[12px] font-medium hidden sm:inline">Think</span>
+            </button>
+
+            <CustomDivider />
+
+            {/* Agent Mode Toggle */}
+            <button
+              type="button"
+              onClick={onToggleAgent}
+              className={cn(
+                "rounded-full transition-all flex items-center gap-1.5 px-2.5 py-1.5 border",
+                showAgent 
+                  ? "bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]" 
+                  : "border-transparent text-[#8a8a8f] hover:text-white hover:bg-white/5"
+              )}
+              title="Autonomous Agent Mode (MCP Tools Enabled)"
+            >
+              <Zap className={cn("size-3.5", showAgent ? "text-purple-400 fill-purple-400/20" : "")} />
+              <span className="text-[12px] font-medium hidden sm:inline">Agent</span>
+              {showAgent && (
+                <span className="size-1.5 rounded-full bg-purple-400 animate-pulse hidden sm:inline-block" />
+              )}
             </button>
 
             {/* Model Selector Inline */}

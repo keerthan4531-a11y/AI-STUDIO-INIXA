@@ -20,6 +20,7 @@
     "@google/genai": "^2.11.0",
     "@gradio/client": "^2.2.0",
     "@heyputer/puter.js": "^2.6.2",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@nanostores/react": "^1.1.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.19",
@@ -83,7 +84,7 @@
     "uuid": "^14.0.0",
     "validator": "^13.15.35",
     "ws": "^8.21.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",

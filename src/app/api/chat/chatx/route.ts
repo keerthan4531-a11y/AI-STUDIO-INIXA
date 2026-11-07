@@ -50,7 +50,8 @@ const MODEL_MAP: Record<string, string> = {
   'grok_fast': 'grok_fast',
   'grok-4.3': 'grok_fast',
   'grok_main': 'grok_main',
-  'grok-4.6': 'grok_main',
+  'grok-4.6': 'grok_fast',
+  'grok-4.6-thinking': 'grok_main',
   'grok-main': 'grok_main',
 
   // DeepSeek

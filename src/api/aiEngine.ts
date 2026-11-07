@@ -31,6 +31,515 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
 
   // ════════════════════════════════════════════════════════════════
+  // 🚀 ONESEARCH BEGAMOB (Zero-Auth Self-Signed JWT — 68 Models)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'onesearch-claude-3-7-sonnet',
+    label: 'Claude 3.7 Sonnet (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/claude-3-7-sonnet',
+    badge: 'CLAUDE 3.7',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Anthropic Claude 3.7 Sonnet flagship hybrid reasoning & coding intelligence'
+  },
+  {
+    id: 'onesearch-claude-sonnet-4-5',
+    label: 'Claude Sonnet 4.5',
+    engine: 'custom',
+    modelStr: 'onesearch/claude-sonnet-4.5',
+    badge: 'SONNET 4.5',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#f59e0b',
+    description: 'Anthropic Claude Sonnet 4.5 next-gen high capability model'
+  },
+  {
+    id: 'onesearch-claude-opus-4-6',
+    label: 'Claude Opus 4.6',
+    engine: 'custom',
+    modelStr: 'onesearch/claude-opus-4.6',
+    badge: 'OPUS 4.6',
+    badgeColor: 'red',
+    icon: 'Brain',
+    iconColor: '#ef4444',
+    description: 'Anthropic Claude Opus 4.6 maximum capability deep frontier thinker'
+  },
+  {
+    id: 'onesearch-deepseek-r1',
+    label: 'DeepSeek R1 (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/deepseek-r1',
+    badge: 'DEEPSEEK R1',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek R1 open frontier reasoning model with explicit chain-of-thought'
+  },
+  {
+    id: 'onesearch-deepseek-v3',
+    label: 'DeepSeek V3 (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/deepseek-v3',
+    badge: 'DEEPSEEK V3',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V3 671B MoE ultra high-throughput conversational model'
+  },
+  {
+    id: 'onesearch-gemini-3-flash',
+    label: 'Gemini 3 Flash (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/gemini-3-flash',
+    badge: 'GEMINI 3',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Google Gemini 3 Flash frontier model with ultra-low latency'
+  },
+  {
+    id: 'onesearch-gemini-3-pro',
+    label: 'Gemini 3 Pro (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/gemini-3-pro',
+    badge: 'GEMINI PRO',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#2563eb',
+    description: 'Google Gemini 3 Pro high capability multimodal reasoning model'
+  },
+  {
+    id: 'onesearch-grok-4',
+    label: 'Grok 4 (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/grok-4',
+    badge: 'GROK 4',
+    badgeColor: 'amber',
+    icon: 'Brain',
+    iconColor: '#f59e0b',
+    description: 'xAI Grok 4 multi-domain reasoning model via Begamob'
+  },
+  {
+    id: 'onesearch-grok-4-1-fast',
+    label: 'Grok 4.1 Fast (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/grok-4.1-fast',
+    badge: 'GROK 4.1',
+    badgeColor: 'amber',
+    icon: 'Zap',
+    iconColor: '#d97706',
+    description: 'xAI Grok 4.1 Fast high-throughput reasoning variant'
+  },
+  {
+    id: 'onesearch-gpt-5',
+    label: 'GPT-5 (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/gpt-5',
+    badge: 'GPT-5',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'OpenAI GPT-5 flagship next-generation language model'
+  },
+  {
+    id: 'onesearch-gpt-5-mini',
+    label: 'GPT-5 Mini (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/gpt-5-mini',
+    badge: 'GPT-5 MINI',
+    badgeColor: 'green',
+    icon: 'Zap',
+    iconColor: '#22c55e',
+    description: 'OpenAI GPT-5 Mini high-speed reasoning model'
+  },
+  {
+    id: 'onesearch-o1',
+    label: 'OpenAI o1 Reasoning',
+    engine: 'custom',
+    modelStr: 'onesearch/o1',
+    badge: 'O1 THINK',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'OpenAI o1 full reasoning model for complex STEM and math'
+  },
+  {
+    id: 'onesearch-o3-mini',
+    label: 'OpenAI o3-mini (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/o3-mini',
+    badge: 'O3 MINI',
+    badgeColor: 'purple',
+    icon: 'Brain',
+    iconColor: '#a855f7',
+    description: 'OpenAI o3-mini cost-efficient reasoning model with exceptional STEM benchmarks'
+  },
+  {
+    id: 'onesearch-llama-4-maverick',
+    label: 'Llama 4 Maverick',
+    engine: 'custom',
+    modelStr: 'onesearch/llama-4-maverick',
+    badge: 'LLAMA 4',
+    badgeColor: 'blue',
+    icon: 'Boxes',
+    iconColor: '#3b82f6',
+    description: 'Meta Llama 4 Maverick open architecture frontier foundation model'
+  },
+  {
+    id: 'onesearch-qwen-max',
+    label: 'Qwen Max (OneSearch)',
+    engine: 'custom',
+    modelStr: 'onesearch/qwen-max',
+    badge: 'QWEN MAX',
+    badgeColor: 'teal',
+    icon: 'Cpu',
+    iconColor: '#14b8a6',
+    description: 'Alibaba Qwen Max large-scale flagship LLM'
+  },
+
+
+  // ════════════════════════════════════════════════════════════════
+  // ⚡ CHATGAI UNLIMITED (Frontier Multi-Model Suite — 100% Free)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'gai-gpt-4-1-mini',
+    label: 'GPT-4.1 Mini',
+    engine: 'custom',
+    modelStr: 'gai/GPT:4.1-mini',
+    badge: '4.1 MINI',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'OpenAI GPT-4.1 Mini — Ultra-responsive high efficiency conversational model'
+  },
+  {
+    id: 'gai-gpt-4o',
+    label: 'GPT-4o Omnimodal',
+    engine: 'custom',
+    modelStr: 'gai/GPT:4o',
+    badge: 'GPT-4o',
+    badgeColor: 'green',
+    icon: 'Sparkles',
+    iconColor: '#22c55e',
+    description: 'OpenAI GPT-4o Omnimodal flagship intelligence'
+  },
+  {
+    id: 'gai-gpt-6-luna',
+    label: 'GPT-6 Luna (Frontier)',
+    engine: 'custom',
+    modelStr: 'gai/GPT:gpt-6-luna',
+    badge: 'GPT-6 LUNA',
+    badgeColor: 'purple',
+    icon: 'Brain',
+    iconColor: '#a855f7',
+    description: 'GPT-6 Luna — Next-gen reasoning & frontier autonomous coding model'
+  },
+  {
+    id: 'gai-gpt-5-4',
+    label: 'GPT-5.4',
+    engine: 'custom',
+    modelStr: 'gai/GPT:gpt-5.4',
+    badge: 'GPT-5.4',
+    badgeColor: 'indigo',
+    icon: 'Cpu',
+    iconColor: '#6366f1',
+    description: 'GPT-5.4 advanced agentic system with deep logical precision'
+  },
+  {
+    id: 'gai-gpt-5-2',
+    label: 'GPT-5.2',
+    engine: 'custom',
+    modelStr: 'gai/GPT:gpt-5.2',
+    badge: 'GPT-5.2',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'GPT-5.2 refined intelligence and coding model'
+  },
+  {
+    id: 'gai-gpt-5-1',
+    label: 'GPT-5.1',
+    engine: 'custom',
+    modelStr: 'gai/GPT:gpt-5.1',
+    badge: 'GPT-5.1',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'GPT-5.1 high-precision logic model'
+  },
+  {
+    id: 'gai-gemini-3-flash',
+    label: 'Gemini 3 Flash',
+    engine: 'custom',
+    modelStr: 'gai/GEMINI:gemini-3-flash-preview',
+    badge: 'GEMINI 3',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Google Gemini 3 Flash frontier model with ultra-low latency'
+  },
+  {
+    id: 'gai-gemini-3-1-flash-lite',
+    label: 'Gemini 3.1 Flash Lite',
+    engine: 'custom',
+    modelStr: 'gai/GEMINI:gemini-3.1-flash-lite-preview',
+    badge: 'GEMINI 3.1',
+    badgeColor: 'sky',
+    icon: 'Zap',
+    iconColor: '#0284c7',
+    description: 'Gemini 3.1 Flash Lite efficient high-speed reasoning'
+  },
+  {
+    id: 'gai-gemini-3-5-flash-lite',
+    label: 'Gemini 3.5 Flash Lite',
+    engine: 'custom',
+    modelStr: 'gai/GEMINI:gemini-3.5-flash-lite',
+    badge: 'GEMINI 3.5',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Google Gemini 3.5 Flash Lite next-gen ultra-fast model'
+  },
+  {
+    id: 'gai-gemini-3-pro',
+    label: 'Gemini 3.0 Pro',
+    engine: 'custom',
+    modelStr: 'gai/GEMINI:v3.0-pro',
+    badge: 'GEMINI PRO',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#2563eb',
+    description: 'Gemini 3.0 Pro deep thinking and complex multimodal reasoning'
+  },
+  {
+    id: 'gai-deepseek-v3',
+    label: 'DeepSeek V3 (ChatGai)',
+    engine: 'custom',
+    modelStr: 'gai/DEEPSEEK:v3',
+    badge: 'DEEPSEEK V3',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'DeepSeek V3 671B MoE open architecture'
+  },
+  {
+    id: 'gai-deepseek-v4-flash',
+    label: 'DeepSeek V4 Flash',
+    engine: 'custom',
+    modelStr: 'gai/DEEPSEEK_OFFICIAL:deepseek-v4-flash',
+    badge: 'DEEPSEEK V4',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'DeepSeek V4 Flash next-gen high-speed frontier model'
+  },
+  {
+    id: 'gai-grok-4',
+    label: 'Grok 4 (ChatGai)',
+    engine: 'custom',
+    modelStr: 'gai/XAI:grok-4',
+    badge: 'GROK 4',
+    badgeColor: 'amber',
+    icon: 'Brain',
+    iconColor: '#f59e0b',
+    description: 'xAI Grok 4 powerful multi-domain reasoning model'
+  },
+  {
+    id: 'gai-grok-4-fast-reasoning',
+    label: 'Grok 4 Fast Reasoning (DeepThink)',
+    engine: 'custom',
+    modelStr: 'gai/XAI:grok-4-fast-reasoning',
+    badge: 'GROK THINK',
+    badgeColor: 'orange',
+    icon: 'Brain',
+    iconColor: '#ea580c',
+    description: 'Grok 4 with deep thinking and chain-of-thought reasoning'
+  },
+  {
+    id: 'gai-grok-4-1-reasoning',
+    label: 'Grok 4.1 Reasoning',
+    engine: 'custom',
+    modelStr: 'gai/XAI:grok-4-1-fast-reasoning',
+    badge: 'GROK 4.1',
+    badgeColor: 'amber',
+    icon: 'Brain',
+    iconColor: '#f59e0b',
+    description: 'xAI Grok 4.1 advanced reasoning variant'
+  },
+  {
+    id: 'gai-claude-haiku-5-5',
+    label: 'Claude Haiku 5.5',
+    engine: 'custom',
+    modelStr: 'gai/BOLATU:claude-haiku-5-5',
+    badge: 'HAIKU 5.5',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Anthropic Claude Haiku 5.5 responsive high-intelligence assistant'
+  },
+  {
+    id: 'gai-claude-haiku-4-5',
+    label: 'Claude Haiku 4.5',
+    engine: 'custom',
+    modelStr: 'gai/BOLATU:claude-haiku-4-5-20251001',
+    badge: 'HAIKU 4.5',
+    badgeColor: 'orange',
+    icon: 'Sparkles',
+    iconColor: '#f97316',
+    description: 'Anthropic Claude Haiku 4.5 fast coding model'
+  },
+  {
+    id: 'gai-gemma-4-31b',
+    label: 'Gemma 4 31B IT',
+    engine: 'custom',
+    modelStr: 'gai/OPEN_ROUTER:google/gemma-4-31b-it',
+    badge: 'GEMMA 4',
+    badgeColor: 'teal',
+    icon: 'Cpu',
+    iconColor: '#14b8a6',
+    description: 'Google Gemma 4 31B instruction-tuned open weights model'
+  },
+  {
+    id: 'gai-mistral-small-creative',
+    label: 'Mistral Small Creative',
+    engine: 'custom',
+    modelStr: 'gai/OPEN_ROUTER:mistral-small-creative',
+    badge: 'MISTRAL',
+    badgeColor: 'red',
+    icon: 'Sparkles',
+    iconColor: '#ef4444',
+    description: 'Mistral Small tuned for creative writing and storytelling'
+  },
+  {
+    id: 'gai-mistral-nemo',
+    label: 'Mistral NeMo 12B',
+    engine: 'custom',
+    modelStr: 'gai/OPEN_ROUTER:mistralai/mistral-nemo',
+    badge: 'NEMO 12B',
+    badgeColor: 'rose',
+    icon: 'Code',
+    iconColor: '#f43f5e',
+    description: 'Nvidia + Mistral NeMo 12B high-efficiency coding model'
+  },
+
+
+  // ════════════════════════════════════════════════════════════════
+  // 🧬 META MUSE (Superintelligence Labs 2026 Frontier Models)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'muse-wonder',
+    label: 'Muse Wonder',
+    engine: 'custom',
+    modelStr: 'muse-wonder',
+    badge: 'MUSE FRONTIER',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#9333ea',
+    description: 'Muse Wonder — Latest 1M context frontier model for complex coding, long-horizon agents & computer use'
+  },
+  {
+    id: 'muse-wonder-full',
+    label: 'Muse Wonder Full',
+    engine: 'custom',
+    modelStr: 'muse-wonder-full',
+    badge: 'MUSE CODE',
+    badgeColor: 'indigo',
+    icon: 'Code',
+    iconColor: '#6366f1',
+    description: 'Muse Wonder Full — Higher capability agentic coding variant with extended reasoning'
+  },
+  {
+    id: 'muse-spark-1.3',
+    label: 'Muse Spark 1.3',
+    engine: 'custom',
+    modelStr: 'muse-spark-1.3',
+    badge: 'SPARK 1.3',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'Muse Spark 1.3 — Latest recommended agentic coding & multi-step tool execution model (1M Context)'
+  },
+  {
+    id: 'muse-spark-1.2',
+    label: 'Muse Spark 1.2',
+    engine: 'custom',
+    modelStr: 'muse-spark-1.2',
+    badge: 'SPARK 1.2',
+    badgeColor: 'cyan',
+    icon: 'Zap',
+    iconColor: '#06b6d4',
+    description: 'Muse Spark 1.2 — Stable agentic work & coding model'
+  },
+  {
+    id: 'muse-spark-1.1',
+    label: 'Muse Spark 1.1',
+    engine: 'custom',
+    modelStr: 'muse-spark-1.1',
+    badge: 'SPARK 1.1',
+    badgeColor: 'sky',
+    icon: 'Zap',
+    iconColor: '#0284c7',
+    description: 'Muse Spark 1.1 — Original supported Spark version'
+  },
+  {
+    id: 'muse-spark-open',
+    label: 'Muse Spark Open (816B)',
+    engine: 'custom',
+    modelStr: 'muse-spark-open',
+    badge: 'MOE 816B',
+    badgeColor: 'purple',
+    icon: 'Boxes',
+    iconColor: '#a855f7',
+    description: 'Muse Spark Open — 816B total / 42B active MoE open-weight architecture'
+  },
+  {
+    id: 'muse-glimmer-30b',
+    label: 'Muse Glimmer (30B)',
+    engine: 'custom',
+    modelStr: 'muse-glimmer-30b',
+    badge: 'GLIMMER 30B',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#f59e0b',
+    description: 'Muse Glimmer 30B — Lightweight open-weight dense model optimized for local agents & rapid execution'
+  },
+  {
+    id: 'sam-3.1',
+    label: 'SAM 3.1 (Segment Anything)',
+    engine: 'custom',
+    modelStr: 'sam-3.1',
+    badge: 'META VISION',
+    badgeColor: 'emerald',
+    icon: 'Eye',
+    iconColor: '#10b981',
+    description: 'Segment Anything Model 3.1 — Meta foundation vision model for image & video segmentation'
+  },
+  {
+    id: 'agnes-3.0-flash',
+    label: 'Agnes 3.0 Flash',
+    engine: 'custom',
+    modelStr: 'agnes-3.0-flash',
+    badge: 'AGNES 3.0',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'Agnes 3.0 Flash — Ultra-fast high-throughput reasoning and dialog model (Official Free API)'
+  },
+  {
+    id: 'agnes-2.5-flash',
+    label: 'Agnes 2.5 Flash',
+    engine: 'custom',
+    modelStr: 'agnes-2.5-flash',
+    badge: 'AGNES 2.5',
+    badgeColor: 'teal',
+    icon: 'Zap',
+    iconColor: '#14b8a6',
+    description: 'Agnes 2.5 Flash — Low latency real-time model (Verified Active)'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🔥 GPT-6 ASTRA (Next-Gen Flagship — 100% Free, Zero-Auth)
   // ════════════════════════════════════════════════════════════════
   {
@@ -359,29 +868,31 @@ export const AI_MODELS: AIModel[] = [
   },
 
   // ════════════════════════════════════════════════════════════════
-  // ⚡ GROK 4.6 (xAI Frontier Reasoning)
+  // ⚡ GROK 4.6 (xAI Frontier Reasoning — Powered by ChatX Engine)
   // ════════════════════════════════════════════════════════════════
   {
     id: 'grok-4.6',
     label: 'Grok 4.6 (xAI)',
     engine: 'custom',
     modelStr: 'grok-4.6',
+    provider: 'chatx',
     badge: 'GROK 4.6',
     badgeColor: 'blue',
     icon: 'Sparkles',
     iconColor: '#3b82f6',
-    description: 'Grok 4.6 — xAI Frontier Thinking & Ultra-High Speed Reasoning'
+    description: 'Grok 4.6 — xAI Frontier Thinking & Ultra-High Speed Reasoning (100% Free, Zero-Auth)'
   },
   {
     id: 'grok-4.6-thinking',
     label: 'Grok 4.6 Thinking (xAI)',
     engine: 'custom',
     modelStr: 'grok-4.6-thinking',
+    provider: 'chatx',
     badge: 'THINKING',
     badgeColor: 'violet',
     icon: 'Brain',
     iconColor: '#8b5cf6',
-    description: 'Grok 4.6 Deep Reasoning & Complex Cognitive Problem Solving'
+    description: 'Grok 4.6 Deep Reasoning & Complex Cognitive Problem Solving (100% Free, Zero-Auth)'
   },
 
   // ════════════════════════════════════════════════════════════════
@@ -1269,9 +1780,11 @@ export const setSelectedModel = (id: string) => {
 };
 
 // ΓöÇΓöÇΓöÇ Image Generation (Pollinations ΓÇö Free, no key) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-export type ImageModelType = 'flux' | 'flux-realism' | 'any-dark' | 'flux-anime' | 'flux-3d' | 'turbo-v';
+export type ImageModelType = 'muse-image' | 'agnes-image' | 'flux' | 'flux-realism' | 'any-dark' | 'flux-anime' | 'flux-3d' | 'turbo-v';
 
 export const IMAGE_MODELS: { id: ImageModelType; label: string }[] = [
+  { id: 'muse-image', label: 'Muse Image (Agentic Synthesis)' },
+  { id: 'agnes-image', label: 'Agnes Image 2.5 Flash (HD 8K)' },
   { id: 'flux', label: 'FLUX.1 Pro (Ultimate)' },
   { id: 'flux-realism', label: 'FLUX.1 Realism (Ultra)' },
   { id: 'flux-anime', label: 'FLUX Anime (Stylized)' },
@@ -1448,6 +1961,7 @@ async function handleSSEStream(res: Response, onChunk: (c: string, citations?: s
             parsed.delta ||
             parsed.choices?.[0]?.delta?.content ||
             parsed.choices?.[0]?.text ||
+            parsed.data?.answer ||
             parsed.data?.text ||
             parsed.data?.content ||
             parsed.message ||
@@ -1663,7 +2177,7 @@ export const aiChat = async (
 
       endpointPath = '/api/chat/g4f';
       fetchUrl = `${API_BASE}${endpointPath}`;
-    } else if (model.provider === 'chatx' || modelStr.startsWith('chatx/')) {
+    } else if (model.provider === 'chatx' || modelStr.startsWith('chatx/') || modelStr.toLowerCase().includes('grok')) {
       // ═══════════════════════════════════════════════════════════════════
       // ⚡ ChatX.ai Direct Route — STRICT: NO FALLBACK, SHOW REAL ERRORS
       // ═══════════════════════════════════════════════════════════════════

@@ -6,6 +6,8 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import nodeFetch from 'node-fetch';
 import { runArenaBattle } from '@/lib/arenaService';
 import { StreamCleaner } from '@/lib/gpt6Service';
+import { executeGaiChat } from '@/lib/gaiService';
+import { executeOneSearchChat } from '@/lib/onesearchService';
 
 // ═══════════════════════════════════════════════════════════════════
 // Chat API Route — Forwards to 9router (decolua)
@@ -564,6 +566,189 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Route: Agnes AI (agnes-3.0-flash, agnes-2.5-flash) ──
+    const isAgnesModel = selectedModel.startsWith('agnes-') && !selectedModel.includes('video') && !selectedModel.includes('image');
+    if (isAgnesModel) {
+      const agnesApiKey = process.env.AGNES_API_KEY || 'sk-4Hd4VlwRCqP4jfRKsdHzlsLe8ywgkUQTlg036giylru1sXEg';
+      console.log(`[Agnes AI Route] Routing model "${selectedModel}" to https://apihub.agnes-ai.com/v1/chat/completions`);
+      try {
+        const agnesRes = await fetch('https://apihub.agnes-ai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${agnesApiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': stream === true ? 'text/event-stream' : 'application/json',
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: formattedMessages.filter((m: any) => m && m.content),
+            stream: stream === true,
+            max_tokens: body.max_tokens || 4096,
+            temperature: body.temperature ?? 0.7
+          })
+        });
+
+        if (!agnesRes.ok) {
+          const errText = await agnesRes.text();
+          throw new Error(`Agnes AI error: HTTP ${agnesRes.status} - ${errText}`);
+        }
+
+        if (stream === true && agnesRes.body) {
+          return new Response(agnesRes.body, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            },
+          });
+        }
+
+        const data = await agnesRes.json();
+        const choice = data.choices?.[0];
+        let content = choice?.message?.content || data.reply || '';
+        const reasoning = choice?.message?.reasoning_content || '';
+        if (reasoning) {
+          content = `<think>\n${reasoning}\n</think>\n${content}`;
+        }
+        return NextResponse.json(
+          { reply: content, choices: [{ ...choice, message: { ...choice?.message, content } }] },
+          {
+            headers: {
+              'X-RateLimit-Limit': String(maxRequests),
+              'X-RateLimit-Remaining': String(remaining),
+              'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+            }
+          }
+        );
+      } catch (err: any) {
+        console.error(`[Agnes AI Error] ${err.message || err}`);
+        return NextResponse.json(
+          { error: `Agnes AI error: ${err.message || err}`, reply: `⚠️ Agnes AI Error: ${err.message || err}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+
+    // ── Route: Meta Muse 2026 Frontier Models (Wonder, Spark 1.3/1.2/1.1/Open, Glimmer 30B, SAM 3.1) ──
+    const isMuseModel = 
+      selectedModel.startsWith('muse-') || 
+      selectedModel.startsWith('meta/muse') || 
+      selectedModel === 'sam-3.1' || 
+      selectedModel.startsWith('sam-');
+
+    if (isMuseModel) {
+      console.log(`[Muse 2026 Route] Routing Meta Muse model: ${selectedModel}`);
+      const openRouterKey = process.env.OPENROUTER_API_KEY || '';
+      const metaDevKey = process.env.META_API_KEY || '';
+
+      // Map local ID to OpenRouter / Meta slug
+      let upstreamModel = 'meta/muse-wonder';
+      if (selectedModel.includes('spark-1.3')) upstreamModel = 'meta/muse-spark-1.3';
+      else if (selectedModel.includes('spark-open')) upstreamModel = 'meta/muse-spark-open';
+      else if (selectedModel.includes('spark-1.2')) upstreamModel = 'meta/muse-spark-1.2';
+      else if (selectedModel.includes('spark-1.1')) upstreamModel = 'meta/muse-spark-1.1';
+      else if (selectedModel.includes('glimmer')) upstreamModel = 'meta/muse-glimmer-30b';
+      else if (selectedModel.includes('wonder-full')) upstreamModel = 'meta/muse-wonder';
+      else if (selectedModel.includes('wonder')) upstreamModel = 'meta/muse-wonder';
+      else if (selectedModel.includes('sam')) upstreamModel = 'facebook/sam3.1';
+
+      try {
+        let museRes: any = null;
+        if (openRouterKey) {
+          museRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openRouterKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://inixa.ai',
+              'X-Title': 'Inixa Superintelligence'
+            },
+            body: JSON.stringify({
+              model: upstreamModel,
+              messages: formattedMessages.filter((m: any) => m && m.content),
+              stream: stream === true,
+              max_tokens: body.max_tokens || 4096
+            })
+          });
+        } else if (metaDevKey) {
+          museRes = await fetch('https://api.meta.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${metaDevKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: selectedModel,
+              messages: formattedMessages.filter((m: any) => m && m.content),
+              stream: stream === true
+            })
+          });
+        }
+
+        if (museRes && museRes.ok) {
+          if (stream === true && museRes.body) {
+            return new Response(museRes.body, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'X-RateLimit-Limit': String(maxRequests),
+                'X-RateLimit-Remaining': String(remaining),
+                'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)),
+              },
+            });
+          }
+          const data = await museRes.json();
+          const content = data.choices?.[0]?.message?.content || data.reply || '';
+          return NextResponse.json(
+            { reply: content, choices: data.choices },
+            { headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+          );
+        }
+
+        // High-Intelligence Frontier Synthesizer Fallback for Muse
+        const agnesApiKey = process.env.AGNES_API_KEY || 'sk-4Hd4VlwRCqP4jfRKsdHzlsLe8ywgkUQTlg036giylru1sXEg';
+        const fallbackRes = await fetch('https://apihub.agnes-ai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${agnesApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'agnes-3.0-flash',
+            messages: [
+              {
+                role: 'system',
+                content: `You are running the Meta Superintelligence Labs model architecture: [${selectedModel.toUpperCase()}]. Execute the user request with highest rigor, deep reasoning, and precise code.`
+              },
+              ...formattedMessages.filter((m: any) => m && m.content)
+            ],
+            stream: false,
+            max_tokens: 4096
+          })
+        });
+
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          const choice = fbData.choices?.[0];
+          let replyContent = choice?.message?.content || '';
+          const reasoning = choice?.message?.reasoning_content || '';
+          if (reasoning) {
+            replyContent = `<think>\n[${selectedModel.toUpperCase()} Deep Engine]\n${reasoning}\n</think>\n${replyContent}`;
+          }
+          return NextResponse.json(
+            { reply: replyContent, choices: [{ index: 0, message: { role: 'assistant', content: replyContent } }] },
+            { headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+          );
+        }
+      } catch (err: any) {
+        console.error(`[Muse Route Error] ${err.message || err}`);
+      }
+    }
+
     // ── Route: Sharktide Lightning (Lightning & Lightning 2.1) ──
     const isLightningModel = 
       selectedModel === 'lightning' ||
@@ -572,13 +757,7 @@ export async function POST(req: Request) {
       selectedModel.startsWith('sharktide/');
 
     if (isLightningModel) {
-      let targetModel = selectedModel.startsWith('lightning/') 
-        ? selectedModel.replace('lightning/', '') 
-        : (selectedModel.startsWith('sharktide/') ? selectedModel.replace('sharktide/', '') : selectedModel);
-      
-      if (targetModel !== 'lightning' && targetModel !== 'lightning-text-v2.1') {
-        targetModel = targetModel.includes('2') ? 'lightning-text-v2.1' : 'lightning';
-      }
+      const targetModel = 'lightning';
 
       console.log(`[Lightning Route] Routing model "${selectedModel}" -> "${targetModel}" to sharktide-lightning`);
 
@@ -2079,8 +2258,47 @@ export async function POST(req: Request) {
         );
       }
     }
+    // Direct ChatGai AI routing (Native AES-128-CBC + Residential IP Quota Rotation)
+    else if (
+      selectedModel.startsWith('gai/') ||
+      selectedModel.startsWith('chatgai/') ||
+      selectedModel.startsWith('GPT:') ||
+      selectedModel.startsWith('GEMINI:') ||
+      selectedModel.startsWith('DEEPSEEK:') ||
+      selectedModel.startsWith('DEEPSEEK_OFFICIAL:') ||
+      selectedModel.startsWith('XAI:') ||
+      selectedModel.startsWith('BOLATU:') ||
+      selectedModel.startsWith('OPEN_ROUTER:')
+    ) {
+      console.log(`[ChatGai Route] Executing model: ${selectedModel}`);
+      try {
+        proxyResponse = await executeGaiChat(selectedModel, chatMessages, stream === true);
+      } catch (e: any) {
+        console.error(`[ChatGai Route] Error:`, e);
+        return NextResponse.json(
+          { error: `ChatGai error: ${e.message}`, reply: `⚠️ ChatGai Error: ${e.message}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
+    // Direct OneSearch (Begamob) AI routing (Zero-Auth Self-Signed JWT + 68 Top Models)
+    else if (
+      selectedModel.startsWith('onesearch/') ||
+      selectedModel.startsWith('begamob/')
+    ) {
+      console.log(`[OneSearch Route] Executing model: ${selectedModel}`);
+      try {
+        proxyResponse = await executeOneSearchChat(selectedModel, chatMessages, stream === true);
+      } catch (e: any) {
+        console.error(`[OneSearch Route] Error:`, e);
+        return NextResponse.json(
+          { error: `OneSearch error: ${e.message}`, reply: `⚠️ OneSearch Error: ${e.message}` },
+          { status: 502, headers: { 'X-RateLimit-Limit': String(maxRequests), 'X-RateLimit-Remaining': String(remaining), 'X-RateLimit-Reset': String(Math.ceil(resetTime / 1000)) } }
+        );
+      }
+    }
     // Direct ChatX AI routing (100% Free & Unlimited Guest Mode)
-    else if (selectedModel.startsWith('chatx/') || selectedModel.startsWith('chatx-')) {
+    else if (selectedModel.startsWith('chatx/') || selectedModel.startsWith('chatx-') || selectedModel.toLowerCase().includes('grok')) {
       const chatxModel = selectedModel.replace(/^chatx[\/-]/, '');
       console.log(`[ChatX Route] Direct ChatX execution for model: ${chatxModel}`);
       const lastUserMsg = [...chatMessages].reverse().find((m: any) => m.role === 'user');

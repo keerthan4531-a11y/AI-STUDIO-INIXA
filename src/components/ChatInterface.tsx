@@ -18,6 +18,8 @@ import { DataChartAgent } from './DataChartAgent';
 import { StudentToolkit, TOOLKIT_ITEMS } from './StudentToolkit';
 import { BoltStyleChatInput } from './ui/bolt-style-chat';
 import { LoadingBreadcrumb } from './ui/animated-loading-svg-text-shimmer';
+import { AgentTimeline } from './AgentTimeline';
+import { AgentStep, AgentArtifact } from '@/lib/mcp/types';
 
 interface ChatInterfaceProps {
   isCodex?: boolean;
@@ -76,10 +78,21 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
     
   const defaultMsg = { role: 'assistant', content: isPdfMode ? 'Upload a PDF to analyze it.' : 'How can I help you today?' };
 
-  const [messages, setMessages] = useState<{ role: string; content: any; thinking?: string; sources?: SearchSource[] }[]>(() => {
+  const [messages, setMessages] = useState<{ 
+    role: string; 
+    content: any; 
+    thinking?: string; 
+    sources?: SearchSource[];
+    agentSteps?: AgentStep[];
+    agentArtifacts?: AgentArtifact[];
+  }[]>(() => {
     try { const s = localStorage.getItem(storageKey); if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length > 0) return p; } } catch {}
     return [defaultMsg];
   });
+
+  const [isAgentMode, setIsAgentMode] = useState(false);
+  const [liveAgentSteps, setLiveAgentSteps] = useState<AgentStep[]>([]);
+  const [liveArtifacts, setLiveArtifacts] = useState<AgentArtifact[]>([]);
 
   // Sync messages when session ID changes (for new chat -> saved chat transition)
   useEffect(() => {
@@ -617,6 +630,87 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
         setIsSearching(false);
       }
 
+      // ── AUTONOMOUS AGENT MODE (MCP Tools Execution Loop) ──
+      if (isAgentMode) {
+        setLiveAgentSteps([]);
+        setLiveArtifacts([]);
+        setIsStreaming(true);
+
+        const agentRes = await fetch('/api/agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: text,
+            model: currentModel.modelStr || currentModel.id,
+            chatHistory: newMessages.map(m => ({ role: m.role, content: getTextContent(m.content) })),
+          }),
+        });
+
+        if (!agentRes.ok) {
+          throw new Error(`Agent request failed with status ${agentRes.status}`);
+        }
+
+        const reader = agentRes.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let currentSteps: AgentStep[] = [];
+        let currentArtifacts: AgentArtifact[] = [];
+        let finalAgentAnswer = '';
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            let currentEventType = '';
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                currentEventType = line.slice(6).trim();
+              } else if (line.startsWith('data:') && currentEventType) {
+                try {
+                  const data = JSON.parse(line.slice(5).trim());
+                  if (currentEventType === 'agent_thought') {
+                    currentSteps = [...currentSteps, data];
+                    setLiveAgentSteps(currentSteps);
+                  } else if (currentEventType === 'tool_call_start') {
+                    currentSteps = [...currentSteps, data];
+                    setLiveAgentSteps(currentSteps);
+                  } else if (currentEventType === 'tool_call_result') {
+                    currentSteps = currentSteps.map(s => s.id === data.id ? data : s);
+                    setLiveAgentSteps(currentSteps);
+                  } else if (currentEventType === 'artifact_created') {
+                    currentArtifacts = [...currentArtifacts, data];
+                    setLiveArtifacts(currentArtifacts);
+                  } else if (currentEventType === 'step_completed') {
+                    if (data.type === 'answer') {
+                      finalAgentAnswer = data.content || '';
+                      setStreamingText(finalAgentAnswer);
+                    }
+                  } else if (currentEventType === 'agent_done') {
+                    if (data.finalAnswer) finalAgentAnswer = data.finalAnswer;
+                    if (data.steps) currentSteps = data.steps;
+                    if (data.artifacts) currentArtifacts = data.artifacts;
+                  }
+                } catch {}
+              }
+            }
+          }
+        }
+
+        setIsStreaming(false);
+        setMessages([...newMessages, {
+          role: 'assistant',
+          content: finalAgentAnswer || 'Task completed.',
+          agentSteps: currentSteps,
+          agentArtifacts: currentArtifacts,
+        }]);
+        setLoading(false);
+        return;
+      }
+
       let thinkContent = '';
       let answerContent = '';
 
@@ -964,6 +1058,13 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
                       </div>
                     )}
 
+                    {/* Agent Timeline if this message had agent steps */}
+                    {m.agentSteps && m.agentSteps.length > 0 && (
+                      <div className="pl-9 mb-3">
+                        <AgentTimeline steps={m.agentSteps} artifacts={m.agentArtifacts} />
+                      </div>
+                    )}
+
                     {/* Thinking panel */}
                     {m.thinking && <DeepThinkPanel thinkingContent={m.thinking} isThinking={false} modelName={currentModel.label} />}
 
@@ -1025,6 +1126,13 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
 
           {/* Thinking while loading */}
           {loading && isThinking && <DeepThinkPanel thinkingContent={thinkingContent} isThinking={true} modelName={currentModel.label} />}
+
+          {/* Live Agent Timeline while running */}
+          {loading && isAgentMode && (
+            <div className="pl-9 mb-3">
+              <AgentTimeline steps={liveAgentSteps} artifacts={liveArtifacts} isStreaming={true} />
+            </div>
+          )}
 
           {/* Streaming */}
           {loading && isStreaming && streamingText && (
@@ -1145,11 +1253,13 @@ export function ChatInterface({ isCodex, isPdfMode, sessionId, onUpdateSessionTi
               value={input}
               onValueChange={setInput}
               isLoading={loading}
-              placeholder="Ask ChatGPT or choose a model..."
+              placeholder={isAgentMode ? "Give an autonomous task to Agent (e.g. search web, code, analyze)..." : "Ask ChatGPT or choose a model..."}
               showSearch={webSearchEnabled}
               onToggleSearch={() => { setWebSearchEnabled(!webSearchEnabled); vibrate(20); }}
               showThink={deepThinkEnabled}
               onToggleThink={() => { setDeepThinkEnabled(!deepThinkEnabled); vibrate(20); }}
+              showAgent={isAgentMode}
+              onToggleAgent={() => { setIsAgentMode(!isAgentMode); vibrate(20); }}
               onFileUploadClick={() => fileInputRef.current?.click()}
               onSend={(msg) => handleSend(msg)}
               currentModelName={currentModel.label}
