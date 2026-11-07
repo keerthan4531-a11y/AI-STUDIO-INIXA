@@ -5,11 +5,7 @@ export type AspectRatio =
   | 'VIDEO_ASPECT_RATIO_LANDSCAPE'
   | 'VIDEO_ASPECT_RATIO_SQUARE';
 
-export type VideoModelType =
-  | 'auto'
-  | 'aritek-sora'
-  | 'sora-2'
-  | 't2v-ultra';
+export type VideoModelType = 'aritek-sora';
 
 export interface GenerateVideoOptions {
   model?: VideoModelType | string;

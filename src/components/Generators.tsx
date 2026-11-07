@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Film, Smartphone, Monitor, Square, Image as ImageIcon, SmartphoneIcon, Wand2, Plus, XCircle, Download, Maximize, Layers, Zap as ZapIcon, Sparkles, AlertCircle, RefreshCw, Clock, Key, Check, ExternalLink } from 'lucide-react';
+import { Film, Smartphone, Monitor, Square, Image as ImageIcon, SmartphoneIcon, Wand2, Plus, XCircle, Download, Maximize, Layers, Zap as ZapIcon, Sparkles, AlertCircle, RefreshCw, Clock } from 'lucide-react';
 import { GlassCard, SectionLabel, cn } from './GlassCard';
 import { vibrate, saveMediaToGallery } from '../utils/helpers';
 import { generateVideo, AspectRatio, VideoModelType } from '../api/veoApi';
@@ -18,10 +18,7 @@ const STYLE_PRESETS = [
 ];
 
 const VIDEO_MODELS: { id: VideoModelType; label: string; desc: string; badge: string }[] = [
-  { id: 'aritek-sora', label: 'Aritek Sora v1.9.3 (Ultra)', desc: 'Direct 4K MP4 real video generation (Zero Auth)', badge: 'SORA REAL' },
-  { id: 'auto', label: 'Sora Auto Motion Engine', desc: 'Auto high-speed real video synthesis', badge: 'RECOMMENDED' },
-  { id: 'sora-2', label: 'Sora-2 Cinematic Motion', desc: 'Ultra-realistic physics & motion dynamics', badge: 'CINEMATIC' },
-  { id: 't2v-ultra', label: 'T2V Diffusion HyperSpeed', desc: 'Instant real MP4 video in ~3 seconds', badge: 'FAST 3S' },
+  { id: 'aritek-sora', label: 'Aritek Sora v1.9.3 (Ultra)', desc: 'Direct 4K MP4 real video generation (Zero Auth • Unlimited Free)', badge: 'SORA REAL' },
 ];
 
 function NeuralPlaceholder({ status, progress }: { status?: string; progress?: number }) {
@@ -64,7 +61,7 @@ function NeuralPlaceholder({ status, progress }: { status?: string; progress?: n
 export function VideoGenerator() {
   const [prompt, setPrompt] = useState(() => localStorage.getItem('inixa_video_last_prompt') || '');
   const [aspect, setAspect] = useState<AspectRatio>(() => (localStorage.getItem('inixa_video_aspect') as AspectRatio) || 'VIDEO_ASPECT_RATIO_PORTRAIT');
-  const [model, setModel] = useState<VideoModelType>('auto');
+  const [model, setModel] = useState<VideoModelType>('aritek-sora');
   const [duration, setDuration] = useState<number>(2);
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
@@ -74,57 +71,8 @@ export function VideoGenerator() {
   const [referenceImg, setReferenceImg] = useState<string | null>(null);
   const [engineUsed, setEngineUsed] = useState<string | null>(null);
 
-  // Multi-Engine Credentials
-  const [hfToken, setHfToken] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('inixa_hf_token') || '' : ''));
-  const [agnesKey, setAgnesKey] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('inixa_agnes_key') || 'sk-4Hd4VlwRCqP4jfRKsdHzlsLe8ywgkUQTlg036giylru1sXEg' : 'sk-4Hd4VlwRCqP4jfRKsdHzlsLe8ywgkUQTlg036giylru1sXEg'));
-  const defaultMuseCookie = 'ecd3959b-4a3d-4e80-ae48-8e463e173702.v1%3ASrdMpmI7iZMpttC3m2lWll7ciCDxnQ7JNG5cdjIGcFSVC3oRlykxUpo3D3Va6o3xnG3-q5Vp_mtFJn48dT0W_L_Z2hLvw74B2mcSm7OozoHjfU6HHr-ty_pTaifU_TaWOcA5PuWLnnTU-6y_yoJH6wkMCTZBZfD_2PLxW94CWBvTANalo2ZrJhmIWY4K8TNTrKueeQJ4A3wnJWiXQimquP0UPIOEpsm-dD4q9Tbyqh1QvsS2QfIhNmCVOSNH8YFXpdMnCHsMhzBX_fV8GirJAoVnoqR00VQR-t5yUmfXuUXYQ9ubsUoNgsJM-TvilzqInJKVU69Zf4BbjUUTd_NuCr1VQoO8ySymvi1Qd6aQ6xqS283RZhBvYHKQhnOQYpxyMnBq_53jFDpiATxQrFTYKoOHe2ULDYCZ_OrLaN9aB2h0soITFE-vGOwMnCpS0FROaRD9TGzESJx8kMpSPXcUQiSeDQ%3ApJ20iH422tEBQkJU%3Aus52_xUIH0PgMKtbmXJ6jQ.kAszzWQWMXnhqGqBnQ8ZT0Qhx3NU_NRNVpKoiyhcelQ';
-  const [museToken, setMuseToken] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('inixa_muse_token') || defaultMuseCookie : defaultMuseCookie));
-  const [museEndpoint, setMuseEndpoint] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('inixa_muse_endpoint') || 'http://localhost:18610' : 'http://localhost:18610'));
-  const [mindVideoToken, setMindVideoToken] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('inixa_mindvideo_token') || '' : ''));
-  const [showTokenSettings, setShowTokenSettings] = useState(false);
-
-  const [tempHfToken, setTempHfToken] = useState('');
-  const [tempAgnesKey, setTempAgnesKey] = useState('');
-  const [tempMuseToken, setTempMuseToken] = useState('');
-  const [tempMuseEndpoint, setTempMuseEndpoint] = useState('');
-  const [tempMindToken, setTempMindToken] = useState('');
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  const activeTokensCount = (hfToken ? 1 : 0) + (agnesKey ? 1 : 0) + (museToken ? 1 : 0) + (mindVideoToken ? 1 : 0);
-
-  const handleSaveCredentials = () => {
-    const trimmedHf = tempHfToken.trim();
-    const trimmedAgnes = tempAgnesKey.trim();
-    const trimmedMuse = tempMuseToken.trim();
-    const trimmedEndpoint = tempMuseEndpoint.trim();
-    const trimmedMind = tempMindToken.trim();
-
-    setHfToken(trimmedHf);
-    setAgnesKey(trimmedAgnes);
-    setMuseToken(trimmedMuse);
-    setMuseEndpoint(trimmedEndpoint || 'http://localhost:18610');
-    setMindVideoToken(trimmedMind);
-
-    if (trimmedHf) localStorage.setItem('inixa_hf_token', trimmedHf);
-    else localStorage.removeItem('inixa_hf_token');
-
-    if (trimmedAgnes) localStorage.setItem('inixa_agnes_key', trimmedAgnes);
-    else localStorage.removeItem('inixa_agnes_key');
-
-    if (trimmedMuse) localStorage.setItem('inixa_muse_token', trimmedMuse);
-    else localStorage.removeItem('inixa_muse_token');
-
-    if (trimmedEndpoint) localStorage.setItem('inixa_muse_endpoint', trimmedEndpoint);
-    else localStorage.removeItem('inixa_muse_endpoint');
-
-    if (trimmedMind) localStorage.setItem('inixa_mindvideo_token', trimmedMind);
-    else localStorage.removeItem('inixa_mindvideo_token');
-
-    setShowTokenSettings(false);
-    vibrate(30);
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,20 +96,18 @@ export function VideoGenerator() {
     }
   };
 
-  const handleGenerate = async (overrideToken?: string) => {
+  const handleGenerate = async () => {
     vibrate();
     if (!prompt.trim() || loading) return;
     setLoading(true); 
     setVideoUrl(null); 
     setErrorMsg(null);
     setEngineUsed(null);
-    setStatus('Connecting to Multi-Engine Video Router...'); 
+    setStatus('Connecting to Aritek Sora Engine...'); 
     setProgress(5);
     localStorage.setItem('inixa_video_last_prompt', prompt);
 
     abortRef.current = new AbortController();
-
-    const activeHf = overrideToken !== undefined ? overrideToken : hfToken;
 
     try {
       const result = await generateVideo(
@@ -172,19 +118,19 @@ export function VideoGenerator() {
         (pct) => setProgress(pct), 
         abortRef.current.signal,
         {
-          model,
+          model: 'aritek-sora',
           referenceImg,
           duration
         }
       );
       setVideoUrl(result.url); 
-      setEngineUsed(result.engineUsed || model);
+      setEngineUsed(result.engineUsed || 'aritek-sora');
       localStorage.setItem('inixa_video_last_url', result.url); 
       setStatus('Complete');
       saveMediaToGallery({ id: Date.now(), type: 'video', prompt, blob: result.url });
     } catch (err: any) { 
       console.error('[VideoGenerator UI] Error:', err);
-      setErrorMsg(err?.message || 'Video generation failed across all providers. Please try again.');
+      setErrorMsg(err?.message || 'Video generation failed. Please try again.');
       setStatus('Failed'); 
     } finally { 
       setLoading(false); 
@@ -205,32 +151,11 @@ export function VideoGenerator() {
           <div className="flex items-center justify-between">
             <SectionLabel icon={Film} text="AI Video Generator" />
             <div className="flex items-center gap-2">
-              {/* Credentials & Tokens Pool Drawer Toggle */}
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  setTempHfToken(hfToken);
-                  setTempAgnesKey(agnesKey);
-                  setTempMuseToken(museToken);
-                  setTempMuseEndpoint(museEndpoint);
-                  setTempMindToken(mindVideoToken);
-                  setShowTokenSettings(!showTokenSettings);
-                  vibrate(20);
-                }}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all",
-                  activeTokensCount > 0
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20" 
-                    : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                )}
-                title="Manage Provider Tokens & Session Keys"
-              >
-                <Key className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {activeTokensCount > 0 ? `${activeTokensCount} Keys Active` : 'Engine Keys'}
-                </span>
-                <span className={cn("w-1.5 h-1.5 rounded-full", activeTokensCount > 0 ? "bg-emerald-400" : "bg-white/30")} />
-              </motion.button>
+              {/* Zero-Auth Engine Status Badge */}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Zero Auth • Free Active
+              </div>
 
               <motion.button 
                 whileTap={{ scale: 0.9 }} 
@@ -263,120 +188,7 @@ export function VideoGenerator() {
             </div>
           </div>
 
-          {/* Multi-Engine Credentials Drawer */}
-          <AnimatePresence>
-            {showTokenSettings && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: 'auto' }} 
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-violet-500/20 space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <span className="text-[12px] font-bold text-white flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-violet-400" /> Multi-Provider Account & Token Pool
-                    </span>
-                    <span className="text-[10px] text-white/40">Tokens are saved locally in your browser</span>
-                  </div>
-
-                  {/* 1. HuggingFace Token */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-white/90">HuggingFace Token (LTX-Video & CogVideoX)</label>
-                      <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-[10px] text-violet-400 hover:underline flex items-center gap-1">
-                        Get Token <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                    <input 
-                      type="password" 
-                      value={tempHfToken} 
-                      onChange={(e) => setTempHfToken(e.target.value)} 
-                      placeholder="hf_..." 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500" 
-                    />
-                  </div>
-
-                  {/* 2. Agnes AI Key */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-white/90">Agnes AI Free Key (720P HD Video)</label>
-                      <a href="https://platform.agnes-ai.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-violet-400 hover:underline flex items-center gap-1">
-                        Get Free Key <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                    <input 
-                      type="password" 
-                      value={tempAgnesKey} 
-                      onChange={(e) => setTempAgnesKey(e.target.value)} 
-                      placeholder="ag_... or Bearer key" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500" 
-                    />
-                  </div>
-
-                  {/* 3. Muse2API Gateway */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-white/90">Muse2API Gateway (muse.ai CDP Driver)</label>
-                      <a href="https://github.com/www222fff/muse2api" target="_blank" rel="noopener noreferrer" className="text-[10px] text-violet-400 hover:underline flex items-center gap-1">
-                        muse2api docs <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <input 
-                        type="text" 
-                        value={tempMuseEndpoint} 
-                        onChange={(e) => setTempMuseEndpoint(e.target.value)} 
-                        placeholder="Gateway URL (e.g. http://localhost:18610)" 
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500" 
-                      />
-                      <input 
-                        type="password" 
-                        value={tempMuseToken} 
-                        onChange={(e) => setTempMuseToken(e.target.value)} 
-                        placeholder="API Key (Optional if open)" 
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500" 
-                      />
-                    </div>
-                  </div>
-
-                  {/* 4. MindVideo Token */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-white/90">MindVideo Token (Sora-2 Free Engine)</label>
-                      <a href="https://mindvideo.ai" target="_blank" rel="noopener noreferrer" className="text-[10px] text-violet-400 hover:underline flex items-center gap-1">
-                        mindvideo.ai <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    </div>
-                    <input 
-                      type="password" 
-                      value={tempMindToken} 
-                      onChange={(e) => setTempMindToken(e.target.value)} 
-                      placeholder="Paste mindvideo session JWT" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500" 
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
-                    <button 
-                      onClick={() => setShowTokenSettings(false)} 
-                      className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-white/60 transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={handleSaveCredentials} 
-                      className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 font-bold text-xs text-white transition-all flex items-center gap-1.5"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Save Credentials
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Model Selector */}
+          {/* Active Video Engine */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <SectionLabel icon={ZapIcon} text="Video Engine" />
@@ -386,32 +198,29 @@ export function VideoGenerator() {
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {VIDEO_MODELS.map((m) => (
-                <motion.button
-                  key={m.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setModel(m.id); vibrate(20); }}
-                  className={cn(
-                    "flex flex-col items-start p-3 rounded-2xl border text-left transition-all relative overflow-hidden",
-                    model === m.id 
-                      ? "bg-violet-600/25 border-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.25)]" 
-                      : "bg-white/5 border-white/10 hover:bg-white/10"
-                  )}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[11px] font-bold text-white truncate max-w-[120px]">{m.label}</span>
-                    <span className={cn(
-                      "text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider",
-                      model === m.id ? "bg-violet-400 text-black" : "bg-white/10 text-white/50"
-                    )}>
-                      {m.badge}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-white/40 leading-snug line-clamp-1">{m.desc}</span>
-                </motion.button>
-              ))}
-            </div>
+            <motion.div
+              className="p-3.5 rounded-2xl border border-violet-400/50 bg-violet-600/20 shadow-[0_0_20px_rgba(139,92,246,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden"
+            >
+              <div className="space-y-1 z-10">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white tracking-wide">Aritek Sora v1.9.3 (Ultra)</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-violet-400 text-black">
+                    SORA REAL
+                  </span>
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 uppercase tracking-wider">
+                    ONLINE • ZERO AUTH
+                  </span>
+                </div>
+                <span className="text-[10px] text-white/50 leading-snug">
+                  Direct 4K MP4 real video generation • Auto-rotating guest token • Unlimited free generations
+                </span>
+              </div>
+              <div className="shrink-0 z-10">
+                <span className="text-[10px] font-mono font-bold text-violet-300 bg-white/5 px-2.5 py-1 rounded-xl border border-white/10">
+                  ⚡ ~2.5s Latency
+                </span>
+              </div>
+            </motion.div>
           </div>
 
           {/* Prompt Area */}
@@ -576,50 +385,9 @@ export function VideoGenerator() {
             <AlertCircle className="w-5 h-5 text-red-400" />
           </div>
           <div className="max-w-md space-y-1">
-            <h4 className="text-white font-bold text-sm">
-              {errorMsg.toLowerCase().includes('quota') ? 'ZeroGPU Free Quota Limit' : 'Video Generation Failed'}
-            </h4>
+            <h4 className="text-white font-bold text-sm">Video Generation Failed</h4>
             <p className="text-white/70 text-xs leading-relaxed">{errorMsg}</p>
           </div>
-
-          {/* Quick HF Token input if quota error */}
-          {errorMsg.toLowerCase().includes('quota') && (
-            <div className="w-full max-w-sm mt-2 p-3 rounded-xl bg-black/40 border border-white/10 space-y-2 text-left">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-violet-300 flex items-center gap-1">
-                  <Key className="w-3 h-3" /> Add Free HF Token
-                </span>
-                <a 
-                  href="https://huggingface.co/settings/tokens" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-violet-400 hover:underline flex items-center gap-1"
-                >
-                  Create (Free) <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
-              <div className="flex gap-2">
-                <input 
-                  type="password"
-                  value={tempHfToken}
-                  onChange={(e) => setTempHfToken(e.target.value)}
-                  placeholder="Paste hf_..."
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-violet-500"
-                />
-                <button
-                  onClick={() => {
-                    const trimmed = tempHfToken.trim();
-                    setHfToken(trimmed);
-                    if (trimmed) localStorage.setItem('inixa_hf_token', trimmed);
-                    handleGenerate(trimmed);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 font-bold text-xs text-white transition-all flex items-center gap-1"
-                >
-                  Save & Retry
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="flex items-center gap-2 mt-1">
             <button 
