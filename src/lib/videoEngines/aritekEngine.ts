@@ -1,75 +1,106 @@
-import { VideoGenerationRequest, VideoGenerationResult } from './types';
+import { VideoGenerationRequest, VideoGenerationResult, VideoEngineType } from './types';
 
-const BASE = 'https://t2v.aritek.app';
-const SIGN = '68d6165b72a7f2d8d17b0dc6fe9691abdf77c583';
-const VERSION_CODE = '93';
-const CTRY_TARGET = 'others';
-const UA = 'okhttp/4.9.3';
-
-function getRandomDeviceId(): string {
-  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+interface EngineConfig {
+  baseUrl: string;
+  sign: string;
+  versionCode: string;
+  deviceIdLen: number;
 }
 
-interface AritekTokenSession {
+const ENGINE_CONFIGS: Record<string, EngineConfig> = {
+  'aritek-sora': {
+    baseUrl: 'https://t2v.aritek.app',
+    sign: '68d6165b72a7f2d8d17b0dc6fe9691abdf77c583',
+    versionCode: '93',
+    deviceIdLen: 32,
+  },
+  'aritek-cartoon-pet': {
+    baseUrl: 'https://t2p.aritek.app',
+    sign: '7259cb222a66496242650023583742fe40ea0a80',
+    versionCode: '23',
+    deviceIdLen: 16,
+  },
+  'aritek-character-mix': {
+    baseUrl: 'https://aifusion.aritek.app',
+    sign: '3325ecccfae4a0c4ee7eed0a4043daac58c51bec',
+    versionCode: '22',
+    deviceIdLen: 32,
+  },
+};
+
+const CTRY_TARGET = 'others';
+const UA = 'okhttp/4.12.0';
+
+function getRandomHex(len: number): string {
+  return Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+interface AritekSession {
   deviceId: string;
   token: string;
   expiresAt: number;
   usesRemaining: number;
 }
 
-let activeSession: AritekTokenSession | null = null;
+const sessionStore: Map<string, AritekSession> = new Map();
 
 /**
- * Bootstraps a fresh guest token from t2v.aritek.app.
+ * Bootstraps a fresh guest token for the requested Aritek engine.
  * Zero login, zero account, zero cookies required.
  */
-async function getOrBootstrapSession(): Promise<{ deviceId: string; token: string }> {
+async function getOrBootstrapSession(engineKey: string): Promise<{ deviceId: string; token: string }> {
+  const config = ENGINE_CONFIGS[engineKey] || ENGINE_CONFIGS['aritek-sora'];
   const now = Date.now();
-  if (activeSession && activeSession.expiresAt > now && activeSession.usesRemaining > 1) {
-    activeSession.usesRemaining -= 1;
-    return { deviceId: activeSession.deviceId, token: activeSession.token };
+  const cached = sessionStore.get(engineKey);
+
+  if (cached && cached.expiresAt > now && cached.usesRemaining > 1) {
+    cached.usesRemaining -= 1;
+    return { deviceId: cached.deviceId, token: cached.token };
   }
 
-  const deviceId = getRandomDeviceId();
-  console.log(`[AritekEngine] Bootstrapping fresh guest session for Device-Id: ${deviceId}...`);
+  const deviceId = getRandomHex(config.deviceIdLen);
+  console.log(`[AritekEngine] Bootstrapping fresh guest session for ${engineKey} (Device-Id: ${deviceId})...`);
 
-  const infoRes = await fetch(`${BASE}/api/v1/user/info`, {
+  const infoRes = await fetch(`${config.baseUrl}/api/v1/user/info`, {
     headers: {
-      sign: SIGN,
-      versionCode: VERSION_CODE,
+      sign: config.sign,
+      Sign: config.sign,
+      versionCode: config.versionCode,
       'Ctry-Target': CTRY_TARGET,
       pt: '',
       'User-Agent': UA,
       Accept: 'application/json',
-      'Device-Id': deviceId
-    }
+      'Device-Id': deviceId,
+    },
   });
 
   if (!infoRes.ok) {
     const errText = await infoRes.text().catch(() => '');
-    throw new Error(`Aritek bootstrap HTTP ${infoRes.status}: ${errText}`);
+    throw new Error(`[${engineKey}] Bootstrap HTTP ${infoRes.status}: ${errText}`);
   }
 
   const data = await infoRes.json();
   const token = data?.data?.token;
   if (!token) {
-    throw new Error(`Aritek bootstrap returned no token: ${JSON.stringify(data)}`);
+    throw new Error(`[${engineKey}] Bootstrap returned no token: ${JSON.stringify(data)}`);
   }
 
   const ttl = Number(data?.data?.ttl || 3600);
-  activeSession = {
+  sessionStore.set(engineKey, {
     deviceId,
     token,
     expiresAt: now + (ttl - 120) * 1000,
-    usesRemaining: 9 // 10 free per device
-  };
+    usesRemaining: 9, // 10 free per device
+  });
 
   return { deviceId, token };
 }
 
 /**
- * Generates an ultra-fast high-definition MP4 video from a text prompt.
- * Reverse-engineered from AI Video Generator v1.9.3 (aritek).
+ * Universal video generation across all verified Aritek zero-auth engines:
+ * 1. aritek-sora: General Sora AI Video v1.9.3 (~2.5s)
+ * 2. aritek-cartoon-pet: Cartoon, Pet & 3D Video v1.2.3 (~3.5s)
+ * 3. aritek-character-mix: Character Fusion & Mix v1.2.2 (~100s)
  */
 export async function generateAritekVideo(
   request: VideoGenerationRequest
@@ -79,6 +110,12 @@ export async function generateAritekVideo(
     throw new Error('Prompt is required for video generation');
   }
 
+  const engineKey = (request.model && ENGINE_CONFIGS[request.model])
+    ? request.model
+    : 'aritek-sora';
+
+  const config = ENGINE_CONFIGS[engineKey];
+
   // Map aspect ratio
   let aspectRatio = '9:16';
   if (request.aspectRatio === 'VIDEO_ASPECT_RATIO_LANDSCAPE') {
@@ -87,86 +124,96 @@ export async function generateAritekVideo(
     aspectRatio = '1:1';
   }
 
-  const { deviceId, token } = await getOrBootstrapSession();
+  const { deviceId, token } = await getOrBootstrapSession(engineKey);
 
-  console.log(`[AritekEngine] Requesting video generation: "${prompt.slice(0, 60)}..."`);
+  console.log(`[AritekEngine] [${engineKey}] Requesting video: "${prompt.slice(0, 50)}..."`);
   const startTime = Date.now();
 
-  const response = await fetch(`${BASE}/api/v4/video/t2v`, {
-    method: 'POST',
-    headers: {
-      sign: SIGN,
-      versionCode: VERSION_CODE,
-      'Ctry-Target': CTRY_TARGET,
-      pt: '',
-      'User-Agent': UA,
-      Accept: 'application/json',
-      'Device-Id': deviceId,
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+  // Build model-specific endpoint and body
+  let endpoint = `${config.baseUrl}/api/v1/video/t2v`;
+  let requestBody: any;
+
+  if (engineKey === 'aritek-sora') {
+    endpoint = `${config.baseUrl}/api/v4/video/t2v`;
+    requestBody = {
       prompt,
       aspect_ratio: aspectRatio,
-      ai_sound: 1
-    })
-  });
+      ai_sound: 1,
+    };
+  } else if (engineKey === 'aritek-cartoon-pet') {
+    endpoint = `${config.baseUrl}/api/v1/video/t2v`;
+    requestBody = {
+      prompt,
+      versionCode: Number(config.versionCode),
+      deviceID: deviceId,
+      isPremium: 0,
+      ctry_target: CTRY_TARGET,
+      used: [],
+      aspect_ratio: aspectRatio,
+      ai_sound: 1,
+    };
+  } else if (engineKey === 'aritek-character-mix') {
+    endpoint = `${config.baseUrl}/api/v1/video/t2v`;
+    requestBody = {
+      prompt,
+      ratio: aspectRatio,
+      resolution: '480p',
+      ai_sound: 1,
+      used: [],
+    };
+  }
 
+  const makeRequest = async (devId: string, tok: string) => {
+    return await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        sign: config.sign,
+        Sign: config.sign,
+        versionCode: config.versionCode,
+        'Ctry-Target': CTRY_TARGET,
+        pt: '',
+        'User-Agent': UA,
+        Accept: 'application/json',
+        'Device-Id': devId,
+        Authorization: `Bearer ${tok}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+  };
+
+  let response = await makeRequest(deviceId, token);
+
+  // If quota exhausted (429 or -22), clear session and retry once with a fresh Device-Id
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
-    // If quota exhausted, invalidate session and retry once with fresh device
-    if (response.status === 429 || errText.includes('-22')) {
-      activeSession = null;
-      console.warn('[AritekEngine] Device quota reached, retrying with fresh Device-Id...');
-      const fresh = await getOrBootstrapSession();
-      const retryRes = await fetch(`${BASE}/api/v4/video/t2v`, {
-        method: 'POST',
-        headers: {
-          sign: SIGN,
-          versionCode: VERSION_CODE,
-          'Ctry-Target': CTRY_TARGET,
-          pt: '',
-          'User-Agent': UA,
-          Accept: 'application/json',
-          'Device-Id': fresh.deviceId,
-          Authorization: `Bearer ${fresh.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt,
-          aspect_ratio: aspectRatio,
-          ai_sound: 1
-        })
-      });
-      const retryData = await retryRes.json();
-      const url = retryData?.data?.url;
-      if (url) {
-        return {
-          videoUrl: url,
-          engineUsed: 'aritek-sora',
-          status: 'completed',
-          durationSeconds: Math.round((Date.now() - startTime) / 1000)
-        };
+    if (response.status === 429 || errText.includes('-22') || errText.includes('limit')) {
+      console.warn(`[AritekEngine] [${engineKey}] Device quota reached, auto-rotating Device-Id...`);
+      sessionStore.delete(engineKey);
+      const fresh = await getOrBootstrapSession(engineKey);
+      if (engineKey === 'aritek-cartoon-pet' && requestBody) {
+        requestBody.deviceID = fresh.deviceId;
       }
+      response = await makeRequest(fresh.deviceId, fresh.token);
+    } else {
+      throw new Error(`[${engineKey}] Video generation HTTP ${response.status}: ${errText}`);
     }
-    throw new Error(`Aritek video generation HTTP ${response.status}: ${errText}`);
   }
 
   const result = await response.json();
   const videoUrl = result?.data?.url;
 
   if (!videoUrl) {
-    throw new Error(`No video URL in Aritek response: ${JSON.stringify(result)}`);
+    throw new Error(`[${engineKey}] No video URL returned: ${JSON.stringify(result)}`);
   }
 
   const elapsed = Math.round((Date.now() - startTime) / 1000);
-  console.log(`[AritekEngine] Video successfully generated in ${elapsed}s: ${videoUrl}`);
+  console.log(`[AritekEngine] [${engineKey}] Video created in ${elapsed}s: ${videoUrl}`);
 
   return {
     videoUrl,
-    engineUsed: 'aritek-sora',
+    engineUsed: engineKey as VideoEngineType,
     status: 'completed',
-    durationSeconds: elapsed || 4
+    durationSeconds: elapsed || 4,
   };
 }
-

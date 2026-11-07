@@ -5,7 +5,10 @@ export type AspectRatio =
   | 'VIDEO_ASPECT_RATIO_LANDSCAPE'
   | 'VIDEO_ASPECT_RATIO_SQUARE';
 
-export type VideoModelType = 'aritek-sora';
+export type VideoModelType =
+  | 'aritek-sora'
+  | 'aritek-cartoon-pet'
+  | 'aritek-character-mix';
 
 export interface GenerateVideoOptions {
   model?: VideoModelType | string;
@@ -31,30 +34,39 @@ export async function generateVideo(
   options?: GenerateVideoOptions,
 ): Promise<GenerateVideoResult> {
 
-  onStatus('🎬 Connecting to Aritek Sora v1.9.3 Video Engine...');
+  const isSlowModel = options?.model === 'aritek-character-mix';
+  const modelName = options?.model === 'aritek-cartoon-pet' 
+    ? 'AI Cartoon & Pet 3D Engine' 
+    : isSlowModel 
+      ? 'Character Fusion Engine (Queued)' 
+      : 'Sora v1.9.3 Video Engine';
+
+  onStatus(`🎬 Connecting to ${modelName}...`);
   onProgress(10);
 
   let progress = 10;
+  const intervalMs = isSlowModel ? 1800 : 400;
+
   const progressTimer = setInterval(() => {
     if (signal?.aborted) {
       clearInterval(progressTimer);
       return;
     }
     if (progress < 30) {
-      progress += 6;
+      progress += isSlowModel ? 2 : 6;
       onStatus('⚡ Generating Zero-Auth Token & Rotating Device-Id...');
     } else if (progress < 60) {
-      progress += 5;
-      onStatus('🏎️ Synthesizing High-Speed Diffusion Video Frames...');
+      progress += isSlowModel ? 1.5 : 5;
+      onStatus(isSlowModel ? '⏳ In Upstream Video Queue (~1.5 min, please wait)...' : '🏎️ Synthesizing High-Speed Diffusion Frames...');
     } else if (progress < 85) {
-      progress += 4;
-      onStatus('✨ Applying Sora Temporal Motion & AAC Audio...');
+      progress += isSlowModel ? 1 : 4;
+      onStatus(isSlowModel ? '✨ Rendering Character Fusion Dynamics...' : '✨ Applying Temporal Motion & Audio...');
     } else if (progress < 95) {
-      progress += 2;
-      onStatus('🎞️ Finalizing & Streaming 4K MP4 Video...');
+      progress += 0.5;
+      onStatus('🎞️ Finalizing & Streaming MP4 Video...');
     }
     onProgress(Math.min(progress, 96));
-  }, 400);
+  }, intervalMs);
 
   try {
     const response = await fetch('/api/generate-video', {

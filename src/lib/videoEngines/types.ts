@@ -1,4 +1,8 @@
-export type VideoEngineType = 'aritek-sora' | 'auto';
+export type VideoEngineType =
+  | 'auto'
+  | 'aritek-sora'
+  | 'aritek-cartoon-pet'
+  | 'aritek-character-mix';
 
 export type AspectRatio =
   | 'VIDEO_ASPECT_RATIO_PORTRAIT'

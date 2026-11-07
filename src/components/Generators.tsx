@@ -17,8 +17,28 @@ const STYLE_PRESETS = [
   { label: 'Slow Motion', prompt: 'ultra slow motion 120fps, high shutter speed, fluid cinematic physics, dramatic capture' },
 ];
 
-const VIDEO_MODELS: { id: VideoModelType; label: string; desc: string; badge: string }[] = [
-  { id: 'aritek-sora', label: 'Aritek Sora v1.9.3 (Ultra)', desc: 'Direct 4K MP4 real video generation (Zero Auth • Unlimited Free)', badge: 'SORA REAL' },
+const VIDEO_MODELS: { id: VideoModelType; label: string; desc: string; badge: string; speed: string }[] = [
+  { 
+    id: 'aritek-sora', 
+    label: 'Sora v1.9.3 (General Video)', 
+    desc: 'High-speed realistic 4K/HD video generation • Ultra motion physics', 
+    badge: 'FAST 2.5S',
+    speed: '~2.5s'
+  },
+  { 
+    id: 'aritek-cartoon-pet', 
+    label: 'AI Cartoon & Pet 3D Video', 
+    desc: 'Vibrant 3D cartoon, pets, and animation styles • High quality', 
+    badge: 'CARTOON 3.5S',
+    speed: '~3.5s'
+  },
+  { 
+    id: 'aritek-character-mix', 
+    label: 'Character Fusion & Mix', 
+    desc: 'Cinematic character merge & fusion dynamics (Queued processing)', 
+    badge: 'FUSION ~100S',
+    speed: '~100s'
+  },
 ];
 
 function NeuralPlaceholder({ status, progress }: { status?: string; progress?: number }) {
@@ -118,13 +138,13 @@ export function VideoGenerator() {
         (pct) => setProgress(pct), 
         abortRef.current.signal,
         {
-          model: 'aritek-sora',
+          model,
           referenceImg,
           duration
         }
       );
       setVideoUrl(result.url); 
-      setEngineUsed(result.engineUsed || 'aritek-sora');
+      setEngineUsed(result.engineUsed || model);
       localStorage.setItem('inixa_video_last_url', result.url); 
       setStatus('Complete');
       saveMediaToGallery({ id: Date.now(), type: 'video', prompt, blob: result.url });
@@ -188,7 +208,7 @@ export function VideoGenerator() {
             </div>
           </div>
 
-          {/* Active Video Engine */}
+          {/* Video Engine Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <SectionLabel icon={ZapIcon} text="Video Engine" />
@@ -198,29 +218,32 @@ export function VideoGenerator() {
                 </span>
               )}
             </div>
-            <motion.div
-              className="p-3.5 rounded-2xl border border-violet-400/50 bg-violet-600/20 shadow-[0_0_20px_rgba(139,92,246,0.2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden"
-            >
-              <div className="space-y-1 z-10">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white tracking-wide">Aritek Sora v1.9.3 (Ultra)</span>
-                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider bg-violet-400 text-black">
-                    SORA REAL
-                  </span>
-                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 uppercase tracking-wider">
-                    ONLINE • ZERO AUTH
-                  </span>
-                </div>
-                <span className="text-[10px] text-white/50 leading-snug">
-                  Direct 4K MP4 real video generation • Auto-rotating guest token • Unlimited free generations
-                </span>
-              </div>
-              <div className="shrink-0 z-10">
-                <span className="text-[10px] font-mono font-bold text-violet-300 bg-white/5 px-2.5 py-1 rounded-xl border border-white/10">
-                  ⚡ ~2.5s Latency
-                </span>
-              </div>
-            </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {VIDEO_MODELS.map((m) => (
+                <motion.button
+                  key={m.id}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setModel(m.id); vibrate(20); }}
+                  className={cn(
+                    "flex flex-col items-start p-3 rounded-2xl border text-left transition-all relative overflow-hidden",
+                    model === m.id 
+                      ? "bg-violet-600/25 border-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.25)]" 
+                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                  )}
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="text-[11px] font-bold text-white truncate max-w-[130px]">{m.label}</span>
+                    <span className={cn(
+                      "text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider",
+                      model === m.id ? "bg-violet-400 text-black" : "bg-white/10 text-white/50"
+                    )}>
+                      {m.badge}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-white/40 leading-snug line-clamp-2">{m.desc}</span>
+                </motion.button>
+              ))}
+            </div>
           </div>
 
           {/* Prompt Area */}
