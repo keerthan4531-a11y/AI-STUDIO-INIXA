@@ -63,7 +63,6 @@ async function getOrBootstrapSession(engineKey: string): Promise<{ deviceId: str
 
   const infoRes = await fetch(`${config.baseUrl}/api/v1/user/info`, {
     headers: {
-      sign: config.sign,
       Sign: config.sign,
       versionCode: config.versionCode,
       'Ctry-Target': CTRY_TARGET,
@@ -167,7 +166,6 @@ export async function generateAritekVideo(
     return await fetch(endpoint, {
       method: 'POST',
       headers: {
-        sign: config.sign,
         Sign: config.sign,
         versionCode: config.versionCode,
         'Ctry-Target': CTRY_TARGET,
