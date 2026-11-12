@@ -508,6 +508,50 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#8b5cf6',
     description: 'Dots 3 Note Preview — Massive 512K long-context note & reasoning model via Kilo Gateway (100% Free, Zero Auth)'
   },
+  {
+    id: 'kilo-openrouter-free',
+    label: 'OpenRouter Free Router (200K)',
+    engine: 'custom',
+    modelStr: 'kilo/openrouter/free',
+    badge: 'OPENROUTER',
+    badgeColor: 'blue',
+    icon: 'Sparkles',
+    iconColor: '#3b82f6',
+    description: 'OpenRouter Free Models Router — Intelligently routes across available high-quality free models (200K context)'
+  },
+  {
+    id: 'kilo-stealth-glyph-cluster',
+    label: 'Glyph Cluster (Stealth Model)',
+    engine: 'custom',
+    modelStr: 'kilo/stealth/glyph-cluster',
+    badge: 'STEALTH',
+    badgeColor: 'violet',
+    icon: 'Brain',
+    iconColor: '#8b5cf6',
+    description: 'Glyph Cluster Stealth Model — High-precision reasoning & context synthesis (256K context, 100% Free)'
+  },
+  {
+    id: 'kilo-reflection-beam-free',
+    label: 'Beam 1.0 Reflection (1M)',
+    engine: 'custom',
+    modelStr: 'kilo/reflection/beam-free',
+    badge: 'BEAM 1M',
+    badgeColor: 'emerald',
+    icon: 'Sparkles',
+    iconColor: '#10b981',
+    description: 'Reflection Beam 1.0 Free — Deep reflective chain-of-thought with massive 1M context window'
+  },
+  {
+    id: 'kilo-nemotron-3.5-lightning-free',
+    label: 'Nemotron 3.5 Lightning (Dedicated Free)',
+    engine: 'custom',
+    modelStr: 'kilo/nvidia/nemotron-3.5-lightning-free',
+    badge: 'LIGHTNING 1M',
+    badgeColor: 'amber',
+    icon: 'Zap',
+    iconColor: '#f59e0b',
+    description: 'NVIDIA Nemotron 3.5 Lightning Alternate Dedicated Free Endpoint — 1M context high-speed reasoning'
+  },
 
   // ════════════════════════════════════════════════════════════════
   // ⚡ GROK 4.6 (xAI Frontier Reasoning — Powered by ChatX Engine)
