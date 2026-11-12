@@ -33,17 +33,7 @@ export const AI_MODELS: AIModel[] = [
   // ════════════════════════════════════════════════════════════════
   // 🚀 ONESEARCH BEGAMOB (Zero-Auth Self-Signed JWT — 68 Models)
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'onesearch-claude-3-7-sonnet',
-    label: 'Claude 3.7 Sonnet (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/claude-3-7-sonnet',
-    badge: 'CLAUDE 3.7',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Anthropic Claude 3.7 Sonnet flagship hybrid reasoning & coding intelligence'
-  },
+
   {
     id: 'onesearch-claude-sonnet-4-5',
     label: 'Claude Sonnet 4.5',
@@ -66,28 +56,8 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#ef4444',
     description: 'Anthropic Claude Opus 4.6 maximum capability deep frontier thinker'
   },
-  {
-    id: 'onesearch-deepseek-r1',
-    label: 'DeepSeek R1 (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/deepseek-r1',
-    badge: 'DEEPSEEK R1',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek R1 open frontier reasoning model with explicit chain-of-thought'
-  },
-  {
-    id: 'onesearch-deepseek-v3',
-    label: 'DeepSeek V3 (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/deepseek-v3',
-    badge: 'DEEPSEEK V3',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V3 671B MoE ultra high-throughput conversational model'
-  },
+
+
   {
     id: 'onesearch-gemini-3-flash',
     label: 'Gemini 3 Flash (OneSearch)',
@@ -110,121 +80,13 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#2563eb',
     description: 'Google Gemini 3 Pro high capability multimodal reasoning model'
   },
-  {
-    id: 'onesearch-grok-4',
-    label: 'Grok 4 (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/grok-4',
-    badge: 'GROK 4',
-    badgeColor: 'amber',
-    icon: 'Brain',
-    iconColor: '#f59e0b',
-    description: 'xAI Grok 4 multi-domain reasoning model via Begamob'
-  },
-  {
-    id: 'onesearch-grok-4-1-fast',
-    label: 'Grok 4.1 Fast (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/grok-4.1-fast',
-    badge: 'GROK 4.1',
-    badgeColor: 'amber',
-    icon: 'Zap',
-    iconColor: '#d97706',
-    description: 'xAI Grok 4.1 Fast high-throughput reasoning variant'
-  },
-  {
-    id: 'onesearch-gpt-5',
-    label: 'GPT-5 (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/gpt-5',
-    badge: 'GPT-5',
-    badgeColor: 'emerald',
-    icon: 'Sparkles',
-    iconColor: '#10b981',
-    description: 'OpenAI GPT-5 flagship next-generation language model'
-  },
-  {
-    id: 'onesearch-gpt-5-mini',
-    label: 'GPT-5 Mini (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/gpt-5-mini',
-    badge: 'GPT-5 MINI',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#22c55e',
-    description: 'OpenAI GPT-5 Mini high-speed reasoning model'
-  },
-  {
-    id: 'onesearch-o1',
-    label: 'OpenAI o1 Reasoning',
-    engine: 'custom',
-    modelStr: 'onesearch/o1',
-    badge: 'O1 THINK',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'OpenAI o1 full reasoning model for complex STEM and math'
-  },
-  {
-    id: 'onesearch-o3-mini',
-    label: 'OpenAI o3-mini (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/o3-mini',
-    badge: 'O3 MINI',
-    badgeColor: 'purple',
-    icon: 'Brain',
-    iconColor: '#a855f7',
-    description: 'OpenAI o3-mini cost-efficient reasoning model with exceptional STEM benchmarks'
-  },
-  {
-    id: 'onesearch-llama-4-maverick',
-    label: 'Llama 4 Maverick',
-    engine: 'custom',
-    modelStr: 'onesearch/llama-4-maverick',
-    badge: 'LLAMA 4',
-    badgeColor: 'blue',
-    icon: 'Boxes',
-    iconColor: '#3b82f6',
-    description: 'Meta Llama 4 Maverick open architecture frontier foundation model'
-  },
-  {
-    id: 'onesearch-qwen-max',
-    label: 'Qwen Max (OneSearch)',
-    engine: 'custom',
-    modelStr: 'onesearch/qwen-max',
-    badge: 'QWEN MAX',
-    badgeColor: 'teal',
-    icon: 'Cpu',
-    iconColor: '#14b8a6',
-    description: 'Alibaba Qwen Max large-scale flagship LLM'
-  },
+
 
 
   // ════════════════════════════════════════════════════════════════
   // ⚡ CHATGAI UNLIMITED (Frontier Multi-Model Suite — 100% Free)
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'gai-gpt-4-1-mini',
-    label: 'GPT-4.1 Mini',
-    engine: 'custom',
-    modelStr: 'gai/GPT:4.1-mini',
-    badge: '4.1 MINI',
-    badgeColor: 'emerald',
-    icon: 'Sparkles',
-    iconColor: '#10b981',
-    description: 'OpenAI GPT-4.1 Mini — Ultra-responsive high efficiency conversational model'
-  },
-  {
-    id: 'gai-gpt-4o',
-    label: 'GPT-4o Omnimodal',
-    engine: 'custom',
-    modelStr: 'gai/GPT:4o',
-    badge: 'GPT-4o',
-    badgeColor: 'green',
-    icon: 'Sparkles',
-    iconColor: '#22c55e',
-    description: 'OpenAI GPT-4o Omnimodal flagship intelligence'
-  },
+
   {
     id: 'gai-gpt-6-luna',
     label: 'GPT-6 Luna (Frontier)',
@@ -313,17 +175,7 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#2563eb',
     description: 'Gemini 3.0 Pro deep thinking and complex multimodal reasoning'
   },
-  {
-    id: 'gai-deepseek-v3',
-    label: 'DeepSeek V3 (ChatGai)',
-    engine: 'custom',
-    modelStr: 'gai/DEEPSEEK:v3',
-    badge: 'DEEPSEEK V3',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V3 671B MoE open architecture'
-  },
+
   {
     id: 'gai-deepseek-v4-flash',
     label: 'DeepSeek V4 Flash',
@@ -425,119 +277,8 @@ export const AI_MODELS: AIModel[] = [
   },
 
 
-  // ════════════════════════════════════════════════════════════════
-  // 🧬 META MUSE (Superintelligence Labs 2026 Frontier Models)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'muse-wonder',
-    label: 'Muse Wonder',
-    engine: 'custom',
-    modelStr: 'muse-wonder',
-    badge: 'MUSE FRONTIER',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#9333ea',
-    description: 'Muse Wonder — Latest 1M context frontier model for complex coding, long-horizon agents & computer use'
-  },
-  {
-    id: 'muse-wonder-full',
-    label: 'Muse Wonder Full',
-    engine: 'custom',
-    modelStr: 'muse-wonder-full',
-    badge: 'MUSE CODE',
-    badgeColor: 'indigo',
-    icon: 'Code',
-    iconColor: '#6366f1',
-    description: 'Muse Wonder Full — Higher capability agentic coding variant with extended reasoning'
-  },
-  {
-    id: 'muse-spark-1.3',
-    label: 'Muse Spark 1.3',
-    engine: 'custom',
-    modelStr: 'muse-spark-1.3',
-    badge: 'SPARK 1.3',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Muse Spark 1.3 — Latest recommended agentic coding & multi-step tool execution model (1M Context)'
-  },
-  {
-    id: 'muse-spark-1.2',
-    label: 'Muse Spark 1.2',
-    engine: 'custom',
-    modelStr: 'muse-spark-1.2',
-    badge: 'SPARK 1.2',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Muse Spark 1.2 — Stable agentic work & coding model'
-  },
-  {
-    id: 'muse-spark-1.1',
-    label: 'Muse Spark 1.1',
-    engine: 'custom',
-    modelStr: 'muse-spark-1.1',
-    badge: 'SPARK 1.1',
-    badgeColor: 'sky',
-    icon: 'Zap',
-    iconColor: '#0284c7',
-    description: 'Muse Spark 1.1 — Original supported Spark version'
-  },
-  {
-    id: 'muse-spark-open',
-    label: 'Muse Spark Open (816B)',
-    engine: 'custom',
-    modelStr: 'muse-spark-open',
-    badge: 'MOE 816B',
-    badgeColor: 'purple',
-    icon: 'Boxes',
-    iconColor: '#a855f7',
-    description: 'Muse Spark Open — 816B total / 42B active MoE open-weight architecture'
-  },
-  {
-    id: 'muse-glimmer-30b',
-    label: 'Muse Glimmer (30B)',
-    engine: 'custom',
-    modelStr: 'muse-glimmer-30b',
-    badge: 'GLIMMER 30B',
-    badgeColor: 'amber',
-    icon: 'Sparkles',
-    iconColor: '#f59e0b',
-    description: 'Muse Glimmer 30B — Lightweight open-weight dense model optimized for local agents & rapid execution'
-  },
-  {
-    id: 'sam-3.1',
-    label: 'SAM 3.1 (Segment Anything)',
-    engine: 'custom',
-    modelStr: 'sam-3.1',
-    badge: 'META VISION',
-    badgeColor: 'emerald',
-    icon: 'Eye',
-    iconColor: '#10b981',
-    description: 'Segment Anything Model 3.1 — Meta foundation vision model for image & video segmentation'
-  },
-  {
-    id: 'agnes-3.0-flash',
-    label: 'Agnes 3.0 Flash',
-    engine: 'custom',
-    modelStr: 'agnes-3.0-flash',
-    badge: 'AGNES 3.0',
-    badgeColor: 'emerald',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'Agnes 3.0 Flash — Ultra-fast high-throughput reasoning and dialog model (Official Free API)'
-  },
-  {
-    id: 'agnes-2.5-flash',
-    label: 'Agnes 2.5 Flash',
-    engine: 'custom',
-    modelStr: 'agnes-2.5-flash',
-    badge: 'AGNES 2.5',
-    badgeColor: 'teal',
-    icon: 'Zap',
-    iconColor: '#14b8a6',
-    description: 'Agnes 2.5 Flash — Low latency real-time model (Verified Active)'
-  },
+
+
 
   // ════════════════════════════════════════════════════════════════
   // 🔥 GPT-6 ASTRA (Next-Gen Flagship — 100% Free, Zero-Auth)
@@ -558,8 +299,8 @@ export const AI_MODELS: AIModel[] = [
   // 🌟 GPT-5.6 LUNA (OpenAI Proxy)
   // ════════════════════════════════════════════════════════════════
   {
-    id: 'gpt-5.6-luna',
-    label: 'GPT-5.6 Luna',
+    id: 'gpt-6-luna',
+    label: 'GPT-6 Luna',
     engine: 'custom',
     modelStr: 'gpt-5-6',
     badge: 'DEFAULT',
@@ -862,17 +603,7 @@ export const AI_MODELS: AIModel[] = [
     iconColor: '#14b8a6',
     description: 'Cohere Command A — Blazing fast agentic instruction following & reasoning (100% Free)'
   },
-  {
-    id: 'qwen-2.5-coder-32b',
-    label: 'Qwen 2.5 Coder 32B',
-    engine: 'custom',
-    modelStr: 'qwen-2.5-coder-32b',
-    badge: 'CODER 32B',
-    badgeColor: 'blue',
-    icon: 'Code',
-    iconColor: '#3b82f6',
-    description: 'Alibaba Qwen 2.5 Coder 32B — Leading open code generation and software development (100% Free)'
-  },
+
   {
     id: 'deepseek-distill-qwen-32b',
     label: 'DeepSeek R1 Distill 32B',
@@ -915,480 +646,12 @@ export const AI_MODELS: AIModel[] = [
   // ════════════════════════════════════════════════════════════════
   // 🌐 PERPLEXITY AI (Live Web Search & Frontier Reasoning — 100% Free)
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'pplx-turbo',
-    label: 'Perplexity Turbo (Sonar Web)',
-    engine: 'custom',
-    modelStr: 'pplx/turbo',
-    provider: 'perplexity',
-    badge: 'LIVE WEB',
-    icon: 'Globe',
-    iconColor: '#14b8a6',
-    description: 'Perplexity Turbo — Ultra-fast real-time web search with citations & verified sources (100% Free)'
-  },
-  {
-    id: 'pplx-gpt6-astra',
-    label: 'GPT-6 Astra (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/gpt6_astra',
-    provider: 'perplexity',
-    badge: 'GPT-6 WEB',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#a855f7',
-    description: 'OpenAI GPT-6 Astra augmented with live Perplexity web search & citations (100% Free)'
-  },
-  {
-    id: 'pplx-gpt56-sol',
-    label: 'GPT-5.6 Sol (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/gpt56_sol',
-    provider: 'perplexity',
-    badge: 'GPT-5.6 WEB',
-    badgeColor: 'emerald',
-    icon: 'Sparkles',
-    iconColor: '#10b981',
-    description: 'OpenAI GPT-5.6 Sol augmented with live Perplexity web search & citations (100% Free)'
-  },
-  {
-    id: 'pplx-sonnet5',
-    label: 'Claude Sonnet 5 (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/sonnet5',
-    provider: 'perplexity',
-    badge: 'SONNET 5 WEB',
-    badgeColor: 'amber',
-    icon: 'Sparkles',
-    iconColor: '#f59e0b',
-    description: 'Anthropic Claude Sonnet 5 with real-time web search verification & citations (100% Free)'
-  },
-  {
-    id: 'pplx-opus5',
-    label: 'Claude Opus 5 (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/opus5',
-    provider: 'perplexity',
-    badge: 'OPUS 5 WEB',
-    badgeColor: 'rose',
-    icon: 'Brain',
-    iconColor: '#f43f5e',
-    description: 'Anthropic Claude Opus 5 deep reasoning with real-time web grounding (100% Free)'
-  },
-  {
-    id: 'pplx-gemini31',
-    label: 'Gemini 3.1 Pro (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/gemini31',
-    provider: 'perplexity',
-    badge: 'GEMINI 3.1 WEB',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Google Gemini 3.1 Pro augmented with live web search & citation links (100% Free)'
-  },
-  {
-    id: 'pplx-grok45',
-    label: 'Grok 4.5 (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/grok45',
-    provider: 'perplexity',
-    badge: 'GROK 4.5 WEB',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'xAI Grok 4.5 frontier intelligence with live Perplexity web search (100% Free)'
-  },
-  {
-    id: 'pplx-kimi3',
-    label: 'Kimi K3 (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/kimi3',
-    provider: 'perplexity',
-    badge: 'KIMI K3 WEB',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Moonshot Kimi K3 long-context reasoning with real-time web search (100% Free)'
-  },
-  {
-    id: 'pplx-glm52',
-    label: 'GLM 5.2 (Perplexity Web)',
-    engine: 'custom',
-    modelStr: 'pplx/glm52',
-    provider: 'perplexity',
-    badge: 'GLM 5.2 WEB',
-    badgeColor: 'purple',
-    icon: 'Globe',
-    iconColor: '#a855f7',
-    description: 'Zhipu GLM-5.2 frontier research model with live web grounding (100% Free)'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // ⚡ CHATX.AI FRONTIER MODELS (All 10 Models — 100% Free & Unlimited)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'chatx-grok-fast',
-    label: 'Grok 4.3 Fast (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/grok_fast',
-    provider: 'chatx',
-    badge: 'GROK 4.3',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Grok 4.3 Fast — xAI Ultra-fast reasoning via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-grok-main',
-    label: 'Grok 4.6 Main (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/grok_main',
-    provider: 'chatx',
-    badge: 'GROK 4.6',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Grok 4.6 Main — xAI Flagship Thinking & Deep Cognitive Reasoning via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-deepseek',
-    label: 'DeepSeek V4.1 Flash (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/deepseek_flash',
-    provider: 'chatx',
-    badge: 'DEEPSEEK',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#0ea5e9',
-    description: 'DeepSeek V4.1 Flash — Ultra-low latency reasoning model via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-claude-sonnet',
-    label: 'Claude Sonnet 5 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/claude_sonnet',
-    provider: 'chatx',
-    badge: 'SONNET 5',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 5 — Anthropic Next-gen coding & nuanced reasoning via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-claude-opus',
-    label: 'Claude Opus 5.5 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/claude_opus',
-    provider: 'chatx',
-    badge: 'OPUS 5.5',
-    badgeColor: 'amber',
-    icon: 'Brain',
-    iconColor: '#d97706',
-    description: 'Claude Opus 5.5 — Anthropic Highest-order reasoning & synthesis via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-claude-haiku',
-    label: 'Claude Haiku 4.5 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/claude_haiku',
-    provider: 'chatx',
-    badge: 'HAIKU 4.5',
-    badgeColor: 'yellow',
-    icon: 'Zap',
-    iconColor: '#eab308',
-    description: 'Claude Haiku 4.5 — Anthropic Fast lightweight model via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-claude-fable',
-    label: 'Claude Fable 5.1 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/claude_fable',
-    provider: 'chatx',
-    badge: 'FABLE 5.1',
-    badgeColor: 'amber',
-    icon: 'Sparkles',
-    iconColor: '#d97706',
-    description: 'Claude Fable 5.1 — Anthropic Creative & narrative intelligence via ChatX'
-  },
-  {
-    id: 'chatx-gemini-pro',
-    label: 'Gemini 3.8 Flash (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gemini_pro',
-    provider: 'chatx',
-    badge: 'GEMINI 3.8',
-    badgeColor: 'green',
-    icon: 'Sparkles',
-    iconColor: '#10b981',
-    description: 'Gemini 3.8 Flash — Google High efficiency multimodal intelligence via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-gemini-lite',
-    label: 'Gemini 3.5 Flash Lite (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gemini',
-    provider: 'chatx',
-    badge: 'GEMINI 3.5',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Gemini 3.5 Flash Lite — Google Ultra-lightweight reasoning model via ChatX'
-  },
-  {
-    id: 'chatx-gpt3',
-    label: 'GPT-6 Luna (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gpt3',
-    provider: 'chatx',
-    badge: 'LUNA',
-    badgeColor: 'cyan',
-    icon: 'Sparkles',
-    iconColor: '#06b6d4',
-    description: 'GPT-6 Luna — OpenAI Fast reasoning model via ChatX'
-  },
-  {
-    id: 'chatx-gpt4',
-    label: 'GPT-5.4 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gpt4',
-    provider: 'chatx',
-    badge: 'GPT-5.4',
-    badgeColor: 'emerald',
-    icon: 'Sparkles',
-    iconColor: '#059669',
-    description: 'GPT-5.4 — OpenAI High-order logic & reasoning intelligence via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-gpt4-5',
-    label: 'GPT-4.1 (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gpt4_5',
-    provider: 'chatx',
-    badge: 'GPT-4.1',
-    badgeColor: 'emerald',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-4.1 — OpenAI Fast instruction model via ChatX'
-  },
-  {
-    id: 'chatx-gpt5-sol',
-    label: 'GPT-6.1 Sol (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gpt5_5',
-    provider: 'chatx',
-    badge: 'GPT-6.1 SOL',
-    badgeColor: 'rose',
-    icon: 'Sparkles',
-    iconColor: '#f43f5e',
-    description: 'GPT-6.1 Sol — OpenAI Advanced synthesis model via ChatX (100% Free & Unlimited)'
-  },
-  {
-    id: 'chatx-gpt6-astra',
-    label: 'GPT-6 Astra (ChatX)',
-    engine: 'custom',
-    modelStr: 'chatx/gpt6_astra',
-    provider: 'chatx',
-    badge: 'GPT-6 ASTRA',
-    badgeColor: 'purple',
-    icon: 'Brain',
-    iconColor: '#a855f7',
-    description: 'GPT-6 Astra — OpenAI Next-gen flagship intelligence via ChatX (100% Free & Unlimited)'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // ⚡ OVERCHAT AI MODELS (via OverChat API Gateway)
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'overchat-gpt-5.2',
-    label: 'GPT-5.2 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-5.2',
-    badge: '5.2',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5.2 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-gpt-5.1',
-    label: 'GPT-5.1 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-5.1',
-    badge: '5.1',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'GPT-5.1 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-gpt-5-nano',
-    label: 'GPT-5 Nano (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-5-nano',
-    badge: 'NANO',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'GPT-5 Nano via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-gpt-4o',
-    label: 'GPT-4o (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gpt-4o',
-    badge: '4O',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'GPT-4o via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-claude-opus-4.6',
-    label: 'Claude Opus 4.6 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/claude-opus-4.6',
-    badge: 'OPUS',
-    badgeColor: 'orange',
-    icon: 'Sparkles',
-    iconColor: '#f97316',
-    description: 'Claude Opus 4.6 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-claude-haiku-4.5',
-    label: 'Claude Haiku 4.5 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/claude-haiku-4.5',
-    badge: 'HAIKU',
-    badgeColor: 'orange',
-    icon: 'Zap',
-    iconColor: '#f97316',
-    description: 'Claude Haiku 4.5 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-claude-sonnet-4.6',
-    label: 'Claude Sonnet 4.6 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/claude-sonnet-4.6',
-    badge: 'SONNET',
-    badgeColor: 'orange',
-    icon: 'Brain',
-    iconColor: '#f97316',
-    description: 'Claude Sonnet 4.6 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-gemini-3-flash',
-    label: 'Gemini 3 Flash (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/gemini-3-flash',
-    badge: 'FLASH',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'Gemini 3 Flash via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-deepseek-v3.2',
-    label: 'DeepSeek V3.2 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/deepseek-v3.2',
-    badge: 'V3.2',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V3.2 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-kimi-k2.5',
-    label: 'Kimi K2.5 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/kimi-k2.5',
-    badge: 'K2.5',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'Kimi K2.5 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-qwen-3',
-    label: 'Qwen 3 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/qwen-3',
-    badge: 'QWEN',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Qwen 3 via OverChat AI Gateway'
-  },
-  {
-    id: 'overchat-llama-4',
-    label: 'Llama 4 (OverChat)',
-    engine: 'g4f',
-    modelStr: 'overchat/llama-4',
-    badge: 'LLAMA',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Meta Llama 4 via OverChat AI Gateway'
-  },
-
-
-  // ════════════════════════════════════════════════════════════════
-  // 🟢 SURFSENSE
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'surfsense-gpt5.4-mini',
-    label: 'GPT-5.4 Mini (SurfSense)',
-    engine: 'custom',
-    modelStr: 'surfsense/gpt-5.4-mini-no-login',
-    badge: 'MINI',
-    badgeColor: 'teal',
-    icon: 'Sparkles',
-    iconColor: '#14b8a6',
-    description: 'Surfsense Anonymous Chat API'
-  },
-
-  {
-    id: 'surfsense-gpt-5.4',
-    label: 'GPT 5.4 (SurfSense)',
-    engine: 'custom',
-    modelStr: 'gpt-5.4',
-    badge: 'GPT-5.4',
-    badgeColor: 'green',
-    icon: 'Sparkles',
-    iconColor: '#10b981',
-    description: 'GPT 5.4 via SurfSense'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // 🟢 PERPLEXITY
-  // ════════════════════════════════════════════════════════════════
-  {
-    id: 'perplexity-copilot',
-    label: 'Perplexity Copilot',
-    engine: 'custom',
-    modelStr: 'perplexity-direct/copilot',
-    badge: 'COPILOT',
-    badgeColor: 'cyan',
-    icon: 'Sparkles',
-    iconColor: '#06b6d4',
-    description: 'Perplexity Copilot via direct Cloudflare worker'
-  },
 
 
   // ════════════════════════════════════════════════════════════════
   // 🟢 META AI
   // ════════════════════════════════════════════════════════════════
-  {
-    id: 'meta-ai-muse',
-    label: 'Meta AI (Muse Spark)',
-    engine: 'custom',
-    modelStr: 'meta-ai/muse-spark',
-    badge: 'META',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Native reverse-engineered Meta AI client'
-  },
+
   {
     id: 'baidu-ernie-5.1',
     label: 'Baidu Ernie 5.1',
@@ -1417,235 +680,6 @@ export const AI_MODELS: AIModel[] = [
   // 🔵 GEMINI MODELS
   // ════════════════════════════════════════════════════════════════
 
-
-  {
-    id: 'g4f-gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-2.5-flash',
-    badge: 'FREE',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Gemini 2.5 Flash via G4F — 220 req, 1768ms'
-  },
-  {
-    id: 'g4f-gemini-2.5-flash-lite',
-    label: 'Gemini 2.5 Flash Lite',
-    engine: 'g4f',
-    modelStr: 'g4f/gemini-2.5-flash-lite',
-    badge: 'LITE',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Gemini 2.5 Flash Lite via G4F'
-  },
-
-  {
-    id: 'g4f-gemini-3-flash-preview',
-    label: 'Gemini 3 Flash Preview',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-3-flash-preview',
-    badge: 'PREVIEW',
-    badgeColor: 'violet',
-    icon: 'Sparkles',
-    iconColor: '#8b5cf6',
-    description: 'Gemini 3 Flash Preview via G4F'
-  },
-  {
-    id: 'g4f-gemini-3.1-flash-lite',
-    label: 'Gemini 3.1 Flash Lite',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-3.1-flash-lite',
-    badge: 'LITE',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Gemini 3.1 Flash Lite via G4F — 27 req'
-  },
-  {
-    id: 'g4f-gemini-3.1-flash-lite-preview',
-    label: 'Gemini 3.1 Flash Lite Preview',
-    engine: 'g4f',
-    modelStr: 'g4f/gemini-3.1-flash-lite-preview',
-    badge: 'PREVIEW',
-    badgeColor: 'cyan',
-    icon: 'Sparkles',
-    iconColor: '#06b6d4',
-    description: 'Gemini 3.1 Flash Lite Preview via G4F'
-  },
-  {
-    id: 'g4f-gemini-3.5-flash',
-    label: 'Gemini 3.5 Flash',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-3.5-flash',
-    badge: 'FREE',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Gemini 3.5 Flash via G4F — 44 req'
-  },
-  {
-    id: 'g4f-gemini-flash-latest',
-    label: 'Gemini Flash Latest',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-flash-latest',
-    badge: 'LATEST',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Gemini Flash Latest via G4F — 52 req'
-  },
-  {
-    id: 'g4f-gemini-flash-lite-latest',
-    label: 'Gemini Flash Lite Latest',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-flash-lite-latest',
-    badge: 'LITE',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Gemini Flash Lite Latest via G4F — 16 req'
-  },
-
-  {
-    id: 'g4f-gemma-4-31b',
-    label: 'Gemma 4 31B',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemma-4-31b-it',
-    badge: '31B',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Google Gemma 4 31B Instruct via G4F'
-  },
-  {
-    id: 'g4f-gemma3-12b',
-    label: 'Gemma 3 12B',
-    engine: 'g4f',
-    modelStr: 'g4f/gemma3:12b',
-    badge: '12B',
-    badgeColor: 'blue',
-    icon: 'Zap',
-    iconColor: '#3b82f6',
-    description: 'Google Gemma 3 12B via Ollama — 1271ms'
-  },
-
-  {
-    id: 'g4f-gemma4-31b',
-    label: 'Gemma 4 31B (Ollama)',
-    engine: 'g4f',
-    modelStr: 'g4f/gemma4:31b',
-    badge: '31B',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'Google Gemma 4 31B via Ollama — 116 req'
-  },
-  {
-    id: 'g4f-models-gemini-2-5-flash-lite',
-    label: 'models/gemini-2.5-flash-lite',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-2.5-flash-lite',
-    provider: 'gemini-v1beta',
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Sparkles',
-    iconColor: '#06b6d4',
-    description: 'models/gemini-2.5-flash-lite via G4F Proxy'
-  },
-  {
-    id: 'g4f-models-gemini-3-1-flash-lite-preview',
-    label: 'models/gemini-3.1-flash-lite-preview',
-    engine: 'g4f',
-    modelStr: 'g4f/models/gemini-3.1-flash-lite-preview',
-    provider: 'gemini-v1beta',
-    badge: 'NEW',
-    badgeColor: 'cyan',
-    icon: 'Sparkles',
-    iconColor: '#06b6d4',
-    description: 'models/gemini-3.1-flash-lite-preview via G4F Proxy'
-  },
-
-
-  // ════════════════════════════════════════════════════════════════
-  // 🧠 DEEPSEEK MODELS
-  // ════════════════════════════════════════════════════════════════
-
-
-  {
-    id: 'g4f-deepseek-v4-flash-ktai',
-    label: 'DeepSeek V4 Flash',
-    engine: 'g4f',
-    modelStr: 'g4f/deepseek-ai/deepseek-v4-flash',
-    badge: 'FLASH',
-    badgeColor: 'green',
-    icon: 'Zap',
-    iconColor: '#10b981',
-    description: 'DeepSeek V4 Flash — 60 req, 3458ms'
-  },
-
-  {
-    id: 'g4f-deepseek-v4-flash-thinking',
-    label: 'DeepSeek V4 Flash Thinking',
-    engine: 'g4f',
-    modelStr: 'g4f/deepseek-v4-flash-thinking',
-    badge: 'THINK',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V4 Flash Thinking — 26 req, 7864ms'
-  },
-  {
-    id: 'g4f-deepseek-v4-pro',
-    label: 'DeepSeek V4 Pro',
-    engine: 'g4f',
-    modelStr: 'g4f/deepseek-v4-pro',
-    badge: 'PRO',
-    badgeColor: 'blue',
-    icon: 'Brain',
-    iconColor: '#3b82f6',
-    description: 'DeepSeek V4 Pro — 552 req, 1369ms'
-  },
-
-  // ════════════════════════════════════════════════════════════════
-  // 💻 QWEN MODELS
-  // ════════════════════════════════════════════════════════════════
-
-
-  {
-    id: 'g4f-qwen3.7-max',
-    label: 'Qwen 3.7 Max',
-    engine: 'g4f',
-    modelStr: 'g4f/qwen3.7-max',
-    badge: 'MAX',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Qwen 3.7 Max via G4F — 10 req, 6674ms'
-  },
-  {
-    id: 'qw-qwen3.7-max',
-    label: 'Qwen 3.7 Max (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-max',
-    badge: 'MAX',
-    badgeColor: 'violet',
-    icon: 'Brain',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Max — dedicated worker'
-  },
-  {
-    id: 'qw-qwen3.7-plus',
-    label: 'Qwen 3.7 Plus (Worker)',
-    engine: 'g4f',
-    modelStr: 'qwen_worker/qwen3.7-plus',
-    badge: 'PLUS',
-    badgeColor: 'violet',
-    icon: 'Zap',
-    iconColor: '#8b5cf6',
-    description: 'Alibaba Qwen 3.7 Plus — dedicated worker'
-  },
 
 
 
@@ -2108,7 +1142,7 @@ export const aiChat = async (
             try {
               const text = await res.text();
               if (text) errDetail = text;
-            } catch {}
+            } catch { }
           }
           const errorMsg = `\n\n❌ [ChatX Error - ${targetModel}]: ${errDetail}`;
           if (onChunk) onChunk(errorMsg);
@@ -2187,7 +1221,7 @@ export const aiChat = async (
             try {
               const text = await res.text();
               if (text) errDetail = text;
-            } catch {}
+            } catch { }
           }
           const errorMsg = `\n\n❌ [GPT-6 Astra Error]: ${errDetail}`;
           if (onChunk) onChunk(errorMsg);
@@ -2269,7 +1303,7 @@ export const aiChat = async (
             try {
               const text = await res.text();
               if (text) errDetail = text;
-            } catch {}
+            } catch { }
           }
           const errorMsg = `\n\n❌ [Perplexity Error - ${targetModel}]: ${errDetail}`;
           if (onChunk) onChunk(errorMsg);
@@ -2332,7 +1366,7 @@ export const aiChat = async (
             try {
               const text = await res.text();
               if (text) errDetail = text;
-            } catch {}
+            } catch { }
           }
           const errorMsg = `\n\n❌ [Kilo Error - ${targetModel}]: ${errDetail}`;
           if (onChunk) onChunk(errorMsg);
@@ -2375,7 +1409,7 @@ export const aiChat = async (
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         console.log(`[aiChat Client] Attempt ${attempt}/${maxAttempts} hitting ${fetchUrl} for ${modelStr}...`);
-        
+
         const reqBody = JSON.stringify({
           messages: conversationHistory,
           model: modelStr,
