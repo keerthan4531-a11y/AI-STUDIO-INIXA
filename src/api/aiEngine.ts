@@ -713,48 +713,37 @@ export const AI_MODELS: AIModel[] = [
     description: 'Cohere North Mini Code — Specialized code generation and engineering model (100% Free)'
   },
   {
-    id: 'kilo-step-3.7-flash',
-    label: 'Step 3.7 Flash (StepFun)',
+    id: 'kilo-ernie-5.5-flash',
+    label: 'ERNIE 5.5 Flash (Baidu)',
     engine: 'custom',
-    modelStr: 'kilo/stepfun/step-3.7-flash:free',
-    badge: 'STEPFUN',
-    badgeColor: 'cyan',
+    modelStr: 'kilo/baidu/ernie-5.5-flash-preview:free',
+    badge: 'ERNIE 5.5',
+    badgeColor: 'blue',
     icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Step 3.7 Flash — High-performance multimodal-trained reasoning model (100% Free)'
+    iconColor: '#3b82f6',
+    description: 'Baidu ERNIE 5.5 Flash Preview — Ultra-fast frontier reasoning & Chinese/English bilingual mastery (100% Free)'
   },
   {
-    id: 'kilo-liquid-lfm-2.5',
-    label: 'LFM 2.5 (Liquid AI)',
+    id: 'kilo-liquid-lfm-3',
+    label: 'LFM 3 1.7B (Liquid AI)',
     engine: 'custom',
-    modelStr: 'kilo/liquid/lfm-2.5-2.6b:free',
-    badge: 'LIQUID AI',
+    modelStr: 'kilo/liquid/lfm-3-1.7b:free',
+    badge: 'LIQUID LFM3',
     badgeColor: 'violet',
     icon: 'Brain',
     iconColor: '#8b5cf6',
-    description: 'Liquid Neural Network (LFM 2.5) — Dynamic adaptive sequence model (100% Free)'
+    description: 'Liquid Neural Network (LFM 3) — Next-gen dynamic adaptive neural architecture (100% Free)'
   },
   {
-    id: 'kilo-ling-3.0-flash',
-    label: 'Ling 3.0 Flash (InclusionAI)',
+    id: 'kilo-nemotron-3.5-super-vl',
+    label: 'Nemotron 3.5 Super VL (NVIDIA)',
     engine: 'custom',
-    modelStr: 'kilo/inclusionai/ling-3.0-flash-sante:free',
-    badge: 'LING 3.0',
-    badgeColor: 'pink',
-    icon: 'Sparkles',
-    iconColor: '#ec4899',
-    description: 'InclusionAI Ling 3.0 Flash — Ultra-fast multilingual reasoning model (100% Free)'
-  },
-  {
-    id: 'kilo-nemotron-3-super',
-    label: 'Nemotron 3 Super 120B (NVIDIA)',
-    engine: 'custom',
-    modelStr: 'kilo/nvidia/nemotron-3-super-120b-a12b:free',
-    badge: 'NVIDIA 120B',
+    modelStr: 'kilo/nvidia/nemotron-3.5-super-vl:free',
+    badge: 'VISION 3.5',
     badgeColor: 'emerald',
     icon: 'Zap',
     iconColor: '#10b981',
-    description: 'NVIDIA Nemotron 3 Super 120B — High-performance enterprise frontier reasoning (100% Free)'
+    description: 'NVIDIA Nemotron 3.5 Super Vision-Language — Frontier multimodal reasoning & visual comprehension (100% Free)'
   },
   {
     id: 'kilo-nemotron-3-nano-reasoning',
@@ -768,83 +757,6 @@ export const AI_MODELS: AIModel[] = [
     description: 'NVIDIA Nemotron 3 Nano Omni 30B — Specialized reasoning & chain-of-thought model (100% Free)'
   },
   {
-    id: 'kilo-nemotron-3.5-content-safety',
-    label: 'Nemotron 3.5 Content Safety (NVIDIA)',
-    engine: 'custom',
-    modelStr: 'kilo/nvidia/nemotron-3.5-content-safety:free',
-    badge: 'SAFETY',
-    badgeColor: 'rose',
-    icon: 'Shield',
-    iconColor: '#f43f5e',
-    description: 'NVIDIA Nemotron 3.5 Content Safety — Content moderation & safety classification model (100% Free)'
-  },
-  {
-    id: 'kilo-poolside-laguna-s',
-    label: 'Laguna S 2.1 (Poolside via Kilo)',
-    engine: 'custom',
-    modelStr: 'kilo/poolside/laguna-s-2.1:free',
-    badge: 'LAGUNA S',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Poolside Laguna S 2.1 — Code-focused frontier reasoning via Kilo Gateway (100% Free)'
-  },
-  {
-    id: 'kilo-poolside-laguna-xs',
-    label: 'Laguna XS 2.1 (Poolside via Kilo)',
-    engine: 'custom',
-    modelStr: 'kilo/poolside/laguna-xs-2.1:free',
-    badge: 'LAGUNA XS',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Poolside Laguna XS 2.1 — Ultra-compact fast code intelligence via Kilo Gateway (100% Free)'
-  },
-  {
-    id: 'kilo-ling-3.1-flash',
-    label: 'Ling 3.1 Flash (InclusionAI)',
-    engine: 'custom',
-    modelStr: 'kilo/inclusionai/ling-3.1-flash',
-    badge: 'LING 3.1',
-    badgeColor: 'pink',
-    icon: 'Sparkles',
-    iconColor: '#ec4899',
-    description: 'InclusionAI Ling 3.1 Flash — Next-gen ultra-fast multilingual reasoning model (100% Free)'
-  },
-  {
-    id: 'kilo-apodex-1.1-mini',
-    label: 'Apodex 1.1 Mini',
-    engine: 'custom',
-    modelStr: 'kilo/apodex/apodex-1.1-mini:free',
-    badge: 'APODEX',
-    badgeColor: 'amber',
-    icon: 'Zap',
-    iconColor: '#f59e0b',
-    description: 'Apodex 1.1 Mini — Compact high-efficiency reasoning & dialogue model (100% Free)'
-  },
-  {
-    id: 'kilo-openrouter-free',
-    label: 'OpenRouter Free (Auto Router)',
-    engine: 'custom',
-    modelStr: 'kilo/openrouter/free',
-    badge: 'AUTO FREE',
-    badgeColor: 'teal',
-    icon: 'Sparkles',
-    iconColor: '#14b8a6',
-    description: 'OpenRouter Free — Auto-routes to the best available free model via Kilo Gateway (100% Free)'
-  },
-  {
-    id: 'kilo-qwen-3.8-27b',
-    label: 'Qwen 3.8 27B (via Kilo)',
-    engine: 'custom',
-    modelStr: 'kilo/qwen/qwen3.8-27b:free',
-    badge: 'QWEN 3.8',
-    badgeColor: 'blue',
-    icon: 'Sparkles',
-    iconColor: '#3b82f6',
-    description: 'Qwen 3.8 27B — High-speed frontier multilingual reasoning model via Kilo Gateway (100% Free, Zero Auth)'
-  },
-  {
     id: 'kilo-dots-3-note-preview',
     label: 'Dots 3 Note Preview (512K)',
     engine: 'custom',
@@ -854,17 +766,6 @@ export const AI_MODELS: AIModel[] = [
     icon: 'Brain',
     iconColor: '#8b5cf6',
     description: 'Dots 3 Note Preview — Massive 512K long-context note & reasoning model via Kilo Gateway (100% Free, Zero Auth)'
-  },
-  {
-    id: 'kilo-inkling-small',
-    label: 'Inkling Small 1M (ThinkingMachines)',
-    engine: 'custom',
-    modelStr: 'kilo/thinkingmachines/inkling-small:free',
-    badge: 'INKLING 1M',
-    badgeColor: 'cyan',
-    icon: 'Zap',
-    iconColor: '#06b6d4',
-    description: 'Inkling Small — 1M massive context window reasoning model via Kilo Gateway (100% Free, Zero Auth)'
   },
 
   // ════════════════════════════════════════════════════════════════

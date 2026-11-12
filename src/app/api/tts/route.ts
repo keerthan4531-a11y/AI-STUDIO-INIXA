@@ -1,39 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // ═══════════════════════════════════════════════════════════════════
-// TTS API Route — Text-to-Speech via auto-scraped keys
+// High-Speed Neural Text-to-Speech API Route (Zero-Auth & Zero-Latency)
 // ═══════════════════════════════════════════════════════════════════
-// Uses the pekpik API with scraped keys for TTS-1-HD model
-// Supports multiple voices: alloy, echo, fable, onyx, nova, shimmer
-// ═══════════════════════════════════════════════════════════════════
-
-// Reuse the same scraper from chat route
-interface ScrapedKeyEntry { key: string; model: string; }
-let cachedTTSKeys: string[] = [];
-let lastTTSScrapeTime = 0;
-const SCRAPE_URL = 'https://raw.githubusercontent.com/alistaitsacle/free-llm-api-keys/main/README.md';
-
-async function getTTSKey(): Promise<string> {
-  const now = Date.now();
-  if (now - lastTTSScrapeTime > 5 * 60 * 1000 || cachedTTSKeys.length === 0) {
-    try {
-      const res = await fetch(SCRAPE_URL, { cache: 'no-store' });
-      const text = await res.text();
-      // Get all sk- keys (TTS keys are not model-specific in the table)
-      const matches = [...text.matchAll(/`(sk-[a-zA-Z0-9_-]+)`/g)];
-      if (matches.length > 0) {
-        cachedTTSKeys = matches.map(m => m[1]);
-        lastTTSScrapeTime = now;
-      }
-    } catch (e) {
-      console.error('Failed to scrape TTS keys:', e);
-    }
-  }
-  if (cachedTTSKeys.length > 0) {
-    return cachedTTSKeys[Math.floor(Math.random() * cachedTTSKeys.length)];
-  }
-  return '';
-}
 
 function splitTextIntoChunks(text: string, maxLen = 160): string[] {
   const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
@@ -69,7 +38,7 @@ function splitTextIntoChunks(text: string, maxLen = 160): string[] {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { text, voice = 'nova', model = 'tts-1-hd', speed = 1.0, lang } = body;
+    const { text, lang } = body;
 
     if (!text || text.trim().length === 0) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
@@ -81,38 +50,6 @@ export async function POST(req: NextRequest) {
     const isTamil = /[\u0B80-\u0BFF]/.test(trimmedText);
     const targetLang = lang ? lang.split('-')[0] : (isTamil ? 'ta' : 'en');
 
-    const apiKey = await getTTSKey();
-    if (apiKey) {
-      try {
-        const ttsResponse = await fetch('https://aiapiv2.pekpik.com/v1/audio/speech', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            input: trimmedText,
-            voice,
-            speed,
-          }),
-        });
-
-        if (ttsResponse.ok) {
-          const audioBuffer = await ttsResponse.arrayBuffer();
-          return new Response(audioBuffer, {
-            headers: {
-              'Content-Type': 'audio/mpeg',
-              'Cache-Control': 'no-cache',
-            },
-          });
-        }
-      } catch (err) {
-        console.warn('Primary TTS failed, using fallback:', err);
-      }
-    }
-
-    // --- FALLBACK: High-Reliability Neural Translate TTS ---
     const validChunks = splitTextIntoChunks(trimmedText, 160);
     if (validChunks.length === 0) {
       return NextResponse.json({ error: 'No readable speech chunks' }, { status: 400 });
@@ -124,16 +61,17 @@ export async function POST(req: NextRequest) {
       'Referer': 'https://translate.google.com/',
     };
 
-    // Fetch chunks sequentially or in parallel batches
-    const gttsBuffers: ArrayBuffer[] = [];
-    for (const chunk of validChunks) {
-      const gttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(targetLang)}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-      const fallbackRes = await fetch(gttsUrl, { headers: browserHeaders });
-      if (!fallbackRes.ok) {
-        throw new Error(`GTTS returned status ${fallbackRes.status}`);
-      }
-      gttsBuffers.push(await fallbackRes.arrayBuffer());
-    }
+    // Parallel fetch chunks for ultra-fast audio synthesis
+    const gttsBuffers = await Promise.all(
+      validChunks.map(async (chunk) => {
+        const gttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(targetLang)}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+        const res = await fetch(gttsUrl, { headers: browserHeaders });
+        if (!res.ok) {
+          throw new Error(`GTTS returned status ${res.status}`);
+        }
+        return await res.arrayBuffer();
+      })
+    );
 
     // Concatenate ArrayBuffers (MP3 frames can be safely concatenated)
     const totalLength = gttsBuffers.reduce((acc, buf) => acc + buf.byteLength, 0);
@@ -147,16 +85,12 @@ export async function POST(req: NextRequest) {
     return new Response(combined.buffer, {
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'public, max-age=86400',
       },
     });
 
   } catch (error: any) {
     console.error('TTS Route Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to generate speech audio.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || 'TTS generation failed' }, { status: 500 });
   }
 }
-

@@ -69,3 +69,10 @@ test_meta_image.js
 .arena_battle_profile/
 .arena_profile/
 free-multimodal-proxy/
+freellmpool/
+gpt4free/
+inixa-veo-backend/
+*.mp4
+hs_err_*.log
+replay_*.log
+

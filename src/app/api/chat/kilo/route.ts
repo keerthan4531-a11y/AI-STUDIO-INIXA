@@ -66,6 +66,13 @@ export async function POST(req: NextRequest) {
 
       if (directRes.ok) {
         kiloRes = directRes;
+      } else if (directRes.status === 404 || directRes.status === 400) {
+        const errText = await directRes.text();
+        console.warn(`[Kilo Route] Immediate client/model error ${directRes.status}: ${errText.slice(0, 150)}`);
+        return new Response(errText, {
+          status: directRes.status,
+          headers: { 'Content-Type': 'application/json' }
+        });
       } else if (directRes.status === 429) {
         console.warn(`[Kilo Route] Direct IP 429 rate-limited for ${model}. Activating rotating proxy pool...`);
         kiloLastError = new Error(`HTTP 429 Rate limited on direct IP`);
