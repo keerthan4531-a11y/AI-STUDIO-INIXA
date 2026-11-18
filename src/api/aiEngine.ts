@@ -31,6 +31,94 @@ export interface AIModel {
 export const AI_MODELS: AIModel[] = [
 
   // ════════════════════════════════════════════════════════════════
+  // 🌟 FRONTIER VEO AI MODELS (Zero-Auth, 100% Real-time Fast Streaming)
+  // ════════════════════════════════════════════════════════════════
+  {
+    id: 'frontier-claude-sonnet-5',
+    label: 'Claude Sonnet 5',
+    engine: 'custom',
+    modelStr: 'frontier/claude-sonnet-5',
+    provider: 'frontier',
+    badge: 'SONNET 5',
+    badgeColor: 'amber',
+    icon: 'Sparkles',
+    iconColor: '#f59e0b',
+    description: 'Anthropic Claude Sonnet 5 flagship reasoning model with superior programming & extended thinking'
+  },
+  {
+    id: 'frontier-gpt-5-6-sol',
+    label: 'GPT-5.6 Sol',
+    engine: 'custom',
+    modelStr: 'frontier/gpt-5.6-sol',
+    provider: 'frontier',
+    badge: 'SOL PRO',
+    badgeColor: 'emerald',
+    icon: 'Zap',
+    iconColor: '#10b981',
+    description: 'OpenAI GPT-5.6 Sol high-speed pro model optimized for rapid, insightful answers and bug fixes'
+  },
+  {
+    id: 'frontier-gpt-5-6-terra',
+    label: 'GPT-5.6 Terra',
+    engine: 'custom',
+    modelStr: 'frontier/gpt-5.6-terra',
+    provider: 'frontier',
+    badge: 'TERRA',
+    badgeColor: 'teal',
+    icon: 'Brain',
+    iconColor: '#14b8a6',
+    description: 'OpenAI GPT-5.6 Terra deep reasoning model with advanced mathematical logic and scientific problem-solving'
+  },
+  {
+    id: 'frontier-claude-fable-5-1',
+    label: 'Claude Fable 5.1',
+    engine: 'custom',
+    modelStr: 'frontier/claude-fable-5.1',
+    provider: 'frontier',
+    badge: 'FABLE 5.1',
+    badgeColor: 'violet',
+    icon: 'Sparkles',
+    iconColor: '#8b5cf6',
+    description: 'Anthropic Claude Fable 5.1 advanced creative reasoning model with enhanced long-form narrative coherence'
+  },
+  {
+    id: 'frontier-claude-fable-5',
+    label: 'Claude Fable 5',
+    engine: 'custom',
+    modelStr: 'frontier/claude-fable-5',
+    provider: 'frontier',
+    badge: 'FABLE 5',
+    badgeColor: 'purple',
+    icon: 'Sparkles',
+    iconColor: '#a855f7',
+    description: 'Anthropic Claude Fable 5 nuanced storytelling, creative writing, and natural human communication'
+  },
+  {
+    id: 'frontier-glm-5-2',
+    label: 'GLM 5.2',
+    engine: 'custom',
+    modelStr: 'frontier/glm-5.2',
+    provider: 'frontier',
+    badge: 'GLM 5.2',
+    badgeColor: 'sky',
+    icon: 'Zap',
+    iconColor: '#0ea5e9',
+    description: 'Z.AI GLM 5.2 flagship bilingual model with strong coding and broad technical knowledge'
+  },
+  {
+    id: 'frontier-kimi-k3',
+    label: 'Kimi K3 (200K)',
+    engine: 'custom',
+    modelStr: 'frontier/kimi-k3',
+    provider: 'frontier',
+    badge: 'KIMI 200K',
+    badgeColor: 'blue',
+    icon: 'Brain',
+    iconColor: '#3b82f6',
+    description: 'Moonshot AI Kimi K3 ultra long-context model with 200K+ token window and pinpoint recall'
+  },
+
+  // ════════════════════════════════════════════════════════════════
   // 🚀 ONESEARCH BEGAMOB (Zero-Auth Self-Signed JWT — 68 Models)
   // ════════════════════════════════════════════════════════════════
 
@@ -1439,6 +1527,69 @@ export const aiChat = async (
       } catch (err: any) {
         console.error(`[aiChat Kilo Error]:`, err);
         const netErrorMsg = `\n\n❌ [Kilo Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/kilo'}`;
+        if (onChunk) onChunk(netErrorMsg);
+        return netErrorMsg;
+      }
+    } else if (model.provider === 'frontier' || modelStr.startsWith('frontier/')) {
+      // ═══════════════════════════════════════════════════════════════════
+      // 🌟 FRONTIER VEO AI GATEWAY — 100% FREE, DIRECT FAST STREAMING
+      // ═══════════════════════════════════════════════════════════════════
+      const targetModel = modelStr.replace(/^frontier\//, '');
+      const lastUserMsg = [...conversationHistory].reverse().find(m => m.role === 'user');
+      const promptText = typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : JSON.stringify(lastUserMsg?.content || '');
+
+      console.log(`[aiChat Frontier] Direct invocation for ${modelStr}...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chat/frontier`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: targetModel,
+            prompt: promptText,
+            messages: conversationHistory,
+            stream: !!onChunk
+          })
+        });
+
+        if (!res.ok) {
+          let errDetail = `HTTP ${res.status}: ${res.statusText}`;
+          try {
+            const data = await res.json();
+            if (data.error) errDetail = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) errDetail = text;
+            } catch { }
+          }
+          const errorMsg = `\n\n❌ [Frontier Error - ${targetModel}]: ${errDetail}`;
+          if (onChunk) onChunk(errorMsg);
+          return errorMsg;
+        }
+
+        if (onChunk && res.body) {
+          const sseReply = await handleSSEStream(res, onChunk);
+          if (sseReply && sseReply !== 'No response received from the AI model.') {
+            return sseReply;
+          }
+          const emptyMsg = `\n\n❌ [Frontier Error - ${targetModel}]: No response received from Frontier gateway.`;
+          onChunk(emptyMsg);
+          return emptyMsg;
+        } else {
+          const data = await res.json();
+          const content = data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content || data.reply || '';
+          if (content) {
+            if (onChunk) onChunk(content);
+            return content;
+          }
+          const emptyMsg = `\n\n❌ [Frontier Error - ${targetModel}]: Empty response received.`;
+          if (onChunk) onChunk(emptyMsg);
+          return emptyMsg;
+        }
+      } catch (err: any) {
+        console.error(`[aiChat Frontier Error]:`, err);
+        const netErrorMsg = `\n\n❌ [Frontier Connection Error - ${targetModel}]: ${err.message || 'Failed to connect to /api/chat/frontier'}`;
         if (onChunk) onChunk(netErrorMsg);
         return netErrorMsg;
       }
